@@ -167,6 +167,19 @@ $allowed_modules = $_SESSION['allowed_modules'] ?? null;
         </div>
 
         <div class="modules-grid">
+            <?php if ($allowed_modules === null || in_array('watchtower', $allowed_modules)): ?>
+            <a href="watchtower/" class="module-card watchtower" title="Unified attention dashboard across all modules">
+                <div class="module-icon watchtower">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                </div>
+                <div class="module-name">Watchtower</div>
+            </a>
+            <?php endif; ?>
+
             <?php if ($allowed_modules === null || in_array('tickets', $allowed_modules)): ?>
             <a href="tickets/" class="module-card tickets" title="Manage support requests, emails, and user issues">
                 <div class="module-icon tickets">

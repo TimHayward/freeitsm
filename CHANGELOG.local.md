@@ -12,6 +12,7 @@ When publishing to the website, move entries from **Unpublished** to the **Publi
 
 | ID  | Module            | Type        | Description |
 |-----|-------------------|-------------|-------------|
+| 165 | Homepage          | Fix         | Add the missing **Watchtower** card to the homepage module grid. Watchtower was already wired into the waffle menu and module-colours but had been left out of the post-login landing page, so analysts could only reach it via the cross-module waffle menu. The card now appears as the first tile on the home grid (matching the waffle-menu order), with its existing slate-blue gradient and alert-circle icon, and respects the per-analyst `allowed_modules` permission |
 
 ---
 
