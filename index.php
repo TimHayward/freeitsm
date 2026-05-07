@@ -369,6 +369,18 @@ $allowed_modules = $_SESSION['allowed_modules'] ?? null;
             </a>
             <?php endif; ?>
 
+            <?php if ($allowed_modules === null || in_array('tasks', $allowed_modules)): ?>
+            <a href="tasks/" class="module-card tasks" title="Kanban board and list view for tracking tasks">
+                <div class="module-icon tasks">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 11l3 3L22 4"></path>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                    </svg>
+                </div>
+                <div class="module-name">Tasks</div>
+            </a>
+            <?php endif; ?>
+
             <?php if ($allowed_modules === null || in_array('system', $allowed_modules)): ?>
             <a href="system/" class="module-card system" title="System administration and configuration">
                 <div class="module-icon system">
