@@ -949,13 +949,18 @@ function saveEmailToDatabase($conn, $email, $accessToken, $mailboxId) {
         $ticketNumber = generateTicketNumber($conn);
 
         $ticketSql = "INSERT INTO tickets (
-            ticket_number, subject, status, priority, requester_email,
-            requester_name, created_datetime, updated_datetime, user_id
-        ) VALUES (?, ?, 'Open', 'Normal', ?, ?, ?, UTC_TIMESTAMP(), ?)";
+            ticket_number, subject, status_id, priority_id,
+            created_datetime, updated_datetime, user_id
+        ) VALUES (
+            ?, ?,
+            (SELECT id FROM ticket_statuses   WHERE name = 'Open'   LIMIT 1),
+            (SELECT id FROM ticket_priorities WHERE name = 'Normal' LIMIT 1),
+            ?, UTC_TIMESTAMP(), ?
+        )";
 
         $ticketStmt = $conn->prepare($ticketSql);
         $ticketStmt->execute([
-            $ticketNumber, $subject, $fromAddress, $fromName, $receivedDateTime, $userId
+            $ticketNumber, $subject, $receivedDateTime, $userId
         ]);
 
         $ticketId = $conn->lastInsertId();

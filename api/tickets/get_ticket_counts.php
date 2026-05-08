@@ -79,12 +79,13 @@ try {
             // Get counts by department and status (filtered by team)
             $deptStatusSql = "SELECT
                                 d.id as dept_id,
-                                t.status,
+                                ts.name AS status,
                                 COUNT(t.id) as count
                               FROM departments d
                               LEFT JOIN tickets t ON t.department_id = d.id
+                              LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
                               WHERE d.is_active = 1 AND d.id IN ($deptIdPlaceholders)
-                              GROUP BY d.id, t.status";
+                              GROUP BY d.id, ts.name";
             $deptStatusStmt = $conn->prepare($deptStatusSql);
             $deptStatusStmt->execute($accessibleDepts);
             $deptStatusCounts = $deptStatusStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -92,11 +93,12 @@ try {
 
             // Get counts by status for accessible departments
             $statusSql = "SELECT
-                            t.status,
+                            ts.name AS status,
                             COUNT(*) as count
                           FROM tickets t
+                          LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
                           WHERE t.department_id IN ($deptIdPlaceholders) OR t.department_id IS NULL
-                          GROUP BY t.status";
+                          GROUP BY ts.name";
             $statusStmt = $conn->prepare($statusSql);
             $statusStmt->execute($accessibleDepts);
             $statusCounts = $statusStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -131,12 +133,13 @@ try {
         // Get counts by department and status
         $deptStatusSql = "SELECT
                             d.id as dept_id,
-                            t.status,
+                            ts.name AS status,
                             COUNT(t.id) as count
                           FROM departments d
                           LEFT JOIN tickets t ON t.department_id = d.id
+                          LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
                           WHERE d.is_active = 1
-                          GROUP BY d.id, t.status";
+                          GROUP BY d.id, ts.name";
         $deptStatusStmt = $conn->prepare($deptStatusSql);
         $deptStatusStmt->execute();
         $deptStatusCounts = $deptStatusStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -144,10 +147,11 @@ try {
 
         // Get counts by status (all departments)
         $statusSql = "SELECT
-                        status,
+                        ts.name AS status,
                         COUNT(*) as count
-                      FROM tickets
-                      GROUP BY status";
+                      FROM tickets t
+                      LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
+                      GROUP BY ts.name";
         $statusStmt = $conn->prepare($statusSql);
         $statusStmt->execute();
         $statusCounts = $statusStmt->fetchAll(PDO::FETCH_ASSOC);

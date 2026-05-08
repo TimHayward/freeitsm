@@ -116,17 +116,36 @@ $schema = [
         'created_at'      => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
     ],
 
+    'ticket_statuses' => [
+        'id'                => 'INT NOT NULL AUTO_INCREMENT',
+        'name'              => 'VARCHAR(50) NOT NULL',
+        'is_closed'         => 'TINYINT(1) NOT NULL DEFAULT 0',
+        'colour'            => 'VARCHAR(20) NULL',
+        'is_default'        => 'TINYINT(1) NOT NULL DEFAULT 0',
+        'display_order'     => 'INT NOT NULL DEFAULT 0',
+        'is_active'         => 'TINYINT(1) NOT NULL DEFAULT 1',
+        'created_datetime'  => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
+    'ticket_priorities' => [
+        'id'                => 'INT NOT NULL AUTO_INCREMENT',
+        'name'              => 'VARCHAR(50) NOT NULL',
+        'colour'            => 'VARCHAR(20) NULL',
+        'is_default'        => 'TINYINT(1) NOT NULL DEFAULT 0',
+        'display_order'     => 'INT NOT NULL DEFAULT 0',
+        'is_active'         => 'TINYINT(1) NOT NULL DEFAULT 1',
+        'created_datetime'  => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
     'tickets' => [
         'id'                    => 'INT NOT NULL AUTO_INCREMENT',
         'ticket_number'         => 'VARCHAR(50) NOT NULL',
         'subject'               => 'VARCHAR(500) NOT NULL',
-        'status'                => 'VARCHAR(50) NULL DEFAULT \'Open\'',
-        'priority'              => 'VARCHAR(50) NULL DEFAULT \'Normal\'',
+        'status_id'             => 'INT NULL',
+        'priority_id'           => 'INT NULL',
         'department_id'         => 'INT NULL',
         'ticket_type_id'        => 'INT NULL',
         'assigned_analyst_id'   => 'INT NULL',
-        'requester_email'       => 'VARCHAR(255) NULL',
-        'requester_name'        => 'VARCHAR(255) NULL',
         'created_datetime'      => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
         'updated_datetime'      => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
         'closed_datetime'       => 'DATETIME NULL',
@@ -1572,6 +1591,182 @@ try {
                 'status' => 'seeded',
                 'details' => ['Inserted 2 default software dashboard widgets']
             ];
+        }
+    }
+
+    // ----------------------------------------------------------------------
+    // Tickets normalisation: lookup tables, backfill, drop legacy columns
+    // ----------------------------------------------------------------------
+    $colExists = function($table, $col) use ($conn, $dbName) {
+        $s = $conn->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ?");
+        $s->execute([$dbName, $table, $col]);
+        return (int)$s->fetchColumn() > 0;
+    };
+    $tableExists = function($table) use ($conn, $dbName) {
+        $s = $conn->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ? AND table_name = ?");
+        $s->execute([$dbName, $table]);
+        return (int)$s->fetchColumn() > 0;
+    };
+    $fkExists = function($table, $fk) use ($conn, $dbName) {
+        $s = $conn->prepare("SELECT COUNT(*) FROM information_schema.table_constraints WHERE table_schema = ? AND table_name = ? AND constraint_name = ? AND constraint_type = 'FOREIGN KEY'");
+        $s->execute([$dbName, $table, $fk]);
+        return (int)$s->fetchColumn() > 0;
+    };
+    $idxExists = function($table, $idx) use ($conn, $dbName) {
+        $s = $conn->prepare("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = ? AND table_name = ? AND index_name = ?");
+        $s->execute([$dbName, $table, $idx]);
+        return (int)$s->fetchColumn() > 0;
+    };
+
+    // Seed default ticket statuses if table is empty
+    if ($tableExists('ticket_statuses')) {
+        $cnt = (int) $conn->query("SELECT COUNT(*) FROM ticket_statuses")->fetchColumn();
+        if ($cnt === 0) {
+            $conn->exec("INSERT INTO ticket_statuses (name, is_closed, colour, is_default, display_order) VALUES
+                ('Open',              0, '#2563eb', 1, 10),
+                ('In Progress',       0, '#9333ea', 0, 20),
+                ('On Hold',           0, '#f59e0b', 0, 30),
+                ('Awaiting Response', 0, '#0891b2', 0, 40),
+                ('Closed',            1, '#6b7280', 0, 50)");
+            $results[] = ['table' => 'ticket_statuses', 'status' => 'seeded', 'details' => ['Inserted 5 default ticket statuses']];
+        }
+    }
+
+    // Seed default ticket priorities if table is empty
+    if ($tableExists('ticket_priorities')) {
+        $cnt = (int) $conn->query("SELECT COUNT(*) FROM ticket_priorities")->fetchColumn();
+        if ($cnt === 0) {
+            $conn->exec("INSERT INTO ticket_priorities (name, colour, is_default, display_order) VALUES
+                ('Low',      '#16a34a', 0, 10),
+                ('Normal',   '#2563eb', 1, 20),
+                ('High',     '#f59e0b', 0, 30),
+                ('Critical', '#dc2626', 0, 40),
+                ('Urgent',   '#b91c1c', 0, 50)");
+            $results[] = ['table' => 'ticket_priorities', 'status' => 'seeded', 'details' => ['Inserted 5 default ticket priorities']];
+        }
+    }
+
+    // Backfill tickets.status_id from legacy tickets.status
+    if ($tableExists('tickets') && $colExists('tickets', 'status') && $colExists('tickets', 'status_id')) {
+        // Insert any unknown status names into ticket_statuses so the FK can be set
+        $conn->exec("INSERT IGNORE INTO ticket_statuses (name, display_order)
+                     SELECT DISTINCT t.status, 999
+                     FROM tickets t
+                     LEFT JOIN ticket_statuses s ON LOWER(s.name) = LOWER(t.status)
+                     WHERE t.status IS NOT NULL AND t.status <> '' AND s.id IS NULL");
+
+        $upd = $conn->exec("UPDATE tickets t
+                            JOIN ticket_statuses s ON LOWER(s.name) = LOWER(t.status)
+                            SET t.status_id = s.id
+                            WHERE t.status_id IS NULL AND t.status IS NOT NULL");
+        if ($upd > 0) {
+            $results[] = ['table' => 'tickets', 'status' => 'migrated', 'details' => ["Backfilled status_id for $upd ticket(s)"]];
+        }
+
+        // Set status_id to default for any ticket still missing one
+        $conn->exec("UPDATE tickets SET status_id = (SELECT id FROM ticket_statuses WHERE is_default = 1 LIMIT 1) WHERE status_id IS NULL");
+    }
+
+    // Backfill tickets.priority_id from legacy tickets.priority
+    if ($tableExists('tickets') && $colExists('tickets', 'priority') && $colExists('tickets', 'priority_id')) {
+        $conn->exec("INSERT IGNORE INTO ticket_priorities (name, display_order)
+                     SELECT DISTINCT t.priority, 999
+                     FROM tickets t
+                     LEFT JOIN ticket_priorities p ON LOWER(p.name) = LOWER(t.priority)
+                     WHERE t.priority IS NOT NULL AND t.priority <> '' AND p.id IS NULL");
+
+        $upd = $conn->exec("UPDATE tickets t
+                            JOIN ticket_priorities p ON LOWER(p.name) = LOWER(t.priority)
+                            SET t.priority_id = p.id
+                            WHERE t.priority_id IS NULL AND t.priority IS NOT NULL");
+        if ($upd > 0) {
+            $results[] = ['table' => 'tickets', 'status' => 'migrated', 'details' => ["Backfilled priority_id for $upd ticket(s)"]];
+        }
+
+        $conn->exec("UPDATE tickets SET priority_id = (SELECT id FROM ticket_priorities WHERE is_default = 1 LIMIT 1) WHERE priority_id IS NULL");
+    }
+
+    // Backfill tickets.user_id from legacy requester_email / requester_name
+    if ($tableExists('tickets') && $tableExists('users') && $colExists('tickets', 'requester_email')) {
+        // Match existing users by email
+        $upd1 = $conn->exec("UPDATE tickets t
+                             JOIN users u ON LOWER(u.email) = LOWER(t.requester_email)
+                             SET t.user_id = u.id
+                             WHERE t.user_id IS NULL AND t.requester_email IS NOT NULL AND t.requester_email <> ''");
+
+        // Create users for any orphan emails
+        $conn->exec("INSERT IGNORE INTO users (email, display_name, created_at)
+                     SELECT t.requester_email, COALESCE(NULLIF(t.requester_name, ''), t.requester_email), UTC_TIMESTAMP()
+                     FROM tickets t
+                     LEFT JOIN users u ON LOWER(u.email) = LOWER(t.requester_email)
+                     WHERE t.user_id IS NULL
+                       AND t.requester_email IS NOT NULL AND t.requester_email <> ''
+                       AND u.id IS NULL
+                     GROUP BY t.requester_email");
+
+        // Re-link any tickets that just had users created
+        $upd2 = $conn->exec("UPDATE tickets t
+                             JOIN users u ON LOWER(u.email) = LOWER(t.requester_email)
+                             SET t.user_id = u.id
+                             WHERE t.user_id IS NULL AND t.requester_email IS NOT NULL AND t.requester_email <> ''");
+
+        $totalLinked = (int)$upd1 + (int)$upd2;
+        if ($totalLinked > 0) {
+            $results[] = ['table' => 'tickets', 'status' => 'migrated', 'details' => ["Backfilled user_id for $totalLinked ticket(s) from requester_email/requester_name"]];
+        }
+    }
+
+    // Add foreign keys + indexes for new ticket columns (only if missing)
+    if ($tableExists('tickets')) {
+        $alters = [
+            ['ix_tickets_status_id',          "ALTER TABLE tickets ADD KEY ix_tickets_status_id (status_id)",                                       'index'],
+            ['ix_tickets_priority_id',        "ALTER TABLE tickets ADD KEY ix_tickets_priority_id (priority_id)",                                   'index'],
+            ['ix_tickets_assigned_analyst_id',"ALTER TABLE tickets ADD KEY ix_tickets_assigned_analyst_id (assigned_analyst_id)",                   'index'],
+            ['ix_tickets_department_id',      "ALTER TABLE tickets ADD KEY ix_tickets_department_id (department_id)",                               'index'],
+            ['ix_tickets_created_datetime',   "ALTER TABLE tickets ADD KEY ix_tickets_created_datetime (created_datetime)",                         'index'],
+            ['fk_tickets_status',             "ALTER TABLE tickets ADD CONSTRAINT fk_tickets_status FOREIGN KEY (status_id) REFERENCES ticket_statuses (id)",     'fk'],
+            ['fk_tickets_priority',           "ALTER TABLE tickets ADD CONSTRAINT fk_tickets_priority FOREIGN KEY (priority_id) REFERENCES ticket_priorities (id)", 'fk'],
+        ];
+        foreach ($alters as [$name, $sql, $kind]) {
+            $present = $kind === 'fk' ? $fkExists('tickets', $name) : $idxExists('tickets', $name);
+            if (!$present) {
+                try { $conn->exec($sql); } catch (Exception $e) { /* may already exist under another name */ }
+            }
+        }
+    }
+
+    // Drop legacy ticket columns once backfill is complete (no NULLs remain)
+    if ($tableExists('tickets')) {
+        $orphanStatus    = $colExists('tickets', 'status')           ? (int) $conn->query("SELECT COUNT(*) FROM tickets WHERE status_id IS NULL")->fetchColumn() : 0;
+        $orphanPriority  = $colExists('tickets', 'priority')         ? (int) $conn->query("SELECT COUNT(*) FROM tickets WHERE priority_id IS NULL")->fetchColumn() : 0;
+        $orphanRequester = $colExists('tickets', 'requester_email')  ? (int) $conn->query("SELECT COUNT(*) FROM tickets WHERE user_id IS NULL AND requester_email IS NOT NULL AND requester_email <> ''")->fetchColumn() : 0;
+
+        $dropped = [];
+        if ($colExists('tickets', 'status') && $orphanStatus === 0) {
+            try { $conn->exec("ALTER TABLE tickets DROP COLUMN `status`"); $dropped[] = 'status'; } catch (Exception $e) { $tableResult['details'][] = 'Drop status failed: '.$e->getMessage(); }
+        }
+        if ($colExists('tickets', 'priority') && $orphanPriority === 0) {
+            try { $conn->exec("ALTER TABLE tickets DROP COLUMN `priority`"); $dropped[] = 'priority'; } catch (Exception $e) {}
+        }
+        if ($colExists('tickets', 'requester_email') && $orphanRequester === 0) {
+            try { $conn->exec("ALTER TABLE tickets DROP COLUMN `requester_email`"); $dropped[] = 'requester_email'; } catch (Exception $e) {}
+        }
+        if ($colExists('tickets', 'requester_name')) {
+            // requester_name is safe to drop whenever requester_email was (or never existed)
+            $stillNeed = $colExists('tickets', 'requester_email') ? true : false;
+            if (!$stillNeed) {
+                try { $conn->exec("ALTER TABLE tickets DROP COLUMN `requester_name`"); $dropped[] = 'requester_name'; } catch (Exception $e) {}
+            }
+        }
+        if (count($dropped) > 0) {
+            $results[] = ['table' => 'tickets', 'status' => 'updated', 'details' => ['Dropped legacy columns: '.implode(', ', $dropped)]];
+        }
+        $stillOrphan = [];
+        if ($orphanStatus > 0)    $stillOrphan[] = "status ($orphanStatus rows)";
+        if ($orphanPriority > 0)  $stillOrphan[] = "priority ($orphanPriority rows)";
+        if ($orphanRequester > 0) $stillOrphan[] = "requester ($orphanRequester rows)";
+        if (count($stillOrphan) > 0) {
+            $results[] = ['table' => 'tickets', 'status' => 'pending', 'details' => ['Cannot drop legacy columns yet — orphans remain: '.implode(', ', $stillOrphan)]];
         }
     }
 

@@ -64,12 +64,13 @@ try {
                 t.id as ticket_id,
                 t.ticket_number,
                 t.subject,
-                t.status,
+                ts.name AS status,
                 e.from_address,
                 e.from_name,
                 e.received_datetime
             FROM tickets t
             INNER JOIN emails e ON e.ticket_id = t.id AND e.is_initial = 1
+            LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
             WHERE ({$whereClause})
             ORDER BY e.received_datetime DESC";
 

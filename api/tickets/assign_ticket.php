@@ -31,11 +31,31 @@ try {
     $conn = connectToDatabase();
 
     // Fetch current ticket state for change detection
-    $currentStmt = $conn->prepare("SELECT assigned_analyst_id, status FROM tickets WHERE id = ?");
+    $currentStmt = $conn->prepare(
+        "SELECT t.assigned_analyst_id, ts.name AS status, ts.is_closed AS old_is_closed
+         FROM tickets t
+         LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
+         WHERE t.id = ?"
+    );
     $currentStmt->execute([$ticket_id]);
     $currentTicket = $currentStmt->fetch(PDO::FETCH_ASSOC);
     $oldAnalystId = $currentTicket ? $currentTicket['assigned_analyst_id'] : null;
     $oldStatus = $currentTicket ? $currentTicket['status'] : null;
+    $oldIsClosed = $currentTicket ? (int)($currentTicket['old_is_closed'] ?? 0) : 0;
+
+    // Resolve incoming status name -> id (and the new status's is_closed flag)
+    $newStatusId = null;
+    $newIsClosed = null;
+    if ($status !== null) {
+        $sLookup = $conn->prepare("SELECT id, is_closed FROM ticket_statuses WHERE name = ? LIMIT 1");
+        $sLookup->execute([$status]);
+        $sRow = $sLookup->fetch(PDO::FETCH_ASSOC);
+        if (!$sRow) {
+            throw new Exception("Unknown status: {$status}");
+        }
+        $newStatusId = (int)$sRow['id'];
+        $newIsClosed = (int)$sRow['is_closed'];
+    }
 
     // Build dynamic SQL based on what's being updated
     $updates = [];
@@ -52,14 +72,14 @@ try {
     }
 
     if ($status !== null) {
-        $updates[] = "status = ?";
-        $params[] = $status;
+        $updates[] = "status_id = ?";
+        $params[] = $newStatusId;
         // Set closed_datetime when closing
-        if ($status === 'Closed' && $oldStatus !== 'Closed') {
+        if ($newIsClosed && !$oldIsClosed) {
             $updates[] = "closed_datetime = UTC_TIMESTAMP()";
         }
         // Clear closed_datetime if reopening
-        if ($status !== 'Closed' && $oldStatus === 'Closed') {
+        if (!$newIsClosed && $oldIsClosed) {
             $updates[] = "closed_datetime = NULL";
         }
     }
@@ -111,8 +131,8 @@ try {
             sendTemplateEmail($conn, $ticket_id, 'ticket_assigned');
         }
 
-        // Trigger ticket_closed if status changed to Closed
-        if ($status === 'Closed' && $oldStatus !== 'Closed') {
+        // Trigger ticket_closed if status changed to a closed state
+        if ($newIsClosed && !$oldIsClosed) {
             sendTemplateEmail($conn, $ticket_id, 'ticket_closed');
         }
     } catch (Exception $tplEx) {

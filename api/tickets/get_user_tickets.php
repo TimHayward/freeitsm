@@ -30,13 +30,15 @@ try {
                 t.id,
                 t.ticket_number,
                 t.subject,
-                t.status,
-                t.priority,
+                ts.name AS status,
+                tp.name AS priority,
                 t.created_datetime,
                 t.updated_datetime,
                 d.name as department_name,
                 a.full_name as assigned_analyst_name
             FROM tickets t
+            LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
+            LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
             LEFT JOIN departments d ON t.department_id = d.id
             LEFT JOIN analysts a ON t.assigned_analyst_id = a.id
             WHERE t.user_id = ?

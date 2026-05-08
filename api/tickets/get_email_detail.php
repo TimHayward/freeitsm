@@ -48,8 +48,8 @@ try {
                 e.direction,
                 t.ticket_number,
                 t.subject,
-                t.status,
-                t.priority,
+                ts.name AS status,
+                tp.name AS priority,
                 t.department_id,
                 t.ticket_type_id,
                 t.assigned_analyst_id,
@@ -62,6 +62,8 @@ try {
                 t.updated_datetime as ticket_updated
             FROM emails e
             INNER JOIN tickets t ON e.ticket_id = t.id
+            LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
+            LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
             WHERE ";
 
     // Look up by email ID or by ticket ID (gets the initial email for the ticket)

@@ -137,17 +137,54 @@ CREATE TABLE IF NOT EXISTS `users` (
     UNIQUE KEY `uq_users_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `ticket_statuses` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `name`              VARCHAR(50) NOT NULL,
+    `is_closed`         TINYINT(1) NOT NULL DEFAULT 0,
+    `colour`            VARCHAR(20) NULL,
+    `is_default`        TINYINT(1) NOT NULL DEFAULT 0,
+    `display_order`     INT NOT NULL DEFAULT 0,
+    `is_active`         TINYINT(1) NOT NULL DEFAULT 1,
+    `created_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_ticket_statuses_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `ticket_statuses` (`name`, `is_closed`, `colour`, `is_default`, `display_order`) VALUES
+    ('Open',              0, '#2563eb', 1, 10),
+    ('In Progress',       0, '#9333ea', 0, 20),
+    ('On Hold',           0, '#f59e0b', 0, 30),
+    ('Awaiting Response', 0, '#0891b2', 0, 40),
+    ('Closed',            1, '#6b7280', 0, 50);
+
+CREATE TABLE IF NOT EXISTS `ticket_priorities` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `name`              VARCHAR(50) NOT NULL,
+    `colour`            VARCHAR(20) NULL,
+    `is_default`        TINYINT(1) NOT NULL DEFAULT 0,
+    `display_order`     INT NOT NULL DEFAULT 0,
+    `is_active`         TINYINT(1) NOT NULL DEFAULT 1,
+    `created_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_ticket_priorities_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `ticket_priorities` (`name`, `colour`, `is_default`, `display_order`) VALUES
+    ('Low',      '#16a34a', 0, 10),
+    ('Normal',   '#2563eb', 1, 20),
+    ('High',     '#f59e0b', 0, 30),
+    ('Critical', '#dc2626', 0, 40),
+    ('Urgent',   '#b91c1c', 0, 50);
+
 CREATE TABLE IF NOT EXISTS `tickets` (
     `id`                    INT NOT NULL AUTO_INCREMENT,
     `ticket_number`         VARCHAR(50) NOT NULL,
     `subject`               VARCHAR(500) NOT NULL,
-    `status`                VARCHAR(50) NULL DEFAULT 'Open',
-    `priority`              VARCHAR(50) NULL DEFAULT 'Normal',
+    `status_id`             INT NULL,
+    `priority_id`           INT NULL,
     `department_id`         INT NULL,
     `ticket_type_id`        INT NULL,
     `assigned_analyst_id`   INT NULL,
-    `requester_email`       VARCHAR(255) NULL,
-    `requester_name`        VARCHAR(255) NULL,
     `created_datetime`      DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_datetime`      DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
     `closed_datetime`       DATETIME NULL,
@@ -159,11 +196,18 @@ CREATE TABLE IF NOT EXISTS `tickets` (
     `work_start_datetime`   DATETIME NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_tickets_number` (`ticket_number`),
+    KEY `ix_tickets_status_id` (`status_id`),
+    KEY `ix_tickets_priority_id` (`priority_id`),
+    KEY `ix_tickets_assigned_analyst_id` (`assigned_analyst_id`),
+    KEY `ix_tickets_department_id` (`department_id`),
+    KEY `ix_tickets_created_datetime` (`created_datetime`),
     CONSTRAINT `fk_tickets_analysts` FOREIGN KEY (`assigned_analyst_id`) REFERENCES `analysts` (`id`),
     CONSTRAINT `fk_tickets_departments` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
     CONSTRAINT `fk_tickets_origin` FOREIGN KEY (`origin_id`) REFERENCES `ticket_origins` (`id`),
     CONSTRAINT `fk_tickets_ticket_types` FOREIGN KEY (`ticket_type_id`) REFERENCES `ticket_types` (`id`),
-    CONSTRAINT `fk_tickets_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+    CONSTRAINT `fk_tickets_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+    CONSTRAINT `fk_tickets_status` FOREIGN KEY (`status_id`) REFERENCES `ticket_statuses` (`id`),
+    CONSTRAINT `fk_tickets_priority` FOREIGN KEY (`priority_id`) REFERENCES `ticket_priorities` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ticket_audit` (

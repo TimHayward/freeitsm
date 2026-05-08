@@ -311,6 +311,36 @@ try {
                 // Remove meta fields
                 unset($record['_ref'], $record['_match_by'], $record['_match_value'], $record['_skip_insert']);
 
+                // Tickets-specific translation: legacy string status/priority -> FK ids,
+                // drop requester_email/requester_name (now sourced from users via user_id).
+                if ($tableName === 'tickets') {
+                    if (array_key_exists('status', $record)) {
+                        if ($record['status'] !== null && $record['status'] !== '') {
+                            $lk = $conn->prepare("SELECT id FROM ticket_statuses WHERE name = ? LIMIT 1");
+                            $lk->execute([$record['status']]);
+                            $sid = $lk->fetchColumn();
+                            if (!$sid) {
+                                throw new Exception("Demo ticket has unknown status: " . $record['status']);
+                            }
+                            $record['status_id'] = (int)$sid;
+                        }
+                        unset($record['status']);
+                    }
+                    if (array_key_exists('priority', $record)) {
+                        if ($record['priority'] !== null && $record['priority'] !== '') {
+                            $lk = $conn->prepare("SELECT id FROM ticket_priorities WHERE name = ? LIMIT 1");
+                            $lk->execute([$record['priority']]);
+                            $pid = $lk->fetchColumn();
+                            if (!$pid) {
+                                throw new Exception("Demo ticket has unknown priority: " . $record['priority']);
+                            }
+                            $record['priority_id'] = (int)$pid;
+                        }
+                        unset($record['priority']);
+                    }
+                    unset($record['requester_email'], $record['requester_name']);
+                }
+
                 // Build and execute INSERT
                 $columns = array_keys($record);
                 $placeholders = array_fill(0, count($columns), '?');

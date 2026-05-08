@@ -27,20 +27,23 @@ try {
                 t.id,
                 t.ticket_number,
                 t.subject,
-                t.status,
-                t.priority,
+                ts.name AS status,
+                tp.name AS priority,
                 t.work_start_datetime,
-                t.requester_name,
-                t.requester_email,
+                u.display_name AS requester_name,
+                u.email AS requester_email,
                 d.name as department_name,
                 a.full_name as owner_name
             FROM tickets t
+            LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
+            LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
             LEFT JOIN departments d ON d.id = t.department_id
             LEFT JOIN analysts a ON a.id = t.owner_id
+            LEFT JOIN users u ON u.id = t.user_id
             WHERE t.work_start_datetime IS NOT NULL
               AND t.work_start_datetime >= ?
               AND t.work_start_datetime < ?
-              AND t.status != 'Closed'
+              AND ts.is_closed = 0
             ORDER BY t.work_start_datetime ASC";
 
     $stmt = $conn->prepare($sql);

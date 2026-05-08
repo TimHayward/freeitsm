@@ -50,12 +50,14 @@ try {
                 le.ticket_id,
                 t.ticket_number,
                 t.subject,
-                t.status,
+                ts.name AS status,
                 t.department_id,
-                t.priority,
+                tp.name AS priority,
                 (SELECT COUNT(*) FROM emails WHERE ticket_id = t.id) as email_count
             FROM LatestEmails le
             INNER JOIN tickets t ON le.ticket_id = t.id
+            LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
+            LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
             WHERE le.rn = 1";
 
     $params = [];
@@ -68,7 +70,7 @@ try {
     }
 
     if ($status !== null && $status !== '') {
-        $sql .= " AND t.status = ?";
+        $sql .= " AND ts.name = ?";
         $params[] = $status;
     }
 

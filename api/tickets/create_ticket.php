@@ -80,11 +80,16 @@ try {
     // Generate ticket number
     $ticketNumber = generateTicketNumber($conn);
 
-    // Create the ticket and get the ID
+    // Create the ticket and get the ID. Resolve status/priority names to ids via subselects.
     $ticketSql = "INSERT INTO tickets (
-        ticket_number, subject, status, priority, department_id, ticket_type_id,
-        assigned_analyst_id, user_id, requester_name, requester_email, created_datetime, updated_datetime
-    ) VALUES (?, ?, 'Open', ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())";
+        ticket_number, subject, status_id, priority_id, department_id, ticket_type_id,
+        assigned_analyst_id, user_id, created_datetime, updated_datetime
+    ) VALUES (
+        ?, ?,
+        (SELECT id FROM ticket_statuses   WHERE name = 'Open' LIMIT 1),
+        (SELECT id FROM ticket_priorities WHERE name = ? LIMIT 1),
+        ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+    )";
 
     $ticketStmt = $conn->prepare($ticketSql);
     $ticketStmt->execute([
@@ -95,8 +100,6 @@ try {
         $ticketTypeId,
         $assignedAnalystId,
         $userId,
-        $fromName,
-        $fromEmail
     ]);
 
     $ticketId = $conn->lastInsertId();

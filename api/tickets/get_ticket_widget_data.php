@@ -48,12 +48,12 @@ try {
     $whereClauses = [];
     $params = [];
 
-    // Status filter
+    // Status filter (joined via ticket_statuses)
     if (!empty($statusFilter) && $widget['is_status_filterable']) {
-        $whereClauses[] = 't.status = ?';
+        $whereClauses[] = 'ts.name = ?';
         $params[] = $statusFilter;
     } elseif (!$widget['is_status_filterable'] && $widget['default_status']) {
-        $whereClauses[] = 't.status = ?';
+        $whereClauses[] = 'ts.name = ?';
         $params[] = $widget['default_status'];
     }
 
@@ -220,23 +220,25 @@ function formatLabel($raw, $timeGrouping) {
 }
 
 function getCategoricalData($conn, $prop, $where, $params) {
-    if (in_array($prop, ['status', 'priority'])) {
-        $col = $prop === 'status' ? 't.status' : 't.priority';
-        $sql = "SELECT COALESCE({$col}, 'Unknown') AS label, COUNT(*) AS value FROM tickets t {$where} GROUP BY {$col} ORDER BY value DESC";
+    $lookupJoin = "LEFT JOIN ticket_statuses ts ON ts.id = t.status_id LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id";
+    if ($prop === 'status') {
+        $sql = "SELECT COALESCE(ts.name, 'Unknown') AS label, COUNT(*) AS value FROM tickets t {$lookupJoin} {$where} GROUP BY ts.name ORDER BY value DESC";
+    } elseif ($prop === 'priority') {
+        $sql = "SELECT COALESCE(tp.name, 'Unknown') AS label, COUNT(*) AS value FROM tickets t {$lookupJoin} {$where} GROUP BY tp.name ORDER BY value DESC";
     } elseif ($prop === 'department') {
-        $sql = "SELECT COALESCE(d.name, 'Unassigned') AS label, COUNT(*) AS value FROM tickets t LEFT JOIN departments d ON d.id = t.department_id {$where} GROUP BY d.name ORDER BY value DESC";
+        $sql = "SELECT COALESCE(d.name, 'Unassigned') AS label, COUNT(*) AS value FROM tickets t {$lookupJoin} LEFT JOIN departments d ON d.id = t.department_id {$where} GROUP BY d.name ORDER BY value DESC";
     } elseif ($prop === 'ticket_type') {
-        $sql = "SELECT COALESCE(tt.name, 'Unassigned') AS label, COUNT(*) AS value FROM tickets t LEFT JOIN ticket_types tt ON tt.id = t.ticket_type_id {$where} GROUP BY tt.name ORDER BY value DESC";
+        $sql = "SELECT COALESCE(tt.name, 'Unassigned') AS label, COUNT(*) AS value FROM tickets t {$lookupJoin} LEFT JOIN ticket_types tt ON tt.id = t.ticket_type_id {$where} GROUP BY tt.name ORDER BY value DESC";
     } elseif ($prop === 'analyst') {
-        $sql = "SELECT COALESCE(a.full_name, 'Unassigned') AS label, COUNT(*) AS value FROM tickets t LEFT JOIN analysts a ON a.id = t.assigned_analyst_id {$where} GROUP BY a.full_name ORDER BY value DESC";
+        $sql = "SELECT COALESCE(a.full_name, 'Unassigned') AS label, COUNT(*) AS value FROM tickets t {$lookupJoin} LEFT JOIN analysts a ON a.id = t.assigned_analyst_id {$where} GROUP BY a.full_name ORDER BY value DESC";
     } elseif ($prop === 'owner') {
-        $sql = "SELECT COALESCE(a.full_name, 'Unassigned') AS label, COUNT(*) AS value FROM tickets t LEFT JOIN analysts a ON a.id = t.owner_id {$where} GROUP BY a.full_name ORDER BY value DESC";
+        $sql = "SELECT COALESCE(a.full_name, 'Unassigned') AS label, COUNT(*) AS value FROM tickets t {$lookupJoin} LEFT JOIN analysts a ON a.id = t.owner_id {$where} GROUP BY a.full_name ORDER BY value DESC";
     } elseif ($prop === 'origin') {
-        $sql = "SELECT COALESCE(o.name, 'Unknown') AS label, COUNT(*) AS value FROM tickets t LEFT JOIN ticket_origins o ON o.id = t.origin_id {$where} GROUP BY o.name ORDER BY value DESC";
+        $sql = "SELECT COALESCE(o.name, 'Unknown') AS label, COUNT(*) AS value FROM tickets t {$lookupJoin} LEFT JOIN ticket_origins o ON o.id = t.origin_id {$where} GROUP BY o.name ORDER BY value DESC";
     } elseif ($prop === 'first_time_fix') {
-        $sql = "SELECT CASE WHEN t.first_time_fix = 1 THEN 'Yes' WHEN t.first_time_fix = 0 THEN 'No' ELSE 'Not set' END AS label, COUNT(*) AS value FROM tickets t {$where} GROUP BY label ORDER BY value DESC";
+        $sql = "SELECT CASE WHEN t.first_time_fix = 1 THEN 'Yes' WHEN t.first_time_fix = 0 THEN 'No' ELSE 'Not set' END AS label, COUNT(*) AS value FROM tickets t {$lookupJoin} {$where} GROUP BY label ORDER BY value DESC";
     } elseif ($prop === 'training_provided') {
-        $sql = "SELECT CASE WHEN t.it_training_provided = 1 THEN 'Yes' WHEN t.it_training_provided = 0 THEN 'No' ELSE 'Not set' END AS label, COUNT(*) AS value FROM tickets t {$where} GROUP BY label ORDER BY value DESC";
+        $sql = "SELECT CASE WHEN t.it_training_provided = 1 THEN 'Yes' WHEN t.it_training_provided = 0 THEN 'No' ELSE 'Not set' END AS label, COUNT(*) AS value FROM tickets t {$lookupJoin} {$where} GROUP BY label ORDER BY value DESC";
     } else {
         return ['labels' => [], 'values' => []];
     }
@@ -253,34 +255,34 @@ function getCategoricalData($conn, $prop, $where, $params) {
 
 function getCategoricalWithSeries($conn, $prop, $seriesProp, $where, $params) {
     $labelExpr = '';
-    $join = '';
+    $extraJoin = '';
+    $lookupJoin = "LEFT JOIN ticket_statuses ts ON ts.id = t.status_id LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id";
 
     if ($prop === 'department') {
         $labelExpr = "COALESCE(d.name, 'Unassigned')";
-        $join = 'LEFT JOIN departments d ON d.id = t.department_id';
+        $extraJoin = 'LEFT JOIN departments d ON d.id = t.department_id';
     } elseif ($prop === 'ticket_type') {
         $labelExpr = "COALESCE(tt.name, 'Unassigned')";
-        $join = 'LEFT JOIN ticket_types tt ON tt.id = t.ticket_type_id';
+        $extraJoin = 'LEFT JOIN ticket_types tt ON tt.id = t.ticket_type_id';
     } elseif ($prop === 'analyst') {
         $labelExpr = "COALESCE(a.full_name, 'Unassigned')";
-        $join = 'LEFT JOIN analysts a ON a.id = t.assigned_analyst_id';
+        $extraJoin = 'LEFT JOIN analysts a ON a.id = t.assigned_analyst_id';
     } elseif ($prop === 'owner') {
         $labelExpr = "COALESCE(a.full_name, 'Unassigned')";
-        $join = 'LEFT JOIN analysts a ON a.id = t.owner_id';
+        $extraJoin = 'LEFT JOIN analysts a ON a.id = t.owner_id';
     } elseif ($prop === 'origin') {
         $labelExpr = "COALESCE(o.name, 'Unknown')";
-        $join = 'LEFT JOIN ticket_origins o ON o.id = t.origin_id';
+        $extraJoin = 'LEFT JOIN ticket_origins o ON o.id = t.origin_id';
     } elseif ($prop === 'priority') {
-        $labelExpr = "COALESCE(t.priority, 'Unknown')";
-        $join = '';
+        $labelExpr = "COALESCE(tp.name, 'Unknown')";
     } else {
         return ['labels' => [], 'series' => []];
     }
 
-    $seriesCol = $seriesProp === 'status' ? "COALESCE(t.status, 'Unknown')" : "COALESCE(t.priority, 'Unknown')";
+    $seriesCol = $seriesProp === 'status' ? "COALESCE(ts.name, 'Unknown')" : "COALESCE(tp.name, 'Unknown')";
 
     $sql = "SELECT {$labelExpr} AS label, {$seriesCol} AS series_val, COUNT(*) AS value
-            FROM tickets t {$join} {$where}
+            FROM tickets t {$lookupJoin} {$extraJoin} {$where}
             GROUP BY label, series_val
             ORDER BY label, series_val";
 
@@ -311,7 +313,8 @@ function getTimeData($conn, $prop, $timeGrouping, $dateRange, $where, $params) {
         $fullWhere = $fullWhere ? $fullWhere . " AND {$notNull}" : " WHERE {$notNull}";
     }
 
-    $sql = "SELECT {$dateExpr} AS label, COUNT(*) AS value FROM tickets t {$fullWhere} GROUP BY label ORDER BY label";
+    $lookupJoin = "LEFT JOIN ticket_statuses ts ON ts.id = t.status_id LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id";
+    $sql = "SELECT {$dateExpr} AS label, COUNT(*) AS value FROM tickets t {$lookupJoin} {$fullWhere} GROUP BY label ORDER BY label";
 
     $stmt = $conn->prepare($sql);
     $stmt->execute($fullParams);
@@ -337,7 +340,8 @@ function getTimeData($conn, $prop, $timeGrouping, $dateRange, $where, $params) {
 function getTimeWithSeries($conn, $prop, $seriesProp, $timeGrouping, $dateRange, $where, $params) {
     $dateField = getDateField($prop);
     $dateExpr = getDateExpr($timeGrouping, $dateField);
-    $seriesCol = $seriesProp === 'status' ? "COALESCE(t.status, 'Unknown')" : "COALESCE(t.priority, 'Unknown')";
+    $seriesCol = $seriesProp === 'status' ? "COALESCE(ts.name, 'Unknown')" : "COALESCE(tp.name, 'Unknown')";
+    $lookupJoin = "LEFT JOIN ticket_statuses ts ON ts.id = t.status_id LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id";
 
     // Add date range filter
     [$dateWhere, $dateParam] = buildDateRangeWhere($dateRange, $dateField);
@@ -355,7 +359,7 @@ function getTimeWithSeries($conn, $prop, $seriesProp, $timeGrouping, $dateRange,
     }
 
     $sql = "SELECT {$dateExpr} AS label, {$seriesCol} AS series_val, COUNT(*) AS value
-            FROM tickets t {$fullWhere}
+            FROM tickets t {$lookupJoin} {$fullWhere}
             GROUP BY label, series_val
             ORDER BY label, series_val";
 
@@ -409,7 +413,8 @@ function getCreatedVsClosedData($conn, $timeGrouping, $dateRange, $where, $param
         $createdParams = $params;
     }
 
-    $sqlCreated = "SELECT {$createdDateExpr} AS label, COUNT(*) AS value FROM tickets t {$createdWhere} GROUP BY label ORDER BY label";
+    $lookupJoin = "LEFT JOIN ticket_statuses ts ON ts.id = t.status_id LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id";
+    $sqlCreated = "SELECT {$createdDateExpr} AS label, COUNT(*) AS value FROM tickets t {$lookupJoin} {$createdWhere} GROUP BY label ORDER BY label";
     $stmt = $conn->prepare($sqlCreated);
     $stmt->execute($createdParams);
     $createdData = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -425,7 +430,7 @@ function getCreatedVsClosedData($conn, $timeGrouping, $dateRange, $where, $param
         $closedParams = $params;
     }
 
-    $sqlClosed = "SELECT {$closedDateExpr} AS label, COUNT(*) AS value FROM tickets t {$closedWhere} GROUP BY label ORDER BY label";
+    $sqlClosed = "SELECT {$closedDateExpr} AS label, COUNT(*) AS value FROM tickets t {$lookupJoin} {$closedWhere} GROUP BY label ORDER BY label";
     $stmt = $conn->prepare($sqlClosed);
     $stmt->execute($closedParams);
     $closedData = $stmt->fetchAll(PDO::FETCH_ASSOC);

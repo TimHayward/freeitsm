@@ -27,10 +27,12 @@ try {
 
     // Fetch ticket - validate ownership
     $ticketStmt = $conn->prepare(
-        "SELECT t.id, t.ticket_number, t.subject, t.status, t.priority,
+        "SELECT t.id, t.ticket_number, t.subject, ts.name AS status, tp.name AS priority,
                 t.created_datetime, t.updated_datetime,
                 d.name as department_name
          FROM tickets t
+         LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
+         LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
          LEFT JOIN departments d ON t.department_id = d.id
          WHERE t.id = ? AND t.user_id = ?"
     );

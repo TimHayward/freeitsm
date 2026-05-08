@@ -42,7 +42,11 @@ function getWatchtowerData($conn) {
     // -- Tickets --
 
     $tkStatusStmt = $conn->query(
-        "SELECT status, COUNT(*) AS cnt FROM tickets WHERE status != 'Closed' GROUP BY status"
+        "SELECT ts.name AS status, COUNT(*) AS cnt
+         FROM tickets t
+         JOIN ticket_statuses ts ON ts.id = t.status_id
+         WHERE ts.is_closed = 0
+         GROUP BY ts.name"
     );
     $tkStatuses = [];
     while ($row = $tkStatusStmt->fetch(PDO::FETCH_ASSOC)) {
@@ -50,11 +54,18 @@ function getWatchtowerData($conn) {
     }
 
     $tkUrgent = (int)$conn->query(
-        "SELECT COUNT(*) FROM tickets WHERE priority IN ('Urgent','High') AND status != 'Closed'"
+        "SELECT COUNT(*)
+         FROM tickets t
+         JOIN ticket_priorities tp ON tp.id = t.priority_id
+         JOIN ticket_statuses   ts ON ts.id = t.status_id
+         WHERE tp.name IN ('Urgent','High','Critical') AND ts.is_closed = 0"
     )->fetchColumn();
 
     $tkUnassigned = (int)$conn->query(
-        "SELECT COUNT(*) FROM tickets WHERE assigned_analyst_id IS NULL AND status != 'Closed'"
+        "SELECT COUNT(*)
+         FROM tickets t
+         JOIN ticket_statuses ts ON ts.id = t.status_id
+         WHERE t.assigned_analyst_id IS NULL AND ts.is_closed = 0"
     )->fetchColumn();
 
     $tickets = [

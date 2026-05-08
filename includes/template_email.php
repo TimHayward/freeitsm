@@ -124,13 +124,17 @@ function getActiveTemplate(PDO $conn, string $eventTrigger): ?array {
  * Build merge data from ticket, analyst, and department tables.
  */
 function buildTicketMergeData(PDO $conn, int $ticketId): ?array {
-    $sql = "SELECT t.ticket_number, t.subject, t.status, t.priority,
-                   t.requester_name, t.requester_email,
+    $sql = "SELECT t.ticket_number, t.subject, ts.name AS status, tp.name AS priority,
+                   COALESCE(u.display_name, u.email) AS requester_name,
+                   u.email AS requester_email,
                    t.created_datetime, t.closed_datetime,
                    COALESCE(o.full_name, a.full_name) AS analyst_name,
                    COALESCE(o.email, a.email) AS analyst_email,
                    d.name AS department_name
             FROM tickets t
+            LEFT JOIN ticket_statuses ts ON ts.id = t.status_id
+            LEFT JOIN ticket_priorities tp ON tp.id = t.priority_id
+            LEFT JOIN users u ON t.user_id = u.id
             LEFT JOIN analysts a ON t.assigned_analyst_id = a.id
             LEFT JOIN analysts o ON t.owner_id = o.id
             LEFT JOIN departments d ON t.department_id = d.id
