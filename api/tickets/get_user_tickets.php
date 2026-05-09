@@ -31,6 +31,7 @@ try {
                 t.ticket_number,
                 t.subject,
                 ts.name AS status,
+                ts.colour AS status_colour,
                 tp.name AS priority,
                 t.created_datetime,
                 t.updated_datetime,

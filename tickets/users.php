@@ -222,12 +222,6 @@ $current_page = 'users';
             padding-left: 10px;
         }
 
-        .status-new { background-color: #e3f2fd; color: #1565c0; }
-        .status-open { background-color: #fff3e0; color: #e65100; }
-        .status-pending { background-color: #fce4ec; color: #c2185b; }
-        .status-resolved { background-color: #e8f5e9; color: #2e7d32; }
-        .status-closed { background-color: #f5f5f5; color: #616161; }
-
         .ticket-priority {
             font-size: 13px;
         }
@@ -426,15 +420,18 @@ $current_page = 'users';
                             <span>Priority</span>
                             <span>Created</span>
                         </div>
-                        ${data.tickets.map(ticket => `
+                        ${data.tickets.map(ticket => {
+                            const c = ticket.status_colour || '#0078d4';
+                            const statusStyle = `background-color: ${c}1f; color: ${c}; border: 1px solid ${c}33;`;
+                            return `
                             <div class="ticket-row" onclick="viewTicket(${ticket.id})">
                                 <span class="ticket-number">${escapeHtml(ticket.ticket_number)}</span>
                                 <span class="ticket-subject">${escapeHtml(ticket.subject)}</span>
-                                <span class="ticket-status status-${(ticket.status || 'new').toLowerCase()}">${escapeHtml(ticket.status || 'New')}</span>
+                                <span class="ticket-status" style="${statusStyle}">${escapeHtml(ticket.status || 'New')}</span>
                                 <span class="ticket-priority">${escapeHtml(ticket.priority || '-')}</span>
                                 <span class="ticket-date">${formatDate(ticket.created_datetime)}</span>
                             </div>
-                        `).join('')}
+                        `;}).join('')}
                     `;
                 } else {
                     container.innerHTML = '<div class="empty-state">Error loading tickets</div>';
