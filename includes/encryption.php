@@ -37,6 +37,7 @@ define('ENCRYPTED_SETTING_KEYS', [
     'intune_client_id',
     'intune_client_secret',
     'rfp_ai_api_key',
+    'tickets_reply_cleanup_api_key',
 ]);
 
 /**
@@ -54,6 +55,7 @@ define('MASKED_SETTING_KEYS', [
     'knowledge_openai_api_key',
     'intune_client_secret',
     'rfp_ai_api_key',
+    'tickets_reply_cleanup_api_key',
 ]);
 
 /**

@@ -1584,6 +1584,7 @@ function openReplyModal() {
         emailEditor.setContent('<p><br></p>');
     }
 
+    setReplyCleanupVisibility('reply');
     document.getElementById('emailModal').classList.add('active');
 }
 
@@ -1607,6 +1608,7 @@ function openForwardModal() {
         emailEditor.setContent('<p><br></p>');
     }
 
+    setReplyCleanupVisibility('forward');
     document.getElementById('emailModal').classList.add('active');
 }
 
@@ -1621,7 +1623,192 @@ function closeEmailModal() {
     // Clear attachments
     emailAttachments = [];
     renderAttachments();
+    hideReplyCleanupUndoBar();
 }
+
+// ===== Reply Cleanup AI =====
+
+let replyCleanupOriginalDraft = null;
+let replyCleanupUndoTimer = null;
+let replyCleanupCountdownTimer = null;
+
+function setReplyCleanupVisibility(mode) {
+    const btn = document.getElementById('replyCleanupBtn');
+    if (btn) btn.style.display = (mode === 'reply') ? '' : 'none';
+    hideReplyCleanupUndoBar();
+}
+
+// Convert plain-text-with-blank-lines (Claude's output) to TinyMCE-friendly HTML
+function replyCleanupTextToHtml(text) {
+    if (!text) return '<p><br></p>';
+    // Normalise newlines, split on 2+ newlines for paragraphs, single newlines become <br>
+    const normalised = text.replace(/\r\n/g, '\n');
+    const paragraphs = normalised.split(/\n{2,}/);
+    return paragraphs.map(p => {
+        const safe = escapeHtml(p).replace(/\n/g, '<br>');
+        return `<p>${safe}</p>`;
+    }).join('');
+}
+
+async function cleanupReplyDraft() {
+    if (!emailEditor) return;
+    if (!currentEmail || !currentEmail.ticket_id) {
+        showToast('No ticket loaded', true);
+        return;
+    }
+
+    const editorContent = emailEditor.getContent({ format: 'text' }).trim();
+    if (editorContent === '') {
+        showToast('Type something first, then click Cleanup', true);
+        return;
+    }
+
+    // Stash original HTML so the undo link can restore it verbatim
+    replyCleanupOriginalDraft = emailEditor.getContent();
+
+    const cleanupBtn = document.getElementById('replyCleanupBtn');
+    const sendBtn = document.getElementById('replySendBtn');
+    cleanupBtn.disabled = true;
+    sendBtn.disabled = true;
+    cleanupBtn.classList.add('is-loading');
+    cleanupBtn.innerHTML = '<span class="spinner-inline"></span> Cleaning up…';
+    hideReplyCleanupUndoBar();
+
+    // Clear the editor — we'll stream into it.
+    emailEditor.setContent('<p><em style="color:#999;">Cleaning up…</em></p>');
+
+    let buffer = '';
+    let firstChunk = true;
+    let streamFailed = false;
+
+    try {
+        const res = await fetch(API_BASE + 'ai_cleanup_reply.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ticket_id: currentEmail.ticket_id,
+                draft_text: editorContent,
+            }),
+        });
+
+        if (!res.ok || !res.body) {
+            throw new Error('HTTP ' + res.status);
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let sseBuffer = '';
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            sseBuffer += decoder.decode(value, { stream: true });
+
+            // Split on SSE event boundaries (\n\n)
+            let idx;
+            while ((idx = sseBuffer.indexOf('\n\n')) !== -1) {
+                const block = sseBuffer.slice(0, idx);
+                sseBuffer = sseBuffer.slice(idx + 2);
+
+                let eventName = '';
+                let dataLine = '';
+                for (const line of block.split('\n')) {
+                    if (line.startsWith('event: ')) eventName = line.slice(7).trim();
+                    else if (line.startsWith('data: ')) dataLine += line.slice(6);
+                }
+                if (!dataLine) continue;
+                let payload;
+                try { payload = JSON.parse(dataLine); } catch { continue; }
+
+                if (eventName === 'text') {
+                    if (firstChunk) {
+                        emailEditor.setContent('');
+                        firstChunk = false;
+                    }
+                    buffer += payload.delta || '';
+                    emailEditor.setContent(replyCleanupTextToHtml(buffer));
+                } else if (eventName === 'error') {
+                    streamFailed = true;
+                    showToast(payload.message || 'Cleanup failed', true);
+                    break;
+                }
+                // 'usage' / 'done' events are ignored for this UI
+            }
+
+            if (streamFailed) break;
+        }
+    } catch (err) {
+        streamFailed = true;
+        console.error('Cleanup error:', err);
+        showToast('Cleanup failed: ' + err.message, true);
+    }
+
+    cleanupBtn.disabled = false;
+    sendBtn.disabled = false;
+    cleanupBtn.classList.remove('is-loading');
+    cleanupBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><path d="M12 3l1.9 5.8L20 10l-5 4.5L16.5 21 12 17.8 7.5 21 9 14.5 4 10l6.1-1.2z"/></svg> Cleanup';
+
+    if (streamFailed) {
+        // Restore the user's original draft so they don't lose their typing
+        if (replyCleanupOriginalDraft !== null) {
+            emailEditor.setContent(replyCleanupOriginalDraft);
+        }
+        return;
+    }
+
+    showReplyCleanupUndoBar();
+}
+
+function showReplyCleanupUndoBar() {
+    const bar = document.getElementById('replyCleanupUndoBar');
+    const timer = document.getElementById('replyCleanupUndoTimer');
+    if (!bar) return;
+    bar.style.display = 'block';
+
+    let secondsLeft = 30;
+    timer.textContent = `(${secondsLeft}s)`;
+
+    if (replyCleanupCountdownTimer) clearInterval(replyCleanupCountdownTimer);
+    replyCleanupCountdownTimer = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft <= 0) {
+            hideReplyCleanupUndoBar();
+        } else {
+            timer.textContent = `(${secondsLeft}s)`;
+        }
+    }, 1000);
+
+    if (replyCleanupUndoTimer) clearTimeout(replyCleanupUndoTimer);
+    replyCleanupUndoTimer = setTimeout(hideReplyCleanupUndoBar, 30000);
+}
+
+function hideReplyCleanupUndoBar() {
+    const bar = document.getElementById('replyCleanupUndoBar');
+    if (bar) bar.style.display = 'none';
+    if (replyCleanupUndoTimer) {
+        clearTimeout(replyCleanupUndoTimer);
+        replyCleanupUndoTimer = null;
+    }
+    if (replyCleanupCountdownTimer) {
+        clearInterval(replyCleanupCountdownTimer);
+        replyCleanupCountdownTimer = null;
+    }
+}
+
+// Wire the Undo link once on first inbox.js load
+document.addEventListener('DOMContentLoaded', function() {
+    const undoLink = document.getElementById('replyCleanupUndoLink');
+    if (undoLink) {
+        undoLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (replyCleanupOriginalDraft !== null && emailEditor) {
+                emailEditor.setContent(replyCleanupOriginalDraft);
+                showToast('Restored your original draft');
+            }
+            hideReplyCleanupUndoBar();
+        });
+    }
+});
 
 // Send email via Microsoft Graph API
 async function sendEmail() {

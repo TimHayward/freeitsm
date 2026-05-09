@@ -205,6 +205,7 @@ $path_prefix = '../../';  // Two levels up from tickets/settings/
             <button class="tab" data-tab="rota" onclick="switchTab('rota')">Rota</button>
             <button class="tab" data-tab="analysts" onclick="switchTab('analysts')">Analysts</button>
             <button class="tab" data-tab="general" onclick="switchTab('general')">General</button>
+            <button class="tab" data-tab="reply-cleanup" onclick="switchTab('reply-cleanup')">Reply Cleanup</button>
         </div>
 
         <!-- Departments Tab -->
@@ -514,6 +515,60 @@ $path_prefix = '../../';  // Two levels up from tickets/settings/
                 </div>
             </form>
 
+        </div>
+
+        <!-- Reply Cleanup Tab -->
+        <div class="tab-content" id="reply-cleanup-tab">
+            <div class="section-header">
+                <h2>Reply Cleanup AI</h2>
+            </div>
+            <p style="max-width: 700px; color: #555;">
+                When an analyst types a rough reply in the ticket compose modal, the
+                <strong>✨ Cleanup</strong> button will rewrite it as a properly formatted
+                email — adding a "Dear [name]," greeting, fixing grammar, applying the
+                tone you choose below, and signing off with "Kind regards,". It will
+                <strong>not</strong> invent technical details or pad the content.
+            </p>
+            <p style="max-width: 700px; color: #555;">
+                This feature uses its own Anthropic API key (separate from RFP AI and
+                Knowledge AI) so its usage shows up as a discrete line on the
+                Anthropic billing dashboard.
+            </p>
+
+            <form id="replyCleanupForm" style="max-width: 600px; margin-top: 24px;">
+                <div class="form-group">
+                    <label for="rcApiKey">Anthropic API Key</label>
+                    <input type="password" id="rcApiKey" autocomplete="off" placeholder="sk-ant-...">
+                    <small style="color: #666;">Encrypted at rest. Leave the masked value untouched to keep the existing key.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="rcModel">Model</label>
+                    <select id="rcModel" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (recommended — fast and cheap)</option>
+                        <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+                        <option value="claude-opus-4-7">Claude Opus 4.7</option>
+                    </select>
+                    <small style="color: #666;">Haiku is plenty for grammar fixes and greetings.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="rcTone">Tone</label>
+                    <select id="rcTone" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        <option value="Friendly">Friendly (default)</option>
+                        <option value="Formal">Formal</option>
+                        <option value="Brief">Brief</option>
+                    </select>
+                    <small style="color: #666;">Applied to every cleanup unless changed here.</small>
+                </div>
+
+                <div class="modal-actions" style="justify-content: flex-start; margin-top: 30px; gap: 12px;">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" id="rcTestBtn" class="btn" style="background: #6c757d; color: white;">Test connection</button>
+                </div>
+
+                <div id="rcTestResult" style="margin-top: 16px; padding: 10px 14px; border-radius: 4px; display: none; font-size: 13px;"></div>
+            </form>
         </div>
     </div>
 
@@ -2582,6 +2637,85 @@ $path_prefix = '../../';  // Two levels up from tickets/settings/
         document.addEventListener('DOMContentLoaded', function() {
             loadAnalysts();
             loadGeneralSettings();
+            loadReplyCleanupSettings();
+        });
+
+        // ============================
+        // Reply Cleanup AI settings
+        // ============================
+        const API_TICKETS = '../../api/tickets/';
+
+        async function loadReplyCleanupSettings() {
+            try {
+                const res = await fetch(API_TICKETS + 'get_reply_cleanup_settings.php');
+                const data = await res.json();
+                if (!data.success) return;
+
+                document.getElementById('rcApiKey').value = data.api_key_masked || '';
+                document.getElementById('rcApiKey').placeholder = data.has_api_key ? '' : 'sk-ant-...';
+                document.getElementById('rcModel').value = data.model || 'claude-haiku-4-5-20251001';
+                document.getElementById('rcTone').value  = data.tone  || 'Friendly';
+            } catch (err) {
+                console.error('Failed to load reply cleanup settings:', err);
+            }
+        }
+
+        document.getElementById('replyCleanupForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const payload = {
+                api_key: document.getElementById('rcApiKey').value,
+                model:   document.getElementById('rcModel').value,
+                tone:    document.getElementById('rcTone').value,
+            };
+            try {
+                const res = await fetch(API_TICKETS + 'save_reply_cleanup_settings.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Reply Cleanup settings saved', 'success');
+                    loadReplyCleanupSettings();
+                } else {
+                    showToast('Error: ' + data.error, 'error');
+                }
+            } catch (err) {
+                showToast('Failed to save settings', 'error');
+            }
+        });
+
+        document.getElementById('rcTestBtn').addEventListener('click', async function() {
+            const btn = this;
+            const result = document.getElementById('rcTestResult');
+            btn.disabled = true;
+            btn.textContent = 'Testing…';
+            result.style.display = 'none';
+            try {
+                const res = await fetch(API_TICKETS + 'test_reply_cleanup_key.php', { method: 'POST' });
+                const data = await res.json();
+                result.style.display = 'block';
+                if (data.success) {
+                    result.style.background = '#e6f4e6';
+                    result.style.color = '#1b5e20';
+                    result.style.border = '1px solid #a5d6a7';
+                    result.textContent = data.message || 'Connection OK';
+                } else {
+                    result.style.background = '#fdecea';
+                    result.style.color = '#a00';
+                    result.style.border = '1px solid #f5c2c0';
+                    result.textContent = data.error || 'Test failed';
+                }
+            } catch (err) {
+                result.style.display = 'block';
+                result.style.background = '#fdecea';
+                result.style.color = '#a00';
+                result.style.border = '1px solid #f5c2c0';
+                result.textContent = 'Network error: ' + err.message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Test connection';
+            }
         });
 
         // General Settings Functions

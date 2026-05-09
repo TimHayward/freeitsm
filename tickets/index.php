@@ -14,7 +14,7 @@ $current_page = 'inbox';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Service Desk - Inbox</title>
-    <link rel="stylesheet" href="../assets/css/inbox.css?v=6">
+    <link rel="stylesheet" href="../assets/css/inbox.css?v=7">
     <script src="../assets/js/tinymce/tinymce.min.js"></script>
 </head>
 <body>
@@ -112,9 +112,16 @@ $current_page = 'inbox';
                     <div class="attachment-list" id="attachmentList"></div>
                 </div>
             </div>
+            <div id="replyCleanupUndoBar" style="display:none; padding: 8px 0; color: #555; font-size: 13px;">
+                ✨ Cleaned up — <a href="#" id="replyCleanupUndoLink" style="color: #0078d4;">Undo</a> <span id="replyCleanupUndoTimer" style="color: #999;"></span>
+            </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeEmailModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="sendEmail()">Send</button>
+                <button class="btn btn-cleanup" id="replyCleanupBtn" onclick="cleanupReplyDraft()" style="display:none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><path d="M12 3l1.9 5.8L20 10l-5 4.5L16.5 21 12 17.8 7.5 21 9 14.5 4 10l6.1-1.2z"/></svg>
+                    Cleanup
+                </button>
+                <button class="btn btn-primary" onclick="sendEmail()" id="replySendBtn">Send</button>
             </div>
         </div>
     </div>
@@ -231,7 +238,7 @@ $current_page = 'inbox';
 
     <div class="toast" id="toast"></div>
     <script>window.API_BASE = '../api/tickets/';</script>
-    <script src="../assets/js/inbox.js?v=14"></script>
+    <script src="../assets/js/inbox.js?v=15"></script>
     <script>
     // Auto-check mailboxes every 60 seconds
     (function() {

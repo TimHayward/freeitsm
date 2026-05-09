@@ -239,11 +239,15 @@ function rfpAiCallOpenAI(array $settings, array $opts): array
  * Only Anthropic supported today — OpenAI streaming has a different
  * SSE shape and callers should pre-check the configured provider.
  */
-function rfpAiCallAnthropicStreaming(PDO $conn, array $opts, callable $onEvent): array
+function rfpAiCallAnthropicStreaming(PDO $conn, array $opts, callable $onEvent, ?array $settingsOverride = null): array
 {
-    $settings = rfpAiGetSettings($conn);
-    if ($settings['provider'] !== 'anthropic') {
-        throw new RuntimeException('Streaming is currently only supported with the Anthropic provider. Switch under Contracts → Settings → RFP AI.');
+    // Per-feature billing visibility: callers (Reply Cleanup, future ticket AI
+    // features, etc.) pass their own settings dict here so each feature uses
+    // its own Anthropic key/workspace and its spend shows up separately on the
+    // Anthropic console. When omitted, fall back to the RFP AI defaults.
+    $settings = $settingsOverride ?? rfpAiGetSettings($conn);
+    if (($settings['provider'] ?? 'anthropic') !== 'anthropic') {
+        throw new RuntimeException('Streaming is currently only supported with the Anthropic provider.');
     }
 
     $opts['max_tokens']  = $opts['max_tokens']  ?? 4096;
