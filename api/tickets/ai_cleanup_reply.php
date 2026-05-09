@@ -96,24 +96,54 @@ try {
     if ($model === '') $model = 'claude-haiku-4-5-20251001';
     if ($tone  === '') $tone  = 'Friendly';
 
-    // Resolve requester first name from the ticket.
+    // Resolve requester first name + ticket subject in one query.
     // users.preferred_name wins if the user has set one, else fall back to
     // users.display_name. Take the first whitespace-delimited token as the
     // greeting name ("Sarah Johnson" → "Sarah").
-    $reqStmt = $conn->prepare(
-        "SELECT COALESCE(NULLIF(TRIM(u.preferred_name), ''), u.display_name) AS name
+    $ticketStmt = $conn->prepare(
+        "SELECT t.subject,
+                COALESCE(NULLIF(TRIM(u.preferred_name), ''), u.display_name) AS name
            FROM tickets t
       LEFT JOIN users u ON u.id = t.user_id
           WHERE t.id = ?"
     );
-    $reqStmt->execute([$ticketId]);
-    $name = trim((string)($reqStmt->fetchColumn() ?: ''));
+    $ticketStmt->execute([$ticketId]);
+    $ticketRow = $ticketStmt->fetch(PDO::FETCH_ASSOC) ?: ['subject' => '', 'name' => ''];
+    $ticketSubject = trim((string)($ticketRow['subject'] ?? ''));
+    $name = trim((string)($ticketRow['name'] ?? ''));
     $firstName = '';
     if ($name !== '') {
         $parts = preg_split('/\s+/', $name);
         $firstName = $parts[0] ?? '';
     }
     $greetingName = $firstName !== '' ? $firstName : 'there';
+
+    // Fetch the first inbound email body — the "original problem reported".
+    // This gives Claude enough context to (a) reference the issue in a short
+    // verification ask when the draft is terse, and (b) phrase that ask
+    // appropriately (e.g. "test" for issues, "confirm receipt" for hardware
+    // requests). Capped to keep tokens predictable.
+    $emailStmt = $conn->prepare(
+        "SELECT body_content
+           FROM emails
+          WHERE ticket_id = ? AND direction = 'Inbound'
+       ORDER BY received_datetime ASC, id ASC
+          LIMIT 1"
+    );
+    $emailStmt->execute([$ticketId]);
+    $rawBody = (string)($emailStmt->fetchColumn() ?: '');
+
+    $originalProblem = '';
+    if ($rawBody !== '') {
+        $stripped = strip_tags($rawBody);
+        $stripped = html_entity_decode($stripped, ENT_QUOTES, 'UTF-8');
+        $stripped = preg_replace('/\s+/', ' ', $stripped) ?? '';
+        $stripped = trim($stripped);
+        if (mb_strlen($stripped) > 2000) {
+            $stripped = mb_substr($stripped, 0, 2000) . '…';
+        }
+        $originalProblem = $stripped;
+    }
 
     // Tone description — kept short so the cached system prompt stays small.
     $toneDescription = match ($tone) {
@@ -123,7 +153,7 @@ try {
     };
 
     $system = <<<PROMPT
-You clean up rough draft replies for IT support analysts.
+You clean up rough draft replies for IT support analysts. The user message will give you the ticket context (subject + original problem) AND the analyst's draft.
 
 Your ONLY job is to:
 - Add a "Dear {$greetingName}," greeting at the top
@@ -136,37 +166,82 @@ Your ONLY job is to:
 
 Tone: {$toneDescription}
 
-Keep it concise: turn each fragment into ONE short complete sentence — not a paragraph. Do NOT add facts, explanations, apologies, recommendations, or next steps the analyst didn't write. Preserve the original meaning exactly; only the wording becomes more grammatical.
+# CONTEXT ENRICHMENT (only when the draft is VERY SHORT)
+
+If — and ONLY if — the draft is fewer than ~15 words AND has no full sentence (e.g. just "fixed", "done", "work completed", "sorted", "delivered"), you may add ONE short sentence that:
+1. Briefly references what was being addressed (using wording close to the original ticket subject)
+2. Asks the user to verify in a way that fits the situation
+
+Match the verification verb to the situation — pick the one that fits:
+- Technical issues (errors, slowness, broken things, access problems): "please test it and let us know" / "please try again and let us know if it persists"
+- Account / login / access requests: "please try logging in and confirm it works"
+- Software install or config requests: "please launch it and confirm everything's working"
+- Hardware / equipment delivery (mouse, keyboard, laptop, monitor): "please confirm it's set up correctly" / "please let us know if you have any issues setting it up" — NEVER use the words "test" or "re-test" for delivered hardware
+- Information requests / questions answered: "please let us know if you need anything further" — NO verification ask needed
+
+NEVER use the literal phrase "please re-test" verbatim — choose phrasing that fits the actual situation.
+
+If the draft is LONGER than ~15 words OR contains complete sentences OR already mentions the issue OR already has its own next-steps/verification instructions ("call if not working", "let me know", "give it a try"), DO NOT add a context sentence — just clean up the grammar and stop.
+
+# HARD CONSTRAINTS
 
 You MUST NOT:
-- Invent technical details, dates, ticket numbers, or facts not in the draft
-- Add apologies, explanations, recommendations, or next steps the analyst did not write
-- Embellish or pad the content beyond what was provided
+- Invent technical details, dates, ticket numbers, or facts not in the draft or ticket context
+- Generalise or rename the problem ("Outlook crash" must not become "your email problem")
+- Quote, summarise, or repeat details from the ticket body beyond the one-clause reference
+- Add apologies, explanations, recommendations, or extra next steps the analyst didn't write
+- Pad short drafts into multiple paragraphs (max one short context sentence + one short verification ask)
 - Output any preamble like "Here is the cleaned-up email:"
 - Add subject lines, signatures with names, footers, disclaimers, or contact details
 
-POSITIVE example (turn fragments into full sentences, but stay tight):
+# EXAMPLES
+
+POSITIVE example A — draft is already substantial, just fix grammar (no enrichment):
 Draft: "DNS issue resolved. Emails going out nicely. Any further problems let us know"
-CORRECT output:
+Correct output:
 Dear Sarah,
 
 The DNS issue has been resolved and emails are now sending normally. Please let us know if you experience any further problems.
 
 Kind regards,
 
-NEGATIVE example (no padding / embellishment):
-Draft: "fixed it"
-WRONG output:
+POSITIVE example B — VERY short draft on a technical-issue ticket (enrich):
+Ticket subject: "Outlook keeps crashing on startup"
+Draft: "fixed"
+Correct output:
 Dear Sarah,
 
-I've resolved the issue and verified everything is working as expected. Please let me know if you need anything else.
+The issue with Outlook crashing on startup has been resolved. Please test it and let us know if you experience any further problems.
 
 Kind regards,
 
-CORRECT output for that draft:
+POSITIVE example C — VERY short draft on a hardware-request ticket (enrich, but NO "re-test"):
+Ticket subject: "New mouse needed for desk B14"
+Draft: "delivered"
+Correct output:
+Dear John,
+
+Your new mouse has been delivered. Please let us know if you have any issues setting it up.
+
+Kind regards,
+
+POSITIVE example D — VERY short draft on an account-access ticket:
+Ticket subject: "Cannot log into VPN"
+Draft: "sorted"
+Correct output:
+Dear Mark,
+
+Your VPN access has been restored. Please try logging in and confirm it works.
+
+Kind regards,
+
+NEGATIVE example — never pad / embellish / fabricate:
+Ticket subject: "Outlook keeps crashing on startup"
+Draft: "fixed"
+WRONG output (do NOT do this):
 Dear Sarah,
 
-It has been fixed.
+I'm pleased to inform you that I've successfully resolved the issue with Outlook crashing on startup. After investigating, I identified the root cause and applied the necessary fix. Outlook should now launch and run smoothly without any crashes. Please test it thoroughly and let me know if you encounter any further issues. I've also taken steps to prevent this from happening again.
 
 Kind regards,
 
@@ -174,11 +249,18 @@ Kind regards,
 Plain text only. Use a single blank line between paragraphs. No HTML, no markdown.
 PROMPT;
 
+    $userMessage = "TICKET CONTEXT:\n";
+    $userMessage .= "Subject: " . ($ticketSubject !== '' ? $ticketSubject : '(none)') . "\n";
+    $userMessage .= "Original problem reported by the user:\n";
+    $userMessage .= ($originalProblem !== '' ? $originalProblem : '(no inbound email body on file)') . "\n\n";
+    $userMessage .= "ANALYST'S DRAFT REPLY (clean this up):\n";
+    $userMessage .= $draftText;
+
     $resp = rfpAiCallAnthropicStreaming(
         $conn,
         [
             'system'      => $system,
-            'user'        => $draftText,
+            'user'        => $userMessage,
             'max_tokens'  => 1024,
             'temperature' => 0.3,
         ],
