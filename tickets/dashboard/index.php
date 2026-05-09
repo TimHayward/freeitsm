@@ -271,8 +271,8 @@ $path_prefix = '../../';
         let dragSource = null;
         let editingWidgetId = null;
 
-        // Ticket statuses for filter dropdowns
-        const STATUSES = ['Open', 'In Progress', 'On Hold', 'Closed'];
+        // Ticket statuses for filter dropdowns — loaded once from the lookup at init()
+        let STATUSES = [];
 
         // Chart.js color palette
         const COLORS = [
@@ -299,10 +299,22 @@ $path_prefix = '../../';
 
         async function init() {
             try {
-                const dashRes = await fetch(API_BASE + 'get_ticket_dashboard.php').then(r => r.json()).catch(() => ({ success: false }));
+                // Fetch dashboard widgets and active ticket statuses in parallel.
+                // Active statuses drive the per-widget filter dropdown so any new
+                // status added in Tickets > Settings > Statuses appears automatically.
+                const [dashRes, statusRes] = await Promise.all([
+                    fetch(API_BASE + 'get_ticket_dashboard.php').then(r => r.json()).catch(() => ({ success: false })),
+                    fetch(API_BASE + 'get_ticket_statuses.php').then(r => r.json()).catch(() => ({ success: false }))
+                ]);
 
                 if (dashRes.success) {
                     dashboardWidgets = dashRes.widgets || [];
+                }
+
+                if (statusRes.success && Array.isArray(statusRes.statuses)) {
+                    STATUSES = statusRes.statuses
+                        .filter(s => s.is_active)
+                        .map(s => s.name);
                 }
             } catch (err) {
                 console.error('Dashboard init error:', err);
@@ -337,7 +349,7 @@ $path_prefix = '../../';
                     <div class="widget-filter">
                         <select onchange="onStatusFilterChange(${w.widget_id}, this.value)" data-widget-filter="${w.widget_id}">
                             <option value="">All statuses</option>
-                            ${STATUSES.map(s => `<option value="${s}" ${w.status_filter === s ? 'selected' : ''}>${s}</option>`).join('')}
+                            ${STATUSES.map(s => `<option value="${escapeHtml(s)}" ${w.status_filter === s ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
                         </select>
                     </div>
                 ` : '';

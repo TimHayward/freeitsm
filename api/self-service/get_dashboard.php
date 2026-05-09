@@ -19,7 +19,17 @@ $userId = (int)$_SESSION['ss_user_id'];
 try {
     $conn = connectToDatabase();
 
-    // Ticket summary counts by status
+    // Active statuses from the lookup — drives the summary card layout dynamically
+    $statusListStmt = $conn->query(
+        "SELECT name, colour, is_closed
+         FROM ticket_statuses
+         WHERE is_active = 1
+         ORDER BY display_order, id"
+    );
+    $activeStatuses = $statusListStmt->fetchAll(PDO::FETCH_ASSOC);
+    $statusListStmt->closeCursor();
+
+    // Ticket counts by status for this user
     $countStmt = $conn->prepare(
         "SELECT ts.name AS status, COUNT(*) as count
          FROM tickets t
@@ -30,15 +40,40 @@ try {
     $countStmt->execute([$userId]);
     $rows = $countStmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $ticketSummary = ['Open' => 0, 'In Progress' => 0, 'On Hold' => 0, 'Closed' => 0, 'total' => 0];
+    $countsByName = [];
     foreach ($rows as $row) {
-        $ticketSummary[$row['status']] = (int)$row['count'];
-        $ticketSummary['total'] += (int)$row['count'];
+        if ($row['status'] !== null) {
+            $countsByName[$row['status']] = (int)$row['count'];
+        }
     }
 
-    // Recent tickets (last 10)
+    // Build the summary payload: one entry per active status (with colour + is_closed
+    // so the frontend can render any layout) plus a total
+    $statusSummary = array_map(function ($s) use ($countsByName) {
+        return [
+            'name'      => $s['name'],
+            'colour'    => $s['colour'],
+            'is_closed' => (int)$s['is_closed'],
+            'count'     => $countsByName[$s['name']] ?? 0,
+        ];
+    }, $activeStatuses);
+
+    $totalCount = 0;
+    foreach ($rows as $row) {
+        $totalCount += (int)$row['count'];
+    }
+
+    $ticketSummary = [
+        'total'    => $totalCount,
+        'statuses' => $statusSummary,
+    ];
+
+    // Recent tickets (last 10) — include status colour so the frontend can render
+    // the badge inline without a hardcoded class lookup
     $ticketStmt = $conn->prepare(
-        "SELECT t.id, t.ticket_number, t.subject, ts.name AS status, tp.name AS priority,
+        "SELECT t.id, t.ticket_number, t.subject,
+                ts.name AS status, ts.colour AS status_colour,
+                tp.name AS priority,
                 t.created_datetime, t.updated_datetime,
                 d.name as department_name
          FROM tickets t

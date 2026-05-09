@@ -308,25 +308,8 @@ require_once 'includes/auth.php';
             <p>Here's an overview of your tickets and system status</p>
         </div>
 
-        <!-- Summary Cards -->
-        <div class="summary-cards" id="summaryCards">
-            <div class="summary-card card-open">
-                <div class="card-label">Open</div>
-                <div class="card-value" id="countOpen">-</div>
-            </div>
-            <div class="summary-card card-progress">
-                <div class="card-label">In Progress</div>
-                <div class="card-value" id="countProgress">-</div>
-            </div>
-            <div class="summary-card card-hold">
-                <div class="card-label">On Hold</div>
-                <div class="card-value" id="countHold">-</div>
-            </div>
-            <div class="summary-card card-total">
-                <div class="card-label">Total</div>
-                <div class="card-value" id="countTotal">-</div>
-            </div>
-        </div>
+        <!-- Summary Cards (rendered dynamically from active ticket_statuses) -->
+        <div class="summary-cards" id="summaryCards"></div>
 
         <!-- Two column layout -->
         <div class="portal-grid">
@@ -379,11 +362,41 @@ require_once 'includes/auth.php';
             }
         }
 
+        // Lookup map populated from the dashboard payload — used by recent-tickets
+        // table to colour status badges without a hardcoded name → class mapping
+        let statusColourMap = {};
+
         function renderSummaryCards(summary) {
-            document.getElementById('countOpen').textContent = summary['Open'] || 0;
-            document.getElementById('countProgress').textContent = summary['In Progress'] || 0;
-            document.getElementById('countHold').textContent = summary['On Hold'] || 0;
-            document.getElementById('countTotal').textContent = summary['total'] || 0;
+            const container = document.getElementById('summaryCards');
+            if (!container) return;
+            const list = summary && Array.isArray(summary.statuses) ? summary.statuses : [];
+
+            // Refresh the colour lookup for badge rendering
+            statusColourMap = {};
+            list.forEach(s => { statusColourMap[s.name] = s.colour || '#0078d4'; });
+
+            // One card per non-closed active status, plus a Total card
+            const cards = list
+                .filter(s => !s.is_closed)
+                .map(s => {
+                    const c = s.colour || '#0078d4';
+                    return `
+                        <div class="summary-card" style="border-left: 4px solid ${c};">
+                            <div class="card-label">${escapeHtml(s.name)}</div>
+                            <div class="card-value">${s.count}</div>
+                        </div>
+                    `;
+                })
+                .join('');
+
+            const totalCard = `
+                <div class="summary-card card-total">
+                    <div class="card-label">Total</div>
+                    <div class="card-value">${(summary && summary.total) || 0}</div>
+                </div>
+            `;
+
+            container.innerHTML = cards + totalCard;
         }
 
         function renderRecentTickets(tickets) {
@@ -407,14 +420,14 @@ require_once 'includes/auth.php';
                 <tbody>`;
 
             tickets.forEach(t => {
-                const statusClass = getStatusClass(t.status);
+                const statusStyle = buildStatusBadgeStyle(t.status_colour || statusColourMap[t.status]);
                 const priorityClass = getPriorityClass(t.priority);
                 const date = formatDate(t.updated_datetime || t.created_datetime);
 
                 html += `<tr>
                     <td><a href="ticket.php?id=${t.id}" class="ticket-link"><span class="ticket-number">${escapeHtml(t.ticket_number)}</span></a></td>
                     <td><a href="ticket.php?id=${t.id}" class="ticket-link">${escapeHtml(t.subject)}</a></td>
-                    <td><span class="status-badge ${statusClass}">${escapeHtml(t.status)}</span></td>
+                    <td><span class="status-badge" style="${statusStyle}">${escapeHtml(t.status)}</span></td>
                     <td><span class="priority-badge ${priorityClass}">${escapeHtml(t.priority || 'Normal')}</span></td>
                     <td><span class="ticket-date">${date}</span></td>
                 </tr>`;
@@ -458,14 +471,12 @@ require_once 'includes/auth.php';
             container.innerHTML = html;
         }
 
-        function getStatusClass(status) {
-            const map = {
-                'Open': 'status-open',
-                'In Progress': 'status-in-progress',
-                'On Hold': 'status-on-hold',
-                'Closed': 'status-closed'
-            };
-            return map[status] || 'status-open';
+        // Build inline style for a status badge from the lookup colour:
+        // tinted background (~12% alpha) with the same colour for text — matches
+        // the existing visual language of the legacy hardcoded badges
+        function buildStatusBadgeStyle(colour) {
+            const c = colour || '#0078d4';
+            return `background-color: ${c}1f; color: ${c}; border: 1px solid ${c}33;`;
         }
 
         function getPriorityClass(priority) {

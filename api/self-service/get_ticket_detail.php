@@ -27,7 +27,9 @@ try {
 
     // Fetch ticket - validate ownership
     $ticketStmt = $conn->prepare(
-        "SELECT t.id, t.ticket_number, t.subject, ts.name AS status, tp.name AS priority,
+        "SELECT t.id, t.ticket_number, t.subject,
+                ts.name AS status, ts.colour AS status_colour,
+                tp.name AS priority,
                 t.created_datetime, t.updated_datetime,
                 d.name as department_name
          FROM tickets t

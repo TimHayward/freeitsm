@@ -264,7 +264,7 @@ if (!$ticketId) {
 
         function renderTicket(ticket, thread, notes) {
             const container = document.getElementById('ticketContent');
-            const statusClass = getStatusClass(ticket.status);
+            const statusStyle = buildStatusBadgeStyle(ticket.status_colour);
             const priorityClass = getPriorityClass(ticket.priority);
             const created = formatDate(ticket.created_datetime);
 
@@ -273,7 +273,7 @@ if (!$ticketId) {
                     <h1 class="ticket-subject">${escapeHtml(ticket.subject)}</h1>
                     <div class="ticket-meta">
                         <span class="ticket-number-display">${escapeHtml(ticket.ticket_number)}</span>
-                        <span class="status-badge ${statusClass}">${escapeHtml(ticket.status)}</span>
+                        <span class="status-badge" style="${statusStyle}">${escapeHtml(ticket.status)}</span>
                         <span class="priority-badge ${priorityClass}">${escapeHtml(ticket.priority || 'Normal')}</span>
                         ${ticket.department_name ? '<span class="ticket-meta-item">' + escapeHtml(ticket.department_name) + '</span>' : ''}
                         <span class="ticket-meta-item">Created ${created}</span>
@@ -331,9 +331,12 @@ if (!$ticketId) {
             container.innerHTML = html;
         }
 
-        function getStatusClass(status) {
-            const map = { 'Open': 'status-open', 'In Progress': 'status-in-progress', 'On Hold': 'status-on-hold', 'Closed': 'status-closed' };
-            return map[status] || 'status-open';
+        // Build inline style for the status badge from the lookup colour returned
+        // by the API — drops the hardcoded name → CSS-class map so any new status
+        // configured in Tickets > Settings > Statuses renders correctly here too
+        function buildStatusBadgeStyle(colour) {
+            const c = colour || '#0078d4';
+            return `background-color: ${c}1f; color: ${c}; border: 1px solid ${c}33;`;
         }
 
         function getPriorityClass(priority) {
