@@ -165,9 +165,32 @@ try {
     $unassignedResult = $unassignedStmt->fetch(PDO::FETCH_ASSOC);
     $unassignedStmt->closeCursor();
 
-    // Build status counts by department map
+    // Master list of active statuses — drives the folder UI
+    $statusListStmt = $conn->query(
+        "SELECT id, name, colour, is_closed, is_default, display_order
+         FROM ticket_statuses
+         WHERE is_active = 1
+         ORDER BY display_order, id"
+    );
+    $activeStatuses = $statusListStmt->fetchAll(PDO::FETCH_ASSOC);
+    $statusListStmt->closeCursor();
+
+    $statusMeta = array_map(function ($s) {
+        return [
+            'name'          => $s['name'],
+            'colour'        => $s['colour'],
+            'is_closed'     => (int)$s['is_closed'],
+            'is_default'    => (int)$s['is_default'],
+            'display_order' => (int)$s['display_order'],
+        ];
+    }, $activeStatuses);
+    $activeStatusNames = array_column($statusMeta, 'name');
+
+    // Build status counts by department map (only counting active statuses)
     $statusByDept = [];
     foreach ($deptStatusCounts as $row) {
+        if ($row['status'] === null) continue;
+        if (!in_array($row['status'], $activeStatusNames, true)) continue;
         if (!isset($statusByDept[$row['dept_id']])) {
             $statusByDept[$row['dept_id']] = [];
         }
@@ -178,30 +201,27 @@ try {
     $departmentStructure = [];
     foreach ($departments as $dept) {
         $deptId = $dept['id'];
-        $statuses = isset($statusByDept[$deptId]) ? $statusByDept[$deptId] : [];
+        $deptStatusMap = isset($statusByDept[$deptId]) ? $statusByDept[$deptId] : [];
+        $statuses = [];
+        foreach ($activeStatusNames as $name) {
+            $statuses[$name] = $deptStatusMap[$name] ?? 0;
+        }
 
         $departmentStructure[] = [
             'id' => $deptId,
             'name' => $dept['name'],
             'count' => (int)$dept['count'],
-            'statuses' => [
-                'Open' => $statuses['Open'] ?? 0,
-                'In Progress' => $statuses['In Progress'] ?? 0,
-                'On Hold' => $statuses['On Hold'] ?? 0,
-                'Closed' => $statuses['Closed'] ?? 0
-            ]
+            'statuses' => $statuses
         ];
     }
 
-    // Build overall status counts
-    $overallStatuses = [
-        'Open' => 0,
-        'In Progress' => 0,
-        'On Hold' => 0,
-        'Closed' => 0
-    ];
+    // Build overall status counts dynamically from active statuses
+    $overallStatuses = [];
+    foreach ($activeStatusNames as $name) {
+        $overallStatuses[$name] = 0;
+    }
     foreach ($statusCounts as $row) {
-        if (isset($overallStatuses[$row['status']])) {
+        if ($row['status'] !== null && isset($overallStatuses[$row['status']])) {
             $overallStatuses[$row['status']] = (int)$row['count'];
         }
     }
@@ -210,6 +230,7 @@ try {
         'success' => true,
         'total_count' => $totalCount,
         'unassigned_count' => (int)$unassignedResult['count'],
+        'statuses' => $statusMeta,
         'departments' => $departmentStructure,
         'overall_statuses' => $overallStatuses
     ]);

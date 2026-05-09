@@ -36,7 +36,7 @@ try {
     $count = (int)$checkStmt->fetchColumn();
 
     if ($count > 0) {
-        throw new Exception("Cannot delete: this status is used by $count ticket(s). Reassign them or set the status to inactive instead.");
+        throw new Exception("Cannot delete: this status is used by $count ticket(s). Reassign them to a different status first.");
     }
 
     $stmt = $conn->prepare("DELETE FROM ticket_statuses WHERE id = ?");

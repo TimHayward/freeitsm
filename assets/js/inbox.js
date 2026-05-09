@@ -343,17 +343,16 @@ function renderFolders() {
                 </div>
             `;
 
-            // Status subfolders — always render all four; group is collapsed/expanded as a unit
+            // Status subfolders — driven by the active statuses returned in folderCounts.statuses
             html += `<div class="subfolder-group ${isExpanded ? 'expanded' : ''}"><div class="subfolder-group-inner">`;
-            const statuses = ['Open', 'In Progress', 'On Hold', 'Closed'];
+            const statuses = (folderCounts.statuses || []).map(s => s.name);
             statuses.forEach(status => {
                 const count = dept.statuses[status] || 0;
                 const subActive = currentFilter.type === 'dept_status' && currentFilter.dept_id == dept.id && currentFilter.status === status;
                 html += `
                     <div class="subfolder-item drop-zone ${subActive ? 'active' : ''} ${count === 0 ? 'empty' : ''}"
-                         data-drop-type="dept_status" data-dept-id="${dept.id}" data-status="${escapeHtml(status)}"
-                         onclick="event.stopPropagation(); selectDeptStatus(${dept.id}, '${status}')">
-                        <span>${status}</span>
+                         data-drop-type="dept_status" data-dept-id="${dept.id}" data-status="${escapeHtml(status)}">
+                        <span>${escapeHtml(status)}</span>
                         <span class="folder-count">${count}</span>
                     </div>
                 `;
@@ -440,6 +439,17 @@ function attachEmailDragHandlers() {
 }
 
 function attachFolderDropHandlers() {
+    // Click handler for subfolder rows (replaces the previous inline onclick which
+    // couldn't safely embed status names containing apostrophes)
+    document.querySelectorAll('#folderList .subfolder-item').forEach(el => {
+        el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const deptId = parseInt(el.dataset.deptId, 10);
+            const status = el.dataset.status;
+            if (deptId && status) selectDeptStatus(deptId, status);
+        });
+    });
+
     document.querySelectorAll('#folderList .drop-zone').forEach(el => {
         el.addEventListener('dragover', (e) => {
             if (!draggedTicketId) return;

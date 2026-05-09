@@ -32,6 +32,17 @@ try {
     }
 
     $conn = connectToDatabase();
+
+    // Refuse to deactivate a status that any ticket currently uses
+    if ($id && !$is_active) {
+        $useStmt = $conn->prepare("SELECT COUNT(*) FROM tickets WHERE status_id = ?");
+        $useStmt->execute([$id]);
+        $inUse = (int)$useStmt->fetchColumn();
+        if ($inUse > 0) {
+            throw new Exception("Cannot deactivate: $inUse ticket(s) currently use this status. Reassign them to a different status first.");
+        }
+    }
+
     $conn->beginTransaction();
 
     // If marking this row as default, clear the flag on every other row first
