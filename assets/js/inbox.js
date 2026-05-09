@@ -522,6 +522,12 @@ async function handleTicketDrop(targetEl, ticketId, ticketNumber) {
         showToast(toastMsg);
         await loadFolderCounts();
         loadEmails();
+
+        // If the dragged ticket is the one open in the reading pane, refresh it
+        // so the Department/Status dropdowns show the new values.
+        if (currentEmail && String(currentEmail.ticket_id) === String(ticketId)) {
+            loadTicketById(currentEmail.ticket_id);
+        }
     } catch (err) {
         console.error('Drop assign error:', err);
         showToast('Failed to move ticket: ' + (err.message || err), true);
