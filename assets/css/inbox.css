@@ -277,33 +277,33 @@ body {
     gap: 8px;
 }
 
-.new-btn {
-    background: #107c10;
-    color: white;
+/* Icon-only action buttons in the email-list header */
+.icon-btn {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    color: #555;
     border: none;
-    padding: 6px 12px;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 13px;
-    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
 }
 
-.new-btn:hover {
-    background: #0b5c0b;
+.icon-btn:hover {
+    background: #e8f0f8;
+    color: #0078d4;
 }
 
-.refresh-btn {
-    background: #0078d4;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 13px;
+.icon-btn-new {
+    color: #107c10;
 }
 
-.refresh-btn:hover {
-    background: #005a9e;
+.icon-btn-new:hover {
+    background: #e6f4e6;
+    color: #0b5c0b;
 }
 
 .email-list {
@@ -1614,21 +1614,6 @@ body {
 
 .assignment-item input[type="checkbox"] {
     margin: 0;
-}
-
-/* Search Button */
-.search-btn {
-    background: #6c757d;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 13px;
-}
-
-.search-btn:hover {
-    background: #5a6268;
 }
 
 /* Draggable Search Modal */

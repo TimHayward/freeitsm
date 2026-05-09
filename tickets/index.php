@@ -14,7 +14,7 @@ $current_page = 'inbox';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Service Desk - Inbox</title>
-    <link rel="stylesheet" href="../assets/css/inbox.css?v=5">
+    <link rel="stylesheet" href="../assets/css/inbox.css?v=6">
     <script src="../assets/js/tinymce/tinymce.min.js"></script>
 </head>
 <body>
@@ -38,9 +38,15 @@ $current_page = 'inbox';
             <div class="email-list-header">
                 <h3 id="emailListTitle">All Tickets</h3>
                 <div class="email-list-actions">
-                    <button class="new-btn" onclick="openNewTicketModal()">+ New</button>
-                    <button class="search-btn" onclick="openSearchModal()">Search</button>
-                    <button class="refresh-btn" onclick="refreshCurrentView()">Refresh</button>
+                    <button class="icon-btn icon-btn-new" onclick="openNewTicketModal()" title="New ticket" aria-label="New ticket">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
+                    <button class="icon-btn" onclick="openSearchModal()" title="Search tickets" aria-label="Search tickets">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </button>
+                    <button class="icon-btn" onclick="refreshCurrentView()" title="Refresh" aria-label="Refresh">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    </button>
                 </div>
             </div>
             <div class="email-list" id="emailList">
