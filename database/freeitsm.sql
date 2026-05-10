@@ -2065,6 +2065,123 @@ CREATE TABLE IF NOT EXISTS `status_incident_services` (
     CONSTRAINT `fk_sis_impact_level` FOREIGN KEY (`impact_level_id`) REFERENCES `service_impact_levels` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ----------------------------------------------------------
+-- CMDB (Configuration Management Database)
+-- See docs/cmdb.md for the full design rationale.
+-- ----------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `cmdb_classes` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `class_key`         VARCHAR(100) NOT NULL,
+    `name`              VARCHAR(150) NOT NULL,
+    `description`       VARCHAR(500) NULL,
+    `icon`              VARCHAR(50) NULL,
+    `display_order`     INT NULL DEFAULT 0,
+    `is_active`         TINYINT(1) NULL DEFAULT 1,
+    `created_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_cmdb_classes_key` (`class_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `cmdb_class_properties` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `class_id`          INT NOT NULL,
+    `property_key`      VARCHAR(100) NOT NULL,
+    `label`             VARCHAR(150) NOT NULL,
+    `property_type`     VARCHAR(20) NOT NULL,
+    -- text | number | date | boolean | dropdown | object_ref
+    `target_class_id`   INT NULL,
+    -- only used when property_type = 'object_ref'
+    `is_required`       TINYINT(1) NULL DEFAULT 0,
+    `display_order`     INT NULL DEFAULT 0,
+    `created_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_cmdb_class_property_key` (`class_id`, `property_key`),
+    CONSTRAINT `fk_cmdb_cp_class` FOREIGN KEY (`class_id`) REFERENCES `cmdb_classes` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_cmdb_cp_target_class` FOREIGN KEY (`target_class_id`) REFERENCES `cmdb_classes` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `cmdb_class_property_options` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `property_id`       INT NOT NULL,
+    `option_value`      VARCHAR(255) NOT NULL,
+    `display_order`     INT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    KEY `ix_cmdb_cpo_property_id` (`property_id`),
+    CONSTRAINT `fk_cmdb_cpo_property` FOREIGN KEY (`property_id`) REFERENCES `cmdb_class_properties` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `cmdb_objects` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `class_id`          INT NOT NULL,
+    `name`              VARCHAR(255) NOT NULL,
+    `parent_id`         INT NULL,
+    `created_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `ix_cmdb_objects_class_id` (`class_id`),
+    KEY `ix_cmdb_objects_parent_id` (`parent_id`),
+    KEY `ix_cmdb_objects_name` (`name`),
+    CONSTRAINT `fk_cmdb_objects_class` FOREIGN KEY (`class_id`) REFERENCES `cmdb_classes` (`id`),
+    CONSTRAINT `fk_cmdb_objects_parent` FOREIGN KEY (`parent_id`) REFERENCES `cmdb_objects` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `cmdb_object_properties` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `object_id`         INT NOT NULL,
+    `property_id`       INT NOT NULL,
+    `value_text`        TEXT NULL,
+    `value_number`      DECIMAL(20,4) NULL,
+    `value_date`        DATETIME NULL,
+    `value_boolean`     TINYINT(1) NULL,
+    `value_object_id`   INT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_cmdb_op_obj_prop` (`object_id`, `property_id`),
+    KEY `ix_cmdb_op_value_object_id` (`value_object_id`),
+    CONSTRAINT `fk_cmdb_op_object` FOREIGN KEY (`object_id`) REFERENCES `cmdb_objects` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_cmdb_op_property` FOREIGN KEY (`property_id`) REFERENCES `cmdb_class_properties` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_cmdb_op_value_object` FOREIGN KEY (`value_object_id`) REFERENCES `cmdb_objects` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `cmdb_relationship_types` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `verb`              VARCHAR(100) NOT NULL,
+    `inverse_verb`      VARCHAR(100) NOT NULL,
+    `description`       VARCHAR(500) NULL,
+    `display_order`     INT NULL DEFAULT 0,
+    `is_active`         TINYINT(1) NULL DEFAULT 1,
+    `created_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_cmdb_rel_type_verb` (`verb`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `cmdb_object_relationships` (
+    `id`                    INT NOT NULL AUTO_INCREMENT,
+    `from_object_id`        INT NOT NULL,
+    `to_object_id`          INT NOT NULL,
+    `relationship_type_id`  INT NOT NULL,
+    `created_datetime`      DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_cmdb_or_triple` (`from_object_id`, `to_object_id`, `relationship_type_id`),
+    KEY `ix_cmdb_or_to_object_id` (`to_object_id`),
+    CONSTRAINT `fk_cmdb_or_from` FOREIGN KEY (`from_object_id`) REFERENCES `cmdb_objects` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_cmdb_or_to`   FOREIGN KEY (`to_object_id`)   REFERENCES `cmdb_objects` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_cmdb_or_type` FOREIGN KEY (`relationship_type_id`) REFERENCES `cmdb_relationship_types` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Seed a small starter set of relationship verbs so analysts have something
+-- to work with on first run. Easily editable from CMDB → Settings.
+INSERT INTO `cmdb_relationship_types` (`verb`, `inverse_verb`, `description`, `display_order`)
+SELECT * FROM (SELECT 'depends on'  AS verb, 'is depended on by' AS inverse_verb, 'A needs B in order to function'  AS description, 10 AS display_order) AS t
+WHERE NOT EXISTS (SELECT 1 FROM `cmdb_relationship_types` WHERE verb = 'depends on');
+INSERT INTO `cmdb_relationship_types` (`verb`, `inverse_verb`, `description`, `display_order`)
+SELECT * FROM (SELECT 'connects to' AS verb, 'is connected from' AS inverse_verb, 'A has a network or data link to B' AS description, 20 AS display_order) AS t
+WHERE NOT EXISTS (SELECT 1 FROM `cmdb_relationship_types` WHERE verb = 'connects to');
+INSERT INTO `cmdb_relationship_types` (`verb`, `inverse_verb`, `description`, `display_order`)
+SELECT * FROM (SELECT 'managed by'  AS verb, 'manages'           AS inverse_verb, 'A is administered by B'           AS description, 30 AS display_order) AS t
+WHERE NOT EXISTS (SELECT 1 FROM `cmdb_relationship_types` WHERE verb = 'managed by');
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ----------------------------------------------------------

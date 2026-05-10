@@ -22,6 +22,7 @@ $defaultModuleColors = [
     'lms'            => ['#2563eb', '#1d4ed8'],
     'process-mapper' => ['#6366f1', '#4f46e5'],
     'tasks'          => ['#7c3aed', '#6d28d9'],
+    'cmdb'           => ['#be185d', '#9d174d'],
     'system'        => ['#546e7a', '#37474f'],
 ];
 

@@ -38,6 +38,7 @@ define('ENCRYPTED_SETTING_KEYS', [
     'intune_client_secret',
     'rfp_ai_api_key',
     'tickets_reply_cleanup_api_key',
+    'cmdb_ai_api_key',
 ]);
 
 /**
@@ -56,6 +57,7 @@ define('MASKED_SETTING_KEYS', [
     'intune_client_secret',
     'rfp_ai_api_key',
     'tickets_reply_cleanup_api_key',
+    'cmdb_ai_api_key',
 ]);
 
 /**

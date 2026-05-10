@@ -1518,6 +1518,76 @@ $schema = [
         'service_id'        => 'INT NOT NULL',
         'impact_level_id'   => 'INT NULL',
     ],
+
+    // CMDB ----------------------------------------------------------
+    'cmdb_classes' => [
+        'id'                => 'INT NOT NULL AUTO_INCREMENT',
+        'class_key'         => 'VARCHAR(100) NOT NULL',
+        'name'              => 'VARCHAR(150) NOT NULL',
+        'description'       => 'VARCHAR(500) NULL',
+        'icon'              => 'VARCHAR(50) NULL',
+        'display_order'     => 'INT NULL DEFAULT 0',
+        'is_active'         => 'TINYINT(1) NULL DEFAULT 1',
+        'created_datetime'  => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
+        'updated_datetime'  => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
+    'cmdb_class_properties' => [
+        'id'                => 'INT NOT NULL AUTO_INCREMENT',
+        'class_id'          => 'INT NOT NULL',
+        'property_key'      => 'VARCHAR(100) NOT NULL',
+        'label'             => 'VARCHAR(150) NOT NULL',
+        'property_type'     => 'VARCHAR(20) NOT NULL',
+        'target_class_id'   => 'INT NULL',
+        'is_required'       => 'TINYINT(1) NULL DEFAULT 0',
+        'display_order'     => 'INT NULL DEFAULT 0',
+        'created_datetime'  => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
+    'cmdb_class_property_options' => [
+        'id'                => 'INT NOT NULL AUTO_INCREMENT',
+        'property_id'       => 'INT NOT NULL',
+        'option_value'      => 'VARCHAR(255) NOT NULL',
+        'display_order'     => 'INT NULL DEFAULT 0',
+    ],
+
+    'cmdb_objects' => [
+        'id'                => 'INT NOT NULL AUTO_INCREMENT',
+        'class_id'          => 'INT NOT NULL',
+        'name'              => 'VARCHAR(255) NOT NULL',
+        'parent_id'         => 'INT NULL',
+        'created_datetime'  => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
+        'updated_datetime'  => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
+    'cmdb_object_properties' => [
+        'id'                => 'INT NOT NULL AUTO_INCREMENT',
+        'object_id'         => 'INT NOT NULL',
+        'property_id'       => 'INT NOT NULL',
+        'value_text'        => 'TEXT NULL',
+        'value_number'      => 'DECIMAL(20,4) NULL',
+        'value_date'        => 'DATETIME NULL',
+        'value_boolean'     => 'TINYINT(1) NULL',
+        'value_object_id'   => 'INT NULL',
+    ],
+
+    'cmdb_relationship_types' => [
+        'id'                => 'INT NOT NULL AUTO_INCREMENT',
+        'verb'              => 'VARCHAR(100) NOT NULL',
+        'inverse_verb'      => 'VARCHAR(100) NOT NULL',
+        'description'       => 'VARCHAR(500) NULL',
+        'display_order'     => 'INT NULL DEFAULT 0',
+        'is_active'         => 'TINYINT(1) NULL DEFAULT 1',
+        'created_datetime'  => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
+    'cmdb_object_relationships' => [
+        'id'                    => 'INT NOT NULL AUTO_INCREMENT',
+        'from_object_id'        => 'INT NOT NULL',
+        'to_object_id'          => 'INT NOT NULL',
+        'relationship_type_id'  => 'INT NOT NULL',
+        'created_datetime'      => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
 ];
 
 // Primary key definitions: table => pk_column (defaults to 'id')
@@ -2269,6 +2339,18 @@ try {
         }
     }
 
+    // Seed default CMDB relationship types so the module has something usable on first run
+    if ($tableExists('cmdb_relationship_types')) {
+        $cnt = (int) $conn->query("SELECT COUNT(*) FROM cmdb_relationship_types")->fetchColumn();
+        if ($cnt === 0) {
+            $conn->exec("INSERT INTO cmdb_relationship_types (verb, inverse_verb, description, display_order) VALUES
+                ('depends on',  'is depended on by', 'A needs B in order to function',           10),
+                ('connects to', 'is connected from', 'A has a network or data link to B',       20),
+                ('managed by',  'manages',           'A is administered by B',                  30)");
+            $results[] = ['table' => 'cmdb_relationship_types', 'status' => 'seeded', 'details' => ['Inserted 3 default CMDB relationship types']];
+        }
+    }
+
     // Ensure unique indexes exist on LMS tables (db_verify only creates columns, not indexes)
     $uniqueIndexes = [
         ['lms_cmi_data', 'uq_lcd_progress_element', '(`progress_id`, `element`)'],
@@ -2281,6 +2363,11 @@ try {
         ['rfp_invited_suppliers', 'uq_rfp_invited_suppliers', '(`rfp_id`, `supplier_id`)'],
         ['rfp_scores', 'uq_rfp_scores', '(`rfp_id`, `supplier_id`, `analyst_id`, `consolidated_id`)'],
         ['user_preferences', 'uq_user_pref', '(`analyst_id`, `preference_key`)'],
+        ['cmdb_classes', 'uq_cmdb_classes_key', '(`class_key`)'],
+        ['cmdb_class_properties', 'uq_cmdb_class_property_key', '(`class_id`, `property_key`)'],
+        ['cmdb_object_properties', 'uq_cmdb_op_obj_prop', '(`object_id`, `property_id`)'],
+        ['cmdb_relationship_types', 'uq_cmdb_rel_type_verb', '(`verb`)'],
+        ['cmdb_object_relationships', 'uq_cmdb_or_triple', '(`from_object_id`, `to_object_id`, `relationship_type_id`)'],
     ];
 
     foreach ($uniqueIndexes as [$tbl, $idxName, $cols]) {

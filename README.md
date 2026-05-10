@@ -708,6 +708,17 @@ Kanban-style task management with board and list views for tracking internal wor
 - **Comments**: Threaded comments on each task
 - **Watchtower integration**: Overdue and due-today counts shown on attention dashboard
 
+### CMDB (`cmdb/`)
+Configuration Management Database — model your IT estate as a graph of typed objects (servers, databases, applications, etc.) with a strict containment hierarchy and a separate user-defined relationships layer.
+
+**v1 ships the foundation: schema + settings page.** Object browsing and the AI-powered detail view land in the next pass. See [`docs/cmdb.md`](docs/cmdb.md) for the full design and roadmap.
+
+- **Settings page** with three tabs:
+  - **Classes**: define types of things (e.g. Server, Database). Each class has its own auto-generated immutable `class_key` plus an editable display name. Click the property-count badge on any class to manage its properties (label, immutable key, type — text/number/date/boolean/dropdown/object_ref, target class for object references, required flag, dropdown options, display order). Property keys are immutable so renaming a label never breaks references.
+  - **Relationship Types**: define the verbs that link objects (e.g. *depends on* ↔ *is depended on by*). Three defaults seeded on first run.
+  - **AI Integration**: provider/key/model + custom-instructions textarea + Test connection button, mirroring the established per-feature Anthropic key pattern (separate from RFP AI / Knowledge AI / Reply Cleanup for granular billing visibility).
+- **Data model** (7 tables, all prefixed `cmdb_`): classes, class_properties, class_property_options, objects, object_properties, relationship_types, object_relationships. Strict cascade-delete on parent_id (per the design's *ontological dependency* parent semantics).
+
 ---
 
 ## Browser Extension

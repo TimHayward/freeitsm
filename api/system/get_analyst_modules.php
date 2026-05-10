@@ -42,7 +42,7 @@ try {
     // Available modules list
     $availableModules = [
         'tickets', 'assets', 'knowledge', 'changes', 'calendar',
-        'morning-checks', 'reporting', 'software', 'forms', 'contracts', 'wiki', 'tasks', 'system'
+        'morning-checks', 'reporting', 'software', 'forms', 'contracts', 'wiki', 'tasks', 'cmdb', 'system'
     ];
 
     echo json_encode([

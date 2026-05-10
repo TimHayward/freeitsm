@@ -108,6 +108,11 @@ $modules = [
         'path' => 'tasks/',
         'icon' => '<path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>'
     ],
+    'cmdb' => [
+        'name' => 'CMDB',
+        'path' => 'cmdb/',
+        'icon' => '<path d="M2 22V8l10-6 10 6v14"></path><path d="M2 12h20"></path><path d="M2 17h20"></path><line x1="12" y1="2" x2="12" y2="22"></line>'
+    ],
     'system' => [
         'name' => 'System',
         'path' => 'system/',
