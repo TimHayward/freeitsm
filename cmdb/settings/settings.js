@@ -466,6 +466,194 @@ async function testAiKey() {
     }
 }
 
+// ---------- AI Suggest Properties (two-stage wizard) ----------
+
+let aiSuggestQuestions = [];   // [{id, question, examples}]
+let aiSuggestAnswers = [];     // [{question, answer}]
+let aiSuggestSuggestions = []; // [{label, property_key, property_type, is_required, why, options?, target_class_hint?}]
+let aiSuggestStage = null;     // 'loading_questions' | 'questions' | 'loading_suggestions' | 'suggestions' | 'error'
+
+function setAiStage(stage) {
+    aiSuggestStage = stage;
+    document.querySelectorAll('#aiSuggestModal .ai-stage').forEach(el => el.classList.remove('active'));
+    const map = {
+        loading_questions:   'aiStageLoadingQuestions',
+        questions:           'aiStageQuestions',
+        loading_suggestions: 'aiStageLoadingSuggestions',
+        suggestions:         'aiStageSuggestions',
+        error:               'aiStageError'
+    };
+    const el = document.getElementById(map[stage]);
+    if (el) el.classList.add('active');
+
+    // Update primary button label/visibility
+    const btn = document.getElementById('aiSuggestPrimaryBtn');
+    const actions = document.getElementById('aiSuggestActions');
+    if (stage === 'questions') {
+        btn.textContent = 'Generate suggestions';
+        btn.disabled = false;
+        actions.style.display = '';
+    } else if (stage === 'suggestions') {
+        btn.textContent = 'Add Selected';
+        btn.disabled = false;
+        actions.style.display = '';
+    } else if (stage === 'loading_questions' || stage === 'loading_suggestions') {
+        btn.disabled = true;
+        actions.style.display = '';
+    } else {
+        actions.style.display = 'none';
+    }
+}
+
+async function openAiSuggestModal() {
+    if (!activeClassForProps) return;
+    document.getElementById('aiSuggestClassName').textContent = activeClassForProps.name;
+    document.getElementById('aiQClassName').textContent = activeClassForProps.name;
+    document.getElementById('aiSClassName').textContent = activeClassForProps.name;
+    document.getElementById('aiSuggestModal').classList.add('active');
+    aiSuggestQuestions = [];
+    aiSuggestAnswers = [];
+    aiSuggestSuggestions = [];
+    setAiStage('loading_questions');
+
+    try {
+        const data = await postJson(API + 'ai_suggest_questions.php', { class_id: activeClassForProps.id });
+        if (!data.success) throw new Error(data.error || 'Failed to fetch questions');
+        aiSuggestQuestions = data.questions || [];
+        if (aiSuggestQuestions.length === 0) throw new Error('AI returned no questions — try again.');
+        renderAiQuestions();
+        setAiStage('questions');
+    } catch (err) {
+        document.getElementById('aiErrorMessage').textContent = err.message;
+        setAiStage('error');
+    }
+}
+
+function closeAiSuggestModal() {
+    document.getElementById('aiSuggestModal').classList.remove('active');
+    aiSuggestStage = null;
+}
+
+function renderAiQuestions() {
+    const list = document.getElementById('aiQuestionsList');
+    list.innerHTML = aiSuggestQuestions.map((q, i) => `
+        <div class="ai-question">
+            <label for="aiQ_${i}">${escapeHtml(q.question)}</label>
+            ${q.examples ? `<div class="examples">e.g. ${escapeHtml(q.examples)}</div>` : ''}
+            <input type="text" id="aiQ_${i}" placeholder="Your answer">
+        </div>
+    `).join('');
+}
+
+function collectAiAnswers() {
+    aiSuggestAnswers = aiSuggestQuestions.map((q, i) => ({
+        question: q.question,
+        answer: (document.getElementById('aiQ_' + i)?.value || '').trim()
+    })).filter(qa => qa.answer !== '');
+}
+
+async function aiPrimaryAction() {
+    if (aiSuggestStage === 'questions') {
+        // Move to stage 2: ask AI for suggestions
+        collectAiAnswers();
+        setAiStage('loading_suggestions');
+        try {
+            const data = await postJson(API + 'ai_suggest_properties.php', {
+                class_id: activeClassForProps.id,
+                answers: aiSuggestAnswers
+            });
+            if (!data.success) throw new Error(data.error || 'Failed to fetch suggestions');
+            aiSuggestSuggestions = data.properties || [];
+            if (aiSuggestSuggestions.length === 0) throw new Error('AI returned no usable suggestions.');
+            renderAiSuggestions();
+            setAiStage('suggestions');
+        } catch (err) {
+            document.getElementById('aiErrorMessage').textContent = err.message;
+            setAiStage('error');
+        }
+    } else if (aiSuggestStage === 'suggestions') {
+        await applyAiSuggestions();
+    }
+}
+
+function renderAiSuggestions() {
+    const list = document.getElementById('aiSuggestionsList');
+    list.innerHTML = aiSuggestSuggestions.map((p, i) => {
+        const meta = [];
+        meta.push(`type: <strong>${escapeHtml(p.property_type)}</strong>`);
+        if (p.is_required) meta.push('<span style="color: #be185d; font-weight: 500;">required</span>');
+        if (p.property_type === 'dropdown' && p.options) meta.push(`${p.options.length} options`);
+        if (p.property_type === 'object_ref' && p.target_class_hint) meta.push(`refers to ~ <em>${escapeHtml(p.target_class_hint)}</em>`);
+        return `
+            <label class="ai-suggestion" for="aiSug_${i}">
+                <input type="checkbox" id="aiSug_${i}" data-idx="${i}" checked>
+                <div class="sug-body">
+                    <div class="sug-head">
+                        <span class="sug-label">${escapeHtml(p.label)}</span>
+                        <span class="sug-key">${escapeHtml(p.property_key)}</span>
+                    </div>
+                    ${p.why ? `<div class="sug-why">${escapeHtml(p.why)}</div>` : ''}
+                    <div class="sug-meta">${meta.join(' · ')}</div>
+                </div>
+            </label>
+        `;
+    }).join('');
+}
+
+async function applyAiSuggestions() {
+    const checked = Array.from(document.querySelectorAll('#aiSuggestionsList input[type="checkbox"]:checked'))
+        .map(cb => parseInt(cb.dataset.idx, 10));
+    if (checked.length === 0) {
+        showInlineToast('Select at least one property to add', true);
+        return;
+    }
+
+    document.getElementById('aiSuggestPrimaryBtn').disabled = true;
+    document.getElementById('aiSuggestPrimaryBtn').textContent = 'Adding…';
+
+    let added = 0, failed = 0;
+    const failures = [];
+
+    // object_ref suggestions need the analyst to pick a target class — skip those
+    // for the bulk-add and tell them to add manually. Keeps this flow simple.
+    for (const idx of checked) {
+        const s = aiSuggestSuggestions[idx];
+        if (s.property_type === 'object_ref') {
+            failed++;
+            failures.push(`${s.label} (object reference — add manually so you can pick the target class)`);
+            continue;
+        }
+        try {
+            const payload = {
+                class_id: activeClassForProps.id,
+                label: s.label,
+                property_key: s.property_key,
+                property_type: s.property_type,
+                target_class_id: null,
+                is_required: !!s.is_required,
+                display_order: 0,
+                options: s.property_type === 'dropdown' ? (s.options || []) : []
+            };
+            const data = await postJson(API + 'save_class_property.php', payload);
+            if (data.success) added++;
+            else { failed++; failures.push(`${s.label} (${data.error || 'failed'})`); }
+        } catch (err) {
+            failed++;
+            failures.push(`${s.label} (${err.message})`);
+        }
+    }
+
+    if (added > 0) showInlineToast(`Added ${added} ${added === 1 ? 'property' : 'properties'}`);
+    if (failed > 0) {
+        const detail = failures.slice(0, 3).join('\n');
+        const more = failures.length > 3 ? `\n…and ${failures.length - 3} more` : '';
+        showInlineToast(`${failed} not added:\n${detail}${more}`, true);
+    }
+
+    closeAiSuggestModal();
+    loadPropsForClass();
+}
+
 // ---------- Init ----------
 
 document.addEventListener('DOMContentLoaded', () => {
