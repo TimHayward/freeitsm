@@ -12,6 +12,7 @@ When publishing to the website, move entries from **Unpublished** to the **Publi
 
 | ID  | Module            | Type        | Description |
 |-----|-------------------|-------------|-------------|
+| 202 | Contracts         | Improvement | **Suppliers screen now mirrors the contracts dashboard layout** — left sidebar + full-width table on the right, using the same `section-card` table styling (font sizes, header treatment, hover rows) as the Contracts page so the two screens feel like one app rather than two. The sidebar leads with an **Overview** block: an *All Suppliers* total at the top, then the supplier base broken down by **supplier type** with each type as a sub-heading and that type's count split across each status it has suppliers in (e.g. *Software vendor → Active 4, Pending 1*). Uncategorised / no-status groups sort to the end so they don't drown out the real categories. The *Add* button moved out of the table header into the sidebar as the primary amber CTA, matching the *+ New Contract* placement on the dashboard. No API changes — the existing `get_suppliers.php` already returns `supplier_type_name` and `supplier_status_name`, so the breakdown is computed client-side as the list loads |
 
 ---
 
