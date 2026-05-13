@@ -122,6 +122,8 @@ $path_prefix = '../../';
         }
         .section-card table tr:last-child td { border-bottom: none; }
         .section-card table tr:hover { background: #fafafa; }
+        .section-card table td a { color: #b45309; text-decoration: none; }
+        .section-card table td a:hover { color: #d97706; text-decoration: underline; }
 
         .empty-state { text-align: center; padding: 40px; color: #999; }
 
@@ -337,7 +339,7 @@ $path_prefix = '../../';
                 <tr>
                     <td><strong>${escapeHtml(c.first_name + ' ' + c.surname)}</strong></td>
                     <td>${escapeHtml(c.job_title || '-')}</td>
-                    <td>${escapeHtml(c.email || '-')}</td>
+                    <td>${c.email ? `<a href="mailto:${escapeHtml(c.email)}">${escapeHtml(c.email)}</a>` : '-'}</td>
                     <td>${escapeHtml(c.mobile || '-')}</td>
                     <td>${escapeHtml(c.supplier_name || '-')}</td>
                     <td><span class="status-badge ${c.is_active ? 'active' : 'inactive'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
