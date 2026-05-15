@@ -82,9 +82,16 @@ const PM = (() => {
     function scheduleAutosave() {
         clearTimeout(autosaveTimer);
         autosaveTimer = setTimeout(() => {
-            if (autosaveOn && dirty && currentProcessId && !saveInFlight) {
-                save(true);
+            if (!autosaveOn || !dirty || !currentProcessId || saveInFlight) return;
+            // Don't save during an active drag — save() reloads the canvas via
+            // openProcess(), which would destroy the in-progress drag element
+            // and snap the user's work back to the last-committed state.
+            // Reschedule so the next tick re-checks after the drag ends.
+            if (dragging || groupDragging || laneDragging || connectDrag || rubberBand) {
+                scheduleAutosave();
+                return;
             }
+            save(true);
         }, AUTOSAVE_DEBOUNCE_MS);
     }
 
