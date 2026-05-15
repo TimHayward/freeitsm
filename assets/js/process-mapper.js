@@ -259,6 +259,7 @@ const PM = (() => {
                     color: s.color || '#0078d4',
                     color2: s.color2 || null,
                     lane_id: s.lane_id != null ? +s.lane_id : null,
+                    group_id: s.group_id != null ? +s.group_id : null,
                     el: null
                 }));
                 connectors = (d.data.connectors || []).map(c => ({
@@ -661,8 +662,10 @@ const PM = (() => {
         }
         if (dragging) {
             if (dragging.moved) {
-                // After a step drag, auto-assign lane_id for each moved step.
-                reassignStepLanes([...selectedStepIds]);
+                // After a step drag, auto-assign lane_id and group_id for each moved step.
+                const movedIds = [...selectedStepIds];
+                reassignStepLanes(movedIds);
+                reassignStepGroups(movedIds);
                 markDirty();
             }
             dragging = null;
@@ -831,11 +834,15 @@ const PM = (() => {
             color: colors[type] || '#0078d4',
             color2: null,
             lane_id: null,
+            group_id: null,
             el: null
         };
         // If the new step lands inside a lane band, assign that lane immediately.
         const containingLane = laneAtY(step.y + step.height / 2);
         if (containingLane) step.lane_id = laneRef(containingLane);
+        // Same for groups — smallest group wins for overlapping rectangles.
+        const containingGroup = groupAtPoint(step.x + step.width / 2, step.y + step.height / 2);
+        if (containingGroup) step.group_id = groupRef(containingGroup);
 
         steps.push(step);
         step.el = createStepEl(step);
@@ -939,6 +946,44 @@ const PM = (() => {
         return groups.find(g => g.id == id || g.tempId == id);
     }
 
+    function groupRef(group) {
+        return group.id != null ? group.id : group.tempId;
+    }
+
+    // Find the smallest group whose rectangle contains the point (x, y). Smallest
+    // wins when groups overlap, on the theory that nested-looking groups should
+    // claim contents in favour of the surrounding one.
+    function groupAtPoint(x, y) {
+        const candidates = groups.filter(g =>
+            x >= g.x && x <= g.x + g.width &&
+            y >= g.y && y <= g.y + g.height
+        );
+        if (!candidates.length) return null;
+        candidates.sort((a, b) => (a.width * a.height) - (b.width * b.height));
+        return candidates[0];
+    }
+
+    // Tag every step with the group_id derived from where its centre currently
+    // sits. Run at the start of a group drag and after step drags so the
+    // step→group membership stays in sync with visual position.
+    function autoAssignAllStepGroups() {
+        steps.forEach(s => {
+            const g = groupAtPoint(s.x + s.width / 2, s.y + s.height / 2);
+            const newGroupId = g ? groupRef(g) : null;
+            if (s.group_id != newGroupId) s.group_id = newGroupId;
+        });
+    }
+
+    function reassignStepGroups(stepIds) {
+        stepIds.forEach(sid => {
+            const s = getStep(sid);
+            if (!s) return;
+            const g = groupAtPoint(s.x + s.width / 2, s.y + s.height / 2);
+            const newGroupId = g ? groupRef(g) : null;
+            if (s.group_id != newGroupId) s.group_id = newGroupId;
+        });
+    }
+
     function selectGroup(g) {
         // Group selection is exclusive — clear step + connector selection.
         selectedStepIds.clear();
@@ -955,11 +1000,15 @@ const PM = (() => {
         const isResize = e.target.classList.contains('pm-group-resize');
         e.stopPropagation();
         e.preventDefault();
+        // Tag every visually-inside-a-group step with this group's id BEFORE we
+        // start moving so the move loop can carry them along by their persisted
+        // group_id. Catches pre-existing steps that were never officially tagged.
+        autoAssignAllStepGroups();
         selectGroup(group);
 
         groupDragging = isResize
-            ? { id: group.id || group.tempId, mode: 'resize', startMouseX: e.clientX, startMouseY: e.clientY, startW: group.width, startH: group.height, moved: false }
-            : { id: group.id || group.tempId, mode: 'move',   startMouseX: e.clientX, startMouseY: e.clientY, startX: group.x, startY: group.y,         moved: false };
+            ? { id: groupRef(group), mode: 'resize', startMouseX: e.clientX, startMouseY: e.clientY, startW: group.width, startH: group.height, moved: false }
+            : { id: groupRef(group), mode: 'move',   startMouseX: e.clientX, startMouseY: e.clientY, startX: group.x, startY: group.y,         moved: false };
     }
 
     function onGroupDocMouseMove(e) {
@@ -970,8 +1019,26 @@ const PM = (() => {
         const dy = e.clientY - groupDragging.startMouseY;
         if (Math.abs(dx) + Math.abs(dy) > 2) groupDragging.moved = true;
         if (groupDragging.mode === 'move') {
+            // Capture before/after group position to compute per-frame delta to
+            // apply to contained steps (they ride along with the group).
+            const oldX = g.x, oldY = g.y;
             g.x = Math.max(0, snap(groupDragging.startX + dx));
             g.y = Math.max(0, snap(groupDragging.startY + dy));
+            const actualDx = g.x - oldX;
+            const actualDy = g.y - oldY;
+            if (actualDx !== 0 || actualDy !== 0) {
+                steps.forEach(s => {
+                    if (s.group_id != null && s.group_id == groupDragging.id) {
+                        s.x = Math.max(0, snap(s.x + actualDx));
+                        s.y = Math.max(0, snap(s.y + actualDy));
+                        if (s.el) {
+                            s.el.style.left = s.x + 'px';
+                            s.el.style.top  = s.y + 'px';
+                        }
+                    }
+                });
+                renderConnectors();
+            }
         } else {
             g.width  = Math.max(80, snap(groupDragging.startW + dx));
             g.height = Math.max(60, snap(groupDragging.startH + dy));
@@ -988,7 +1055,22 @@ const PM = (() => {
 
     function onGroupDocMouseUp() {
         if (!groupDragging) return;
-        if (groupDragging.moved) markDirty();
+        if (groupDragging.moved) {
+            // Steps that came along with a moved group may have entered new lane
+            // bands; re-evaluate their lane_id from their new positions.
+            const carriedStepIds = steps
+                .filter(s => s.group_id != null && s.group_id == groupDragging.id)
+                .map(s => s.id || s.tempId);
+            if (groupDragging.mode === 'move' && carriedStepIds.length) {
+                reassignStepLanes(carriedStepIds);
+            }
+            // Resize can pull steps outside the group's rectangle, so re-evaluate
+            // group_id for every step (cheap; idempotent).
+            if (groupDragging.mode === 'resize') {
+                autoAssignAllStepGroups();
+            }
+            markDirty();
+        }
         groupDragging = null;
     }
 
@@ -1478,7 +1560,11 @@ const PM = (() => {
         if (selectedGroupId) {
             const g = getGroup(selectedGroupId);
             if (g && g.el) g.el.remove();
-            groups = groups.filter(gr => (gr.id || gr.tempId) != selectedGroupId);
+            // Steps that belonged to this group lose their group assignment but keep their position.
+            steps.forEach(s => {
+                if (s.group_id != null && s.group_id == selectedGroupId) s.group_id = null;
+            });
+            groups = groups.filter(gr => groupRef(gr) != selectedGroupId);
             selectedGroupId = null;
             closeDetail();
             markDirty();
@@ -1716,7 +1802,8 @@ const PM = (() => {
                 height: s.height,
                 color: s.color,
                 color2: s.color2 || null,
-                lane_id: s.lane_id != null ? s.lane_id : null
+                lane_id: s.lane_id != null ? s.lane_id : null,
+                group_id: s.group_id != null ? s.group_id : null
             })),
             connectors: connectors.map(c => ({
                 id: c.id || null,
@@ -1726,6 +1813,7 @@ const PM = (() => {
             })),
             groups: groups.map(g => ({
                 id: g.id || null,
+                tempId: g.tempId || null,
                 label: g.label,
                 color: g.color,
                 color2: g.color2 || null,

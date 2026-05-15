@@ -1917,9 +1917,11 @@ CREATE TABLE IF NOT EXISTS `process_steps` (
     `color`             VARCHAR(20) NULL DEFAULT '#0078d4',
     `color2`            VARCHAR(20) NULL,
     `lane_id`           INT NULL,
+    `group_id`          INT NULL,
     PRIMARY KEY (`id`),
     KEY `idx_ps_process` (`process_id`),
-    KEY `idx_ps_lane` (`lane_id`)
+    KEY `idx_ps_lane` (`lane_id`),
+    KEY `idx_ps_group` (`group_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `process_connectors` (

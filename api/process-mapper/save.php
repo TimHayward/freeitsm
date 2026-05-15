@@ -68,17 +68,39 @@ try {
         $laneIdMap[$oldLaneRef] = (int)$conn->lastInsertId();
     }
 
-    // Map old step IDs/tempIds to new real IDs
+    // Insert groups BEFORE steps so we can map old IDs/tempIds -> real IDs for step.group_id.
+    $groupIdMap = [];
+    $groupInsert = $conn->prepare("INSERT INTO process_groups (process_id, label, color, color2, x, y, width, height) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    foreach ($groups as $gi => $g) {
+        $oldGroupRef = $g['id'] ?? ($g['tempId'] ?? "_idx_$gi");
+        $gColor2 = $g['color2'] ?? null;
+        if ($gColor2 === '') $gColor2 = null;
+        $groupInsert->execute([
+            $id,
+            $g['label'] ?? '',
+            $g['color'] ?? '#e3f2fd',
+            $gColor2,
+            (int)($g['x'] ?? 0),
+            (int)($g['y'] ?? 0),
+            (int)($g['width'] ?? 240),
+            (int)($g['height'] ?? 160),
+        ]);
+        $groupIdMap[$oldGroupRef] = (int)$conn->lastInsertId();
+    }
+
+    // Map old step IDs/tempIds to new real IDs. Steps reference lanes via lane_id
+    // and groups via group_id; both refs are translated through the maps above.
     $idMap = [];
-    $stepInsert = $conn->prepare("INSERT INTO process_steps (process_id, type, label, description, x, y, width, height, color, color2, lane_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stepInsert = $conn->prepare("INSERT INTO process_steps (process_id, type, label, description, x, y, width, height, color, color2, lane_id, group_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
     foreach ($steps as $i => $s) {
         $oldId = $s['id'] ?? ($s['tempId'] ?? $i);
         $color2 = $s['color2'] ?? null;
         if ($color2 === '') $color2 = null;
-        // Translate frontend lane_id (real or tempId) into the persisted lane id.
         $laneRef = $s['lane_id'] ?? null;
         $laneId = ($laneRef !== null && isset($laneIdMap[$laneRef])) ? $laneIdMap[$laneRef] : null;
+        $groupRef = $s['group_id'] ?? null;
+        $groupId = ($groupRef !== null && isset($groupIdMap[$groupRef])) ? $groupIdMap[$groupRef] : null;
         $stepInsert->execute([
             $id,
             $s['type'] ?? 'process',
@@ -91,6 +113,7 @@ try {
             $s['color'] ?? '#0078d4',
             $color2,
             $laneId,
+            $groupId,
         ]);
         $idMap[$oldId] = (int)$conn->lastInsertId();
     }
@@ -105,23 +128,6 @@ try {
         if ($fromNew && $toNew) {
             $connInsert->execute([$id, $fromNew, $toNew, $c['label'] ?? '']);
         }
-    }
-
-    // Insert groups (pure visual underlays — no FK relationship to steps)
-    $groupInsert = $conn->prepare("INSERT INTO process_groups (process_id, label, color, color2, x, y, width, height) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    foreach ($groups as $g) {
-        $gColor2 = $g['color2'] ?? null;
-        if ($gColor2 === '') $gColor2 = null;
-        $groupInsert->execute([
-            $id,
-            $g['label'] ?? '',
-            $g['color'] ?? '#e3f2fd',
-            $gColor2,
-            (int)($g['x'] ?? 0),
-            (int)($g['y'] ?? 0),
-            (int)($g['width'] ?? 240),
-            (int)($g['height'] ?? 160),
-        ]);
     }
 
     $conn->commit();

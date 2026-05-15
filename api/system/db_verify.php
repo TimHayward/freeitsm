@@ -923,6 +923,7 @@ $schema = [
         'color'             => "VARCHAR(20) NULL DEFAULT '#0078d4'",
         'color2'            => 'VARCHAR(20) NULL',
         'lane_id'           => 'INT NULL',
+        'group_id'          => 'INT NULL',
     ],
 
     'process_connectors' => [
