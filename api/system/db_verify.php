@@ -921,6 +921,7 @@ $schema = [
         'width'             => 'INT NOT NULL DEFAULT 160',
         'height'            => 'INT NOT NULL DEFAULT 80',
         'color'             => "VARCHAR(20) NULL DEFAULT '#0078d4'",
+        'color2'            => 'VARCHAR(20) NULL',
     ],
 
     'process_connectors' => [
@@ -936,6 +937,7 @@ $schema = [
         'process_id'        => 'INT NOT NULL',
         'label'             => "VARCHAR(100) NULL DEFAULT ''",
         'color'             => "VARCHAR(20) NULL DEFAULT '#e3f2fd'",
+        'color2'            => 'VARCHAR(20) NULL',
         'x'                 => 'INT NOT NULL DEFAULT 0',
         'y'                 => 'INT NOT NULL DEFAULT 0',
         'width'             => 'INT NOT NULL DEFAULT 240',

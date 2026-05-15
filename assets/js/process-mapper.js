@@ -253,6 +253,7 @@ const PM = (() => {
                     width: +s.width,
                     height: +s.height,
                     color: s.color || '#0078d4',
+                    color2: s.color2 || null,
                     el: null
                 }));
                 connectors = (d.data.connectors || []).map(c => ({
@@ -265,6 +266,7 @@ const PM = (() => {
                     id: g.id,
                     label: g.label || '',
                     color: g.color || '#e3f2fd',
+                    color2: g.color2 || null,
                     x: +g.x,
                     y: +g.y,
                     width: +g.width,
@@ -309,7 +311,7 @@ const PM = (() => {
         el.style.top = step.y + 'px';
         el.style.width = step.width + 'px';
         el.style.height = step.height + 'px';
-        el.style.background = step.color;
+        el.style.background = fillStyle(step.color, step.color2);
         el.textContent = step.label || '(unnamed)';
 
         // Edge handles for connectors
@@ -867,11 +869,20 @@ const PM = (() => {
         el.style.top    = group.y + 'px';
         el.style.width  = group.width + 'px';
         el.style.height = group.height + 'px';
-        el.style.background = group.color;
-        // Slightly darker border derived from background fill.
+        el.style.background = fillStyle(group.color, group.color2);
+        // Border darkens the primary fill — keeps the outline visible against
+        // both solid and gradient backgrounds without having to recompute per stop.
         el.style.borderColor = shade(group.color, -25);
         const labelEl = el.querySelector('.pm-group-label');
         if (labelEl) labelEl.textContent = group.label || '';
+    }
+
+    // Returns the right CSS background string: gradient when color2 is set, otherwise solid.
+    function fillStyle(color, color2) {
+        if (color2 && color2 !== '') {
+            return `linear-gradient(135deg, ${color}, ${color2})`;
+        }
+        return color;
     }
 
     // Light/darken a #rrggbb colour by `amt` units per channel (negative = darker).
@@ -954,6 +965,12 @@ const PM = (() => {
         document.getElementById('detailGroupY').value = g.y;
         document.getElementById('detailGroupW').value = g.width;
         document.getElementById('detailGroupH').value = g.height;
+        const useGrad = !!g.color2;
+        const gradCb = document.getElementById('detailGroupGradient');
+        const grad2  = document.getElementById('detailGroupColor2');
+        gradCb.checked = useGrad;
+        grad2.value = g.color2 || shade(g.color || '#e3f2fd', -40);
+        grad2.style.display = useGrad ? '' : 'none';
         detailPanel.dataset.groupId = g.id || g.tempId;
         detailPanel.dataset.stepId = '';
     }
@@ -969,6 +986,12 @@ const PM = (() => {
         g.y      = parseInt(document.getElementById('detailGroupY').value, 10) || 0;
         g.width  = Math.max(80, parseInt(document.getElementById('detailGroupW').value, 10) || 240);
         g.height = Math.max(60, parseInt(document.getElementById('detailGroupH').value, 10) || 160);
+
+        const useGrad = document.getElementById('detailGroupGradient').checked;
+        const grad2El = document.getElementById('detailGroupColor2');
+        grad2El.style.display = useGrad ? '' : 'none';
+        g.color2 = useGrad ? grad2El.value : null;
+
         if (g.el) applyGroupStyle(g.el, g);
         markDirty();
     }
@@ -1054,6 +1077,12 @@ const PM = (() => {
         document.getElementById('detailDescription').value = step.description || '';
         document.getElementById('detailX').value = step.x;
         document.getElementById('detailY').value = step.y;
+        const useGrad = !!step.color2;
+        const gradCb = document.getElementById('detailGradient');
+        const grad2  = document.getElementById('detailColor2');
+        gradCb.checked = useGrad;
+        grad2.value = step.color2 || shade(step.color || '#0078d4', -40);
+        grad2.style.display = useGrad ? '' : 'none';
         detailPanel.dataset.stepId = step.id || step.tempId;
 
         // Show connectors related to this step
@@ -1098,6 +1127,11 @@ const PM = (() => {
         step.description = document.getElementById('detailDescription').value;
         step.x = snap(+document.getElementById('detailX').value || 0);
         step.y = snap(+document.getElementById('detailY').value || 0);
+
+        const useGrad = document.getElementById('detailGradient').checked;
+        const grad2El = document.getElementById('detailColor2');
+        grad2El.style.display = useGrad ? '' : 'none';
+        step.color2 = useGrad ? grad2El.value : null;
 
         // Re-render step element
         if (step.el) step.el.remove();
@@ -1210,7 +1244,8 @@ const PM = (() => {
                 y: s.y,
                 width: s.width,
                 height: s.height,
-                color: s.color
+                color: s.color,
+                color2: s.color2 || null
             })),
             connectors: connectors.map(c => ({
                 id: c.id || null,
@@ -1222,6 +1257,7 @@ const PM = (() => {
                 id: g.id || null,
                 label: g.label,
                 color: g.color,
+                color2: g.color2 || null,
                 x: g.x,
                 y: g.y,
                 width: g.width,

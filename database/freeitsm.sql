@@ -1915,6 +1915,7 @@ CREATE TABLE IF NOT EXISTS `process_steps` (
     `width`             INT NOT NULL DEFAULT 160,
     `height`            INT NOT NULL DEFAULT 80,
     `color`             VARCHAR(20) NULL DEFAULT '#0078d4',
+    `color2`            VARCHAR(20) NULL,
     PRIMARY KEY (`id`),
     KEY `idx_ps_process` (`process_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1934,6 +1935,7 @@ CREATE TABLE IF NOT EXISTS `process_groups` (
     `process_id`        INT NOT NULL,
     `label`             VARCHAR(100) NULL DEFAULT '',
     `color`             VARCHAR(20) NULL DEFAULT '#e3f2fd',
+    `color2`            VARCHAR(20) NULL,
     `x`                 INT NOT NULL DEFAULT 0,
     `y`                 INT NOT NULL DEFAULT 0,
     `width`             INT NOT NULL DEFAULT 240,

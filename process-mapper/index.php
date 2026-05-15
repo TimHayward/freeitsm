@@ -117,6 +117,13 @@ $path_prefix = '../';
                 <div class="form-group">
                     <label class="form-label">Colour</label>
                     <input type="color" class="form-input" id="detailColor" value="#0078d4" onchange="PM.updateStepFromDetail()" style="height: 36px; padding: 2px;">
+                    <div class="pm-gradient-row">
+                        <label class="pm-gradient-toggle">
+                            <input type="checkbox" id="detailGradient" onchange="PM.updateStepFromDetail()">
+                            <span>Gradient</span>
+                        </label>
+                        <input type="color" class="form-input pm-gradient-color2" id="detailColor2" value="#003a6b" onchange="PM.updateStepFromDetail()">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Description</label>
@@ -142,6 +149,13 @@ $path_prefix = '../';
                 <div class="form-group">
                     <label class="form-label">Colour</label>
                     <input type="color" class="form-input" id="detailGroupColor" value="#e3f2fd" onchange="PM.updateGroupFromDetail()" style="height: 36px; padding: 2px;">
+                    <div class="pm-gradient-row">
+                        <label class="pm-gradient-toggle">
+                            <input type="checkbox" id="detailGroupGradient" onchange="PM.updateGroupFromDetail()">
+                            <span>Gradient</span>
+                        </label>
+                        <input type="color" class="form-input pm-gradient-color2" id="detailGroupColor2" value="#b3d9f7" onchange="PM.updateGroupFromDetail()">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Position</label>
