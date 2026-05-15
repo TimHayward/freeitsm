@@ -1211,24 +1211,41 @@ const PM = (() => {
         updateSelectionVisuals();
     }
 
-    // Resize lane to `newHeight`, shifting all steps in lanes below by the delta
-    // (so they stay anchored to their own lane band as their bandTop moves).
+    // Resize lane to `newHeight`, shifting all steps and groups in lanes below
+    // by the delta (so they stay anchored to their own lane band as their
+    // bandTop moves). Groups have no persistent lane_id, so we compute their
+    // current lane from their vertical centre before changing anything.
     function resizeLaneTo(lane, newHeight) {
         const delta = newHeight - lane.height;
         if (delta === 0) return;
-        lane.height = Math.max(80, newHeight);
+
+        // Snapshot which groups visually sit in lanes below BEFORE we change the
+        // band heights (otherwise the lookup would be against the new layout).
+        recomputeLaneBandTops();
         const ord = lanesOrdered();
         const myIdx = ord.findIndex(l => laneRef(l) == laneRef(lane));
         const idsBelow = new Set(ord.slice(myIdx + 1).map(l => laneRef(l)));
+        const groupsToShift = groups.filter(g => {
+            const lAt = laneAtY(g.y + g.height / 2);
+            return lAt && idsBelow.has(laneRef(lAt));
+        });
+
+        lane.height = Math.max(80, newHeight);
         steps.forEach(s => {
             if (s.lane_id != null && idsBelow.has(s.lane_id)) {
                 s.y = snap(s.y + delta);
             }
         });
+        groupsToShift.forEach(g => {
+            g.y = snap(g.y + delta);
+            if (g.el) applyGroupStyle(g.el, g);
+        });
     }
 
-    // Reorder lane to display_order = targetOrder. Steps in every affected lane
-    // are shifted so they stay anchored to their lane band.
+    // Reorder lane to display_order = targetOrder. Steps and groups in every
+    // affected lane are shifted so they stay anchored to their lane band.
+    // Groups have no stored lane_id — their lane membership is derived on the
+    // fly from their vertical centre at snapshot time.
     function reorderLaneTo(lane, targetOrder) {
         if (lanes.length < 2) { lane.display_order = 0; return; }
 
@@ -1242,13 +1259,23 @@ const PM = (() => {
             stepYWithinLane.set(s.id || s.tempId, { laneRef: s.lane_id, yWithinLane: s.y - l._bandTop });
         });
 
+        // Same snapshot for groups, derived from each group's vertical centre.
+        // Groups not currently inside any lane stay where they are (no entry).
+        const groupYWithinLane = new Map();
+        groups.forEach(g => {
+            const lAt = laneAtY(g.y + g.height / 2);
+            if (!lAt) return;
+            groupYWithinLane.set(g.id || g.tempId, { laneRef: laneRef(lAt), yWithinLane: g.y - lAt._bandTop });
+        });
+
         // Move dragged lane to its new slot.
         const ord = lanesOrdered().filter(l => laneRef(l) != laneRef(lane));
         const clamped = Math.max(0, Math.min(ord.length, targetOrder));
         ord.splice(clamped, 0, lane);
         ord.forEach((l, i) => { l.display_order = i; });
 
-        // Recompute bandTops and reapply each step's offset against its lane's new bandTop.
+        // Recompute bandTops and reapply each step's + group's offset against
+        // its lane's new bandTop.
         recomputeLaneBandTops();
         steps.forEach(s => {
             const meta = stepYWithinLane.get(s.id || s.tempId);
@@ -1256,6 +1283,14 @@ const PM = (() => {
             const l = getLane(meta.laneRef);
             if (!l) return;
             s.y = snap(l._bandTop + meta.yWithinLane);
+        });
+        groups.forEach(g => {
+            const meta = groupYWithinLane.get(g.id || g.tempId);
+            if (!meta) return;
+            const l = getLane(meta.laneRef);
+            if (!l) return;
+            g.y = snap(l._bandTop + meta.yWithinLane);
+            if (g.el) applyGroupStyle(g.el, g);
         });
     }
 
@@ -1390,15 +1425,25 @@ const PM = (() => {
         steps.forEach(s => {
             if (s.lane_id != null && s.lane_id == selectedLaneId) s.lane_id = null;
         });
-        // Lanes below shift up by the deleted lane's height — steps in those lanes follow.
+        // Lanes below shift up by the deleted lane's height — steps and groups
+        // in those lanes follow so they stay anchored to their bands.
+        recomputeLaneBandTops();
         const ord = lanesOrdered();
         const myIdx = ord.findIndex(l => laneRef(l) == selectedLaneId);
         const idsBelow = new Set(ord.slice(myIdx + 1).map(l => laneRef(l)));
         const shift = -lane.height;
+        const groupsToShift = groups.filter(g => {
+            const lAt = laneAtY(g.y + g.height / 2);
+            return lAt && idsBelow.has(laneRef(lAt));
+        });
         steps.forEach(s => {
             if (s.lane_id != null && idsBelow.has(s.lane_id)) {
                 s.y = snap(s.y + shift);
             }
+        });
+        groupsToShift.forEach(g => {
+            g.y = snap(g.y + shift);
+            if (g.el) applyGroupStyle(g.el, g);
         });
         // Remove the lane and renumber display_order
         lanes = lanes.filter(l => laneRef(l) != selectedLaneId);
