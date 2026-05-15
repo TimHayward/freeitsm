@@ -245,6 +245,12 @@
     overflow: auto;
     cursor: default;
     outline: none;
+    /* isolation: isolate promotes the canvas to a stacking-context root so that
+       lane elements positioned at z-index: -1 paint ABOVE the canvas's own dot
+       grid background (and below z>=0 siblings like groups and steps). Without
+       this, negative-z children paint behind the canvas background entirely
+       and lanes are invisible. */
+    isolation: isolate;
     background-color: #fafafa;
     background-image: radial-gradient(circle, #ccc 1px, transparent 1px);
     background-size: 20px 20px;
