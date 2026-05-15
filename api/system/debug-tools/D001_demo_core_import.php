@@ -393,6 +393,9 @@ if (!file_exists($importPath)) {
     $liveOut[] = "";
 
     // Custom error handler captures PHP warnings/notices emitted by the import.
+    // Severity map deliberately excludes E_STRICT — the constant is deprecated
+    // in PHP 8.4+, and referencing it inside the handler would itself emit a
+    // DEPRECATED notice that re-entrantly falls through to the default handler.
     $captured = [];
     set_error_handler(function($severity, $message, $file, $line) use (&$captured) {
         // Expected noise when re-including a script that calls session_start /
@@ -400,15 +403,33 @@ if (!file_exists($importPath)) {
         if (stripos($message, 'headers already sent') !== false) return true;
         if (stripos($message, 'session has already been started') !== false) return true;
         if (stripos($message, 'Cannot change session') !== false) return true;
-        $sevName = [
-            E_ERROR => 'ERROR', E_WARNING => 'WARNING', E_NOTICE => 'NOTICE',
-            E_USER_ERROR => 'USER_ERROR', E_USER_WARNING => 'USER_WARNING',
-            E_USER_NOTICE => 'USER_NOTICE', E_DEPRECATED => 'DEPRECATED',
-            E_USER_DEPRECATED => 'USER_DEPRECATED', E_STRICT => 'STRICT',
-        ][$severity] ?? "SEV{$severity}";
+        $sevMap = [
+            E_ERROR             => 'ERROR',
+            E_WARNING           => 'WARNING',
+            E_PARSE             => 'PARSE',
+            E_NOTICE            => 'NOTICE',
+            E_CORE_ERROR        => 'CORE_ERROR',
+            E_CORE_WARNING      => 'CORE_WARNING',
+            E_COMPILE_ERROR     => 'COMPILE_ERROR',
+            E_COMPILE_WARNING   => 'COMPILE_WARNING',
+            E_USER_ERROR        => 'USER_ERROR',
+            E_USER_WARNING      => 'USER_WARNING',
+            E_USER_NOTICE       => 'USER_NOTICE',
+            E_RECOVERABLE_ERROR => 'RECOVERABLE',
+            E_DEPRECATED        => 'DEPRECATED',
+            E_USER_DEPRECATED   => 'USER_DEPRECATED',
+        ];
+        $sevName = $sevMap[$severity] ?? "SEV{$severity}";
         $captured[] = "[{$sevName}] {$message} in " . basename($file) . ":{$line}";
         return true;
     });
+
+    // The import script uses relative includes (require_once '../../config.php')
+    // resolved against CWD. Apache sets CWD to the script's directory when serving
+    // it directly; we have to replicate that or the require fails. Restore CWD
+    // afterwards so nothing else in this request is affected.
+    $oldCwd = getcwd();
+    @chdir(dirname($importPath));
 
     $_POST['module'] = 'core';
     $exceptionMsg = null;
@@ -419,6 +440,8 @@ if (!file_exists($importPath)) {
         $exceptionMsg = get_class($e) . ': ' . $e->getMessage() . ' at ' . basename($e->getFile()) . ':' . $e->getLine();
     }
     $response = ob_get_clean();
+
+    @chdir($oldCwd);
     restore_error_handler();
 
     $liveOut[] = "Raw response from import_demo_data.php:";
