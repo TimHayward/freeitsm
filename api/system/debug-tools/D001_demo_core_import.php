@@ -30,7 +30,7 @@ function safe_size($path) {
     $sz = @filesize($path);
     return $sz === false ? 'unknown' : ($sz . ' bytes');
 }
-function redact_row($row, $redactCols = ['password_hash', 'totp_secret']) {
+function redact_row($row, $redactCols = ['password_hash', 'totp_secret', 'username', 'email', 'full_name', 'display_name', 'preferred_name']) {
     if (!is_array($row)) return $row;
     foreach ($redactCols as $c) {
         if (array_key_exists($c, $row) && $row[$c] !== null && $row[$c] !== '') {
@@ -137,7 +137,7 @@ try {
 $cfg[] = "config.php include      : " . ($includeOk ? 'OK' : 'NOT ATTEMPTED');
 $cfg[] = "DB_SERVER defined       : " . bool_str(defined('DB_SERVER'))   . (defined('DB_SERVER')   ? ' = ' . DB_SERVER : '');
 $cfg[] = "DB_NAME defined         : " . bool_str(defined('DB_NAME'))     . (defined('DB_NAME')     ? ' = ' . DB_NAME : '');
-$cfg[] = "DB_USERNAME defined     : " . bool_str(defined('DB_USERNAME')) . (defined('DB_USERNAME') ? ' = ' . DB_USERNAME : '');
+$cfg[] = "DB_USERNAME defined     : " . bool_str(defined('DB_USERNAME')) . (defined('DB_USERNAME') ? ' (value redacted, length=' . strlen(DB_USERNAME) . ')' : '');
 $cfg[] = "DB_PASSWORD defined     : " . bool_str(defined('DB_PASSWORD')) . (defined('DB_PASSWORD') ? ' (value redacted, length=' . strlen(DB_PASSWORD) . ')' : '');
 addSection($sections, "CONFIG", $cfg);
 
