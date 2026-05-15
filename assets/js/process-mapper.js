@@ -19,8 +19,11 @@ const PM = (() => {
     let currentProcessId = null;
     let steps = [];          // { id, tempId, type, label, description, x, y, width, height, color, el }
     let connectors = [];     // { id, tempId, fromId, toId, label }
+    let groups = [];         // { id, tempId, label, color, x, y, width, height, el } — visual underlay only
     let selectedStepIds = new Set();
     let selectedConnectorId = null;
+    let selectedGroupId = null;
+    let groupDragging = null;  // { id, mode: 'move'|'resize', offsetX, offsetY, startW, startH }
     let nextTempId = -1;
     let dirty = false;
 
@@ -258,6 +261,16 @@ const PM = (() => {
                     toId: +c.to_step_id,
                     label: c.label || ''
                 }));
+                groups = (d.data.groups || []).map(g => ({
+                    id: g.id,
+                    label: g.label || '',
+                    color: g.color || '#e3f2fd',
+                    x: +g.x,
+                    y: +g.y,
+                    width: +g.width,
+                    height: +g.height,
+                    el: null
+                }));
                 dirty = false;
                 canvasEmpty.style.display = 'none';
                 renderAll();
@@ -272,9 +285,14 @@ const PM = (() => {
     //  Render
     // =========================================================
     function renderAll() {
-        // Remove old step elements
+        // Remove old elements
         canvas.querySelectorAll('.pm-step').forEach(el => el.remove());
-        // Render steps
+        canvas.querySelectorAll('.pm-group').forEach(el => el.remove());
+        // Groups first so they sit behind steps + connectors (CSS z-index handles the rest)
+        groups.forEach(g => {
+            g.el = createGroupEl(g);
+            canvas.appendChild(g.el);
+        });
         steps.forEach(s => {
             s.el = createStepEl(s);
             canvas.appendChild(s.el);
@@ -539,6 +557,11 @@ const PM = (() => {
     }
 
     function onDocMouseMove(e) {
+        // Dragging or resizing a group
+        if (groupDragging) {
+            onGroupDocMouseMove(e);
+            return;
+        }
         // Dragging step(s)
         if (dragging) {
             dragging.moved = true;
@@ -602,6 +625,10 @@ const PM = (() => {
     }
 
     function onDocMouseUp(e) {
+        if (groupDragging) {
+            onGroupDocMouseUp();
+            return;
+        }
         if (dragging) {
             if (dragging.moved) markDirty();
             dragging = null;
@@ -660,6 +687,7 @@ const PM = (() => {
             if (!rubberBand) {
                 selectedStepIds.clear();
                 selectedConnectorId = null;
+                selectedGroupId = null;
                 updateSelectionVisuals();
                 closeDetail();
             }
@@ -781,6 +809,170 @@ const PM = (() => {
         markDirty();
     }
 
+    // =========================================================
+    //  Groups (visual underlays)
+    // =========================================================
+
+    function addGroup() {
+        if (!currentProcessId) { toast('Open or create a process first', 'error'); return; }
+        const tempId = nextTempId--;
+        const w = 240, h = 160;
+        const x = snap(canvas.scrollLeft + canvas.clientWidth / 2 - w / 2);
+        const y = snap(canvas.scrollTop + canvas.clientHeight / 2 - h / 2);
+        const group = {
+            tempId,
+            label: '',
+            color: '#e3f2fd',
+            x, y, width: w, height: h,
+            el: null
+        };
+        groups.push(group);
+        group.el = createGroupEl(group);
+        canvas.appendChild(group.el);
+        canvasEmpty.style.display = 'none';
+        selectGroup(group);
+        markDirty();
+    }
+
+    function createGroupEl(group) {
+        const el = document.createElement('div');
+        el.className = 'pm-group';
+        el.dataset.groupId = group.id || group.tempId;
+        applyGroupStyle(el, group);
+
+        // Label across the top
+        const label = document.createElement('div');
+        label.className = 'pm-group-label';
+        label.textContent = group.label || '';
+        el.appendChild(label);
+
+        // Resize handle (bottom-right corner)
+        const handle = document.createElement('div');
+        handle.className = 'pm-group-resize';
+        el.appendChild(handle);
+
+        el.addEventListener('mousedown', e => onGroupMouseDown(e, group));
+        el.addEventListener('dblclick', e => {
+            // Quick-rename: focus the detail panel label input
+            e.stopPropagation();
+            selectGroup(group);
+            const input = document.getElementById('detailGroupLabel');
+            if (input) { input.focus(); input.select(); }
+        });
+        return el;
+    }
+
+    function applyGroupStyle(el, group) {
+        el.style.left   = group.x + 'px';
+        el.style.top    = group.y + 'px';
+        el.style.width  = group.width + 'px';
+        el.style.height = group.height + 'px';
+        el.style.background = group.color;
+        // Slightly darker border derived from background fill.
+        el.style.borderColor = shade(group.color, -25);
+        const labelEl = el.querySelector('.pm-group-label');
+        if (labelEl) labelEl.textContent = group.label || '';
+    }
+
+    // Light/darken a #rrggbb colour by `amt` units per channel (negative = darker).
+    function shade(hex, amt) {
+        if (!/^#[0-9a-f]{6}$/i.test(hex)) return hex;
+        let r = parseInt(hex.slice(1, 3), 16);
+        let g = parseInt(hex.slice(3, 5), 16);
+        let b = parseInt(hex.slice(5, 7), 16);
+        r = Math.max(0, Math.min(255, r + amt));
+        g = Math.max(0, Math.min(255, g + amt));
+        b = Math.max(0, Math.min(255, b + amt));
+        return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+    }
+
+    function getGroup(id) {
+        return groups.find(g => g.id == id || g.tempId == id);
+    }
+
+    function selectGroup(g) {
+        // Group selection is exclusive — clear step + connector selection.
+        selectedStepIds.clear();
+        selectedConnectorId = null;
+        selectedGroupId = g.id || g.tempId;
+        canvas.focus({ preventScroll: true });
+        updateSelectionVisuals();
+        showDetailForGroup(g);
+    }
+
+    function onGroupMouseDown(e, group) {
+        if (e.button !== 0) return;
+        // Resize handle? Start resize. Otherwise move.
+        const isResize = e.target.classList.contains('pm-group-resize');
+        e.stopPropagation();
+        e.preventDefault();
+        selectGroup(group);
+
+        groupDragging = isResize
+            ? { id: group.id || group.tempId, mode: 'resize', startMouseX: e.clientX, startMouseY: e.clientY, startW: group.width, startH: group.height, moved: false }
+            : { id: group.id || group.tempId, mode: 'move',   startMouseX: e.clientX, startMouseY: e.clientY, startX: group.x, startY: group.y,         moved: false };
+    }
+
+    function onGroupDocMouseMove(e) {
+        if (!groupDragging) return;
+        const g = getGroup(groupDragging.id);
+        if (!g) return;
+        const dx = e.clientX - groupDragging.startMouseX;
+        const dy = e.clientY - groupDragging.startMouseY;
+        if (Math.abs(dx) + Math.abs(dy) > 2) groupDragging.moved = true;
+        if (groupDragging.mode === 'move') {
+            g.x = Math.max(0, snap(groupDragging.startX + dx));
+            g.y = Math.max(0, snap(groupDragging.startY + dy));
+        } else {
+            g.width  = Math.max(80, snap(groupDragging.startW + dx));
+            g.height = Math.max(60, snap(groupDragging.startH + dy));
+        }
+        applyGroupStyle(g.el, g);
+        // Reflect into open detail panel so the numeric inputs track the drag.
+        if (selectedGroupId == groupDragging.id) {
+            document.getElementById('detailGroupX').value = g.x;
+            document.getElementById('detailGroupY').value = g.y;
+            document.getElementById('detailGroupW').value = g.width;
+            document.getElementById('detailGroupH').value = g.height;
+        }
+    }
+
+    function onGroupDocMouseUp() {
+        if (!groupDragging) return;
+        if (groupDragging.moved) markDirty();
+        groupDragging = null;
+    }
+
+    function showDetailForGroup(g) {
+        detailPanel.classList.add('open');
+        document.getElementById('detailBodyStep').style.display = 'none';
+        document.getElementById('detailBodyGroup').style.display = '';
+        document.getElementById('detailTitle').textContent = 'Group Details';
+        document.getElementById('detailGroupLabel').value = g.label || '';
+        document.getElementById('detailGroupColor').value = g.color || '#e3f2fd';
+        document.getElementById('detailGroupX').value = g.x;
+        document.getElementById('detailGroupY').value = g.y;
+        document.getElementById('detailGroupW').value = g.width;
+        document.getElementById('detailGroupH').value = g.height;
+        detailPanel.dataset.groupId = g.id || g.tempId;
+        detailPanel.dataset.stepId = '';
+    }
+
+    function updateGroupFromDetail() {
+        const id = detailPanel.dataset.groupId;
+        if (!id) return;
+        const g = getGroup(id);
+        if (!g) return;
+        g.label  = document.getElementById('detailGroupLabel').value;
+        g.color  = document.getElementById('detailGroupColor').value;
+        g.x      = parseInt(document.getElementById('detailGroupX').value, 10) || 0;
+        g.y      = parseInt(document.getElementById('detailGroupY').value, 10) || 0;
+        g.width  = Math.max(80, parseInt(document.getElementById('detailGroupW').value, 10) || 240);
+        g.height = Math.max(60, parseInt(document.getElementById('detailGroupH').value, 10) || 160);
+        if (g.el) applyGroupStyle(g.el, g);
+        markDirty();
+    }
+
     function addConnector(fromId, toId) {
         // Check for duplicate
         const exists = connectors.some(c =>
@@ -796,6 +988,15 @@ const PM = (() => {
     }
 
     function deleteSelected() {
+        if (selectedGroupId) {
+            const g = getGroup(selectedGroupId);
+            if (g && g.el) g.el.remove();
+            groups = groups.filter(gr => (gr.id || gr.tempId) != selectedGroupId);
+            selectedGroupId = null;
+            closeDetail();
+            markDirty();
+            return;
+        }
         if (selectedConnectorId) {
             connectors = connectors.filter(c => (c.id || c.tempId) != selectedConnectorId);
             selectedConnectorId = null;
@@ -827,6 +1028,9 @@ const PM = (() => {
         canvas.querySelectorAll('.pm-step').forEach(el => {
             const sid = el.dataset.stepId;
             el.classList.toggle('selected', selectedStepIds.has(+sid) || selectedStepIds.has(parseInt(sid)));
+        });
+        canvas.querySelectorAll('.pm-group').forEach(el => {
+            el.classList.toggle('selected', el.dataset.groupId == selectedGroupId);
         });
         renderConnectors();
     }
@@ -876,6 +1080,10 @@ const PM = (() => {
     function closeDetail() {
         detailPanel.classList.remove('open');
         detailPanel.dataset.stepId = '';
+        detailPanel.dataset.groupId = '';
+        document.getElementById('detailBodyStep').style.display = '';
+        document.getElementById('detailBodyGroup').style.display = 'none';
+        document.getElementById('detailTitle').textContent = 'Step Details';
     }
 
     function updateStepFromDetail() {
@@ -1009,6 +1217,15 @@ const PM = (() => {
                 from_step_id: c.fromId,
                 to_step_id: c.toId,
                 label: c.label
+            })),
+            groups: groups.map(g => ({
+                id: g.id || null,
+                label: g.label,
+                color: g.color,
+                x: g.x,
+                y: g.y,
+                width: g.width,
+                height: g.height
             }))
         };
 
@@ -1066,11 +1283,14 @@ const PM = (() => {
 
     function clearCanvas() {
         canvas.querySelectorAll('.pm-step').forEach(el => el.remove());
+        canvas.querySelectorAll('.pm-group').forEach(el => el.remove());
         svg.querySelectorAll('.pm-connector-group').forEach(g => g.remove());
         steps = [];
         connectors = [];
+        groups = [];
         selectedStepIds.clear();
         selectedConnectorId = null;
+        selectedGroupId = null;
         dirty = false;
     }
 
@@ -1098,6 +1318,7 @@ const PM = (() => {
         filterProcesses, save, deleteSelected,
         closeDetail, updateStepFromDetail,
         updateConnectorLabel, removeConnector,
-        toggleAutosave
+        toggleAutosave,
+        addGroup, updateGroupFromDetail
     };
 })();

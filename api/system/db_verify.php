@@ -931,6 +931,17 @@ $schema = [
         'label'             => "VARCHAR(255) NULL DEFAULT ''",
     ],
 
+    'process_groups' => [
+        'id'                => 'INT NOT NULL AUTO_INCREMENT',
+        'process_id'        => 'INT NOT NULL',
+        'label'             => "VARCHAR(100) NULL DEFAULT ''",
+        'color'             => "VARCHAR(20) NULL DEFAULT '#e3f2fd'",
+        'x'                 => 'INT NOT NULL DEFAULT 0',
+        'y'                 => 'INT NOT NULL DEFAULT 0',
+        'width'             => 'INT NOT NULL DEFAULT 240',
+        'height'            => 'INT NOT NULL DEFAULT 160',
+    ],
+
     'knowledge_articles' => [
         'id'                    => 'INT NOT NULL AUTO_INCREMENT',
         'title'                 => 'VARCHAR(255) NOT NULL',

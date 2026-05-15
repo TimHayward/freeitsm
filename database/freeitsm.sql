@@ -1929,6 +1929,19 @@ CREATE TABLE IF NOT EXISTS `process_connectors` (
     KEY `idx_pc_process` (`process_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `process_groups` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `process_id`        INT NOT NULL,
+    `label`             VARCHAR(100) NULL DEFAULT '',
+    `color`             VARCHAR(20) NULL DEFAULT '#e3f2fd',
+    `x`                 INT NOT NULL DEFAULT 0,
+    `y`                 INT NOT NULL DEFAULT 0,
+    `width`             INT NOT NULL DEFAULT 240,
+    `height`            INT NOT NULL DEFAULT 160,
+    PRIMARY KEY (`id`),
+    KEY `idx_pg_process` (`process_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ----------------------------------------------------------
 -- System
 -- ----------------------------------------------------------

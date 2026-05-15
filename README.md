@@ -700,6 +700,7 @@ Visual flowchart builder for documenting processes and workflows.
 - **Slide-in detail panel**: Click a step to edit label, type, colour, description, and view/edit its connectors
 - **Save/load**: Full persistence with sidebar listing all saved processes
 - **Autosave**: Optional toolbar toggle that debounces a save ~2s after the last edit. Live Word-style status indicator beside the toggle cycles through `✓ Saved` / `Unsaved` / `Saving…` / `⚠ Save failed — retry`. Toggle state persists per-analyst via `user_preferences` (key: `process_mapper_autosave`). The manual Save button still works regardless of toggle state.
+- **Groups**: Optional labelled coloured rectangles that sit behind steps as a visual underlay — useful for marking a phase ("Resolution", "Triage"), a team's area of responsibility, or any free-form cluster. Click `Group` in the toolbar to drop one at the canvas centre, drag to move, drag the corner handle to resize, double-click to rename. No relationship to steps in the data model — steps just happen to sit on top. Persisted in the `process_groups` table (id, process_id, label, color, x, y, width, height).
 
 ### Tasks (`tasks/`)
 Kanban-style task management with board and list views for tracking internal work.

@@ -60,6 +60,10 @@ $path_prefix = '../';
                         <svg width="18" height="18" viewBox="0 0 18 18"><line x1="3" y1="15" x2="15" y2="3" stroke="currentColor" stroke-width="1.5"/><polyline points="10,3 15,3 15,8" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
                         <span>Connect</span>
                     </button>
+                    <button class="pm-tool-btn" onclick="PM.addGroup()" title="Add a labelled coloured rectangle behind steps to visually group them">
+                        <svg width="18" height="18" viewBox="0 0 18 18"><rect x="1" y="1" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2"/></svg>
+                        <span>Group</span>
+                    </button>
                 </div>
                 <div class="pm-toolbar-right">
                     <button class="pm-tool-btn" onclick="PM.deleteSelected()" title="Delete selected (Del)">
@@ -95,7 +99,8 @@ $path_prefix = '../';
                 <h3 id="detailTitle">Step Details</h3>
                 <button class="pm-detail-close" onclick="PM.closeDetail()">&times;</button>
             </div>
-            <div class="pm-detail-body">
+            <!-- Step detail body -->
+            <div class="pm-detail-body" id="detailBodyStep">
                 <div class="form-group">
                     <label class="form-label">Label</label>
                     <input type="text" class="form-input" id="detailLabel" oninput="PM.updateStepFromDetail()">
@@ -127,6 +132,31 @@ $path_prefix = '../';
                 <hr style="margin: 16px 0; border: none; border-top: 1px solid #e0e0e0;">
                 <h4 style="margin-bottom: 12px; font-size: 13px; color: #666;">Connectors</h4>
                 <div id="detailConnectors"></div>
+            </div>
+            <!-- Group detail body (shown when a group is selected) -->
+            <div class="pm-detail-body" id="detailBodyGroup" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Label</label>
+                    <input type="text" class="form-input" id="detailGroupLabel" oninput="PM.updateGroupFromDetail()" placeholder="e.g. Resolution phase">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Colour</label>
+                    <input type="color" class="form-input" id="detailGroupColor" value="#e3f2fd" onchange="PM.updateGroupFromDetail()" style="height: 36px; padding: 2px;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Position</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="number" class="form-input" id="detailGroupX" style="width: 50%;" onchange="PM.updateGroupFromDetail()">
+                        <input type="number" class="form-input" id="detailGroupY" style="width: 50%;" onchange="PM.updateGroupFromDetail()">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Size</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="number" class="form-input" id="detailGroupW" style="width: 50%;" onchange="PM.updateGroupFromDetail()" min="80">
+                        <input type="number" class="form-input" id="detailGroupH" style="width: 50%;" onchange="PM.updateGroupFromDetail()" min="60">
+                    </div>
+                </div>
             </div>
         </div>
     </div>

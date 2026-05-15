@@ -15,11 +15,12 @@ if (!isset($_SESSION['analyst_id'])) {
     exit;
 }
 
-$input = json_decode(file_get_contents('php://input'), true);
-$id    = (int)($input['id'] ?? 0);
-$title = trim($input['title'] ?? '');
-$steps = $input['steps'] ?? [];
-$conns = $input['connectors'] ?? [];
+$input  = json_decode(file_get_contents('php://input'), true);
+$id     = (int)($input['id'] ?? 0);
+$title  = trim($input['title'] ?? '');
+$steps  = $input['steps'] ?? [];
+$conns  = $input['connectors'] ?? [];
+$groups = $input['groups'] ?? [];
 
 if (empty($title)) {
     echo json_encode(['success' => false, 'error' => 'Title is required']);
@@ -41,9 +42,10 @@ try {
         $id = (int)$conn->lastInsertId();
     }
 
-    // Replace steps: delete old, insert new
+    // Replace steps/connectors/groups: delete old, insert new
     $conn->prepare("DELETE FROM process_connectors WHERE process_id = ?")->execute([$id]);
     $conn->prepare("DELETE FROM process_steps WHERE process_id = ?")->execute([$id]);
+    $conn->prepare("DELETE FROM process_groups WHERE process_id = ?")->execute([$id]);
 
     // Map old step IDs/tempIds to new real IDs
     $idMap = [];
@@ -75,6 +77,20 @@ try {
         if ($fromNew && $toNew) {
             $connInsert->execute([$id, $fromNew, $toNew, $c['label'] ?? '']);
         }
+    }
+
+    // Insert groups (pure visual underlays — no FK relationship to steps)
+    $groupInsert = $conn->prepare("INSERT INTO process_groups (process_id, label, color, x, y, width, height) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    foreach ($groups as $g) {
+        $groupInsert->execute([
+            $id,
+            $g['label'] ?? '',
+            $g['color'] ?? '#e3f2fd',
+            (int)($g['x'] ?? 0),
+            (int)($g['y'] ?? 0),
+            (int)($g['width'] ?? 240),
+            (int)($g['height'] ?? 160),
+        ]);
     }
 
     $conn->commit();
