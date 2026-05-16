@@ -33,6 +33,7 @@ try {
         "SELECT d.id, d.parent_diagram_id, d.title, d.description, d.version_label,
                 d.created_by_analyst_id, a.full_name AS author_name,
                 d.created_datetime, d.updated_datetime,
+                d.paper_size, d.paper_orientation,
                 (SELECT COUNT(*) FROM network_diagrams ch WHERE ch.parent_diagram_id = d.id) AS child_count
            FROM network_diagrams d
       LEFT JOIN analysts a ON a.id = d.created_by_analyst_id

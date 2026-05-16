@@ -44,19 +44,29 @@ try {
         throw new Exception('Can only create a new version from the current (leaf) version of the chain');
     }
 
+    // Pull the parent's paper settings so the new version inherits the same
+    // page overlay — analysts don't want to re-pick A3 landscape on every
+    // version fork.
+    $papStmt = $conn->prepare("SELECT paper_size, paper_orientation FROM network_diagrams WHERE id = ?");
+    $papStmt->execute([$parentId]);
+    $paper = $papStmt->fetch(PDO::FETCH_ASSOC) ?: ['paper_size' => null, 'paper_orientation' => null];
+
     $conn->beginTransaction();
 
     $ins = $conn->prepare(
         "INSERT INTO network_diagrams
               (parent_diagram_id, title, description, version_label,
+               paper_size, paper_orientation,
                created_by_analyst_id, created_datetime, updated_datetime)
-         VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())"
+         VALUES (?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())"
     );
     $ins->execute([
         $parentId,
         $title,
         $description === '' ? null : $description,
         $versionLabel === '' ? null : $versionLabel,
+        $paper['paper_size'],
+        $paper['paper_orientation'],
         (int)$_SESSION['analyst_id'],
     ]);
     $newId = (int)$conn->lastInsertId();

@@ -1644,6 +1644,11 @@ $schema = [
         'created_by_analyst_id' => 'INT NULL',
         'created_datetime'      => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
         'updated_datetime'      => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
+        // Optional paper-size overlay (NULL = no overlay shown). Surfaces on
+        // the editor canvas as a dashed outline so analysts can see what
+        // will fit before exporting to PNG/PDF. Persisted per-diagram.
+        'paper_size'            => 'VARCHAR(20) NULL',
+        'paper_orientation'     => 'VARCHAR(20) NULL',
     ],
 
     'network_diagram_nodes' => [

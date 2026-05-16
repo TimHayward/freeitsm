@@ -42,6 +42,19 @@
     const SVG_NS = 'http://www.w3.org/2000/svg';
     const SVG_SIZE = 5000;          // SVG layer width/height (matches Process Mapper)
 
+    // Paper dimensions at 96 DPI (the standard CSS-pixel-to-physical-inch
+    // assumption). Width × height in pixels, in PORTRAIT orientation;
+    // landscape just swaps them. Used by the page-outline overlay so what
+    // analysts see on the canvas matches what will fit in a PNG/PDF export.
+    const PAPER_SIZES_PX = {
+        A4:      { w: 794,  h: 1123, label: 'A4',      mm: '210 × 297 mm' },
+        A3:      { w: 1123, h: 1587, label: 'A3',      mm: '297 × 420 mm' },
+        A2:      { w: 1587, h: 2245, label: 'A2',      mm: '420 × 594 mm' },
+        Letter:  { w: 816,  h: 1056, label: 'Letter',  mm: '8.5 × 11 in'  },
+        Tabloid: { w: 1056, h: 1632, label: 'Tabloid', mm: '11 × 17 in'   }
+    };
+    const PAPER_SIZE_ORDER = ['A4', 'A3', 'A2', 'Letter', 'Tabloid'];
+
     // ---- state ----
     let diagramId = 0;
     let diagram = null;          // metadata; null while loading
@@ -95,6 +108,7 @@
     let currentPropertiesObjectId = null;
     let elRelatedModal, elRmSourceName, elRmResults, elRmAddBtn;
     let elVersionsBtn, elVersionsDropdown;
+    let elPageBtn, elPageDropdown, elPageBtnLabel;
     let elIconPickerModal, elIpNodeName, elIpSearch, elIpGrid;
 
     // =========================================================
@@ -145,15 +159,24 @@
         elRmAddBtn        = document.getElementById('rmAddBtn');
         elVersionsBtn     = document.getElementById('versionsBtn');
         elVersionsDropdown = document.getElementById('versionsDropdown');
+        elPageBtn         = document.getElementById('pageBtn');
+        elPageDropdown    = document.getElementById('pageDropdown');
+        elPageBtnLabel    = document.getElementById('pageBtnLabel');
 
-        // Close the versions dropdown on outside click (capture the click on
-        // body and check whether the target is inside the dropdown or its
-        // anchor button — clean way to dismiss without a global modal pattern)
+        // Close toolbar dropdowns on outside click. Each dropdown checks for
+        // its anchor button + its panel; click outside both → dismiss. Same
+        // pattern shared by Versions + Page.
         document.addEventListener('mousedown', e => {
-            if (!elVersionsDropdown || elVersionsDropdown.style.display === 'none') return;
-            if (elVersionsBtn && elVersionsBtn.contains(e.target)) return;
-            if (elVersionsDropdown.contains(e.target)) return;
-            closeVersionsDropdown();
+            if (elVersionsDropdown && elVersionsDropdown.style.display !== 'none') {
+                if (!(elVersionsBtn && elVersionsBtn.contains(e.target)) && !elVersionsDropdown.contains(e.target)) {
+                    closeVersionsDropdown();
+                }
+            }
+            if (elPageDropdown && elPageDropdown.style.display !== 'none') {
+                if (!(elPageBtn && elPageBtn.contains(e.target)) && !elPageDropdown.contains(e.target)) {
+                    closePageDropdown();
+                }
+            }
         });
 
         ensureSvgLayer();
@@ -245,6 +268,8 @@
             renderHeader();
             applyReadOnlyState();
             renderNodes();
+            updatePageButtonLabel();
+            renderPageOutline();
             setStatus(autosaveOn ? 'saved' : 'off');
         } catch (e) {
             elTitle.textContent = 'Failed to load diagram';
@@ -1644,6 +1669,167 @@
     }
 
     // =========================================================
+    //  Page-size overlay — toolbar dropdown picks paper size + orientation,
+    //  a dashed outline renders inside the SVG layer at the canvas origin.
+    //  Persisted per-diagram (paper_size + paper_orientation cols) so the
+    //  outline survives reload. Sets up the bounds for PNG/PDF export.
+    // =========================================================
+    function togglePageDropdown(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (!elPageDropdown) return;
+        if (elPageDropdown.style.display !== 'none') {
+            closePageDropdown();
+            return;
+        }
+        renderPageDropdown();
+        elPageDropdown.style.display = '';
+    }
+
+    function closePageDropdown() {
+        if (elPageDropdown) elPageDropdown.style.display = 'none';
+    }
+
+    function renderPageDropdown() {
+        const cur = diagram || {};
+        const curSize = cur.paper_size || null;
+        const curOrient = cur.paper_orientation || 'landscape';
+        const editable = !!(diagram && diagram.is_current);
+
+        const offRow =
+            '<a class="nm-vd-row' + (!curSize ? ' active' : '') + '" href="#" data-size="" data-orient="">' +
+                '<div class="nm-vd-row-top">' +
+                    '<span class="nm-vd-label">Off</span>' +
+                    (!curSize ? '<span class="nm-vd-pill viewing">Current</span>' : '') +
+                '</div>' +
+                '<div class="nm-vd-row-meta">No page outline shown</div>' +
+            '</a>';
+
+        let rows = offRow;
+        PAPER_SIZE_ORDER.forEach(size => {
+            const def = PAPER_SIZES_PX[size];
+            if (!def) return;
+            ['landscape', 'portrait'].forEach(orient => {
+                const isCur = curSize === size && curOrient === orient;
+                const dims = orient === 'portrait'
+                    ? def.w + ' × ' + def.h + ' px'
+                    : def.h + ' × ' + def.w + ' px';
+                rows +=
+                    '<a class="nm-vd-row' + (isCur ? ' active' : '') + '" href="#" data-size="' + escapeAttr(size) + '" data-orient="' + orient + '">' +
+                        '<div class="nm-vd-row-top">' +
+                            '<span class="nm-vd-label">' + escapeHtml(def.label) + ' ' + orient + '</span>' +
+                            (isCur ? '<span class="nm-vd-pill viewing">Current</span>' : '') +
+                        '</div>' +
+                        '<div class="nm-vd-row-meta">' + escapeHtml(def.mm) + ' &middot; ' + dims + '</div>' +
+                    '</a>';
+            });
+        });
+
+        elPageDropdown.innerHTML = rows;
+        // Wire click handlers
+        elPageDropdown.querySelectorAll('.nm-vd-row').forEach(row => {
+            row.addEventListener('click', e => {
+                e.preventDefault();
+                if (!editable) {
+                    if (window.showToast) showToast('Historical versions are read-only', 'info');
+                    closePageDropdown();
+                    return;
+                }
+                const size   = row.dataset.size   || null;
+                const orient = row.dataset.orient || null;
+                applyPageSetting(size, orient);
+                closePageDropdown();
+            });
+        });
+    }
+
+    function applyPageSetting(size, orient) {
+        if (!diagram) return;
+        // No-op if unchanged — avoids dirtying the diagram unnecessarily
+        if ((diagram.paper_size || null) === (size || null) &&
+            (diagram.paper_orientation || null) === (orient || null)) {
+            return;
+        }
+        diagram.paper_size = size;
+        diagram.paper_orientation = orient;
+        updatePageButtonLabel();
+        renderPageOutline();
+        markDirty();
+    }
+
+    function updatePageButtonLabel() {
+        if (!elPageBtnLabel) return;
+        const size = diagram && diagram.paper_size;
+        const orient = diagram && diagram.paper_orientation;
+        if (!size) {
+            elPageBtnLabel.textContent = 'Page: Off';
+        } else {
+            const def = PAPER_SIZES_PX[size];
+            const lbl = def ? def.label : size;
+            const shortOrient = (orient === 'portrait') ? 'P' : 'L';
+            elPageBtnLabel.textContent = 'Page: ' + lbl + ' ' + shortOrient;
+        }
+    }
+
+    function pageDimensionsPx(size, orient) {
+        const def = PAPER_SIZES_PX[size];
+        if (!def) return null;
+        return (orient === 'portrait')
+            ? { w: def.w, h: def.h }
+            : { w: def.h, h: def.w };
+    }
+
+    function renderPageOutline() {
+        if (!elSvgLayer) return;
+        // Tear down the previous outline + label group
+        Array.from(elSvgLayer.querySelectorAll('.nm-page-outline-group')).forEach(g => g.remove());
+
+        const size = diagram && diagram.paper_size;
+        const orient = diagram && diagram.paper_orientation;
+        if (!size) return;
+        const dims = pageDimensionsPx(size, orient);
+        if (!dims) return;
+
+        // Insert as the FIRST child of the SVG (after <defs>) so it renders
+        // behind connectors. defs is the first child; insert after it.
+        const g = document.createElementNS(SVG_NS, 'g');
+        g.classList.add('nm-page-outline-group');
+
+        // Soft fill so the page area is visually distinguished from the
+        // surrounding canvas — helps users see what's "on page" vs "off page"
+        const fill = document.createElementNS(SVG_NS, 'rect');
+        fill.setAttribute('x', '0');
+        fill.setAttribute('y', '0');
+        fill.setAttribute('width',  String(dims.w));
+        fill.setAttribute('height', String(dims.h));
+        fill.classList.add('nm-page-outline-fill');
+        g.appendChild(fill);
+
+        // Dashed cyan border
+        const border = document.createElementNS(SVG_NS, 'rect');
+        border.setAttribute('x', '0');
+        border.setAttribute('y', '0');
+        border.setAttribute('width',  String(dims.w));
+        border.setAttribute('height', String(dims.h));
+        border.classList.add('nm-page-outline-border');
+        g.appendChild(border);
+
+        // Corner label so analysts can see at a glance which paper they picked
+        const def = PAPER_SIZES_PX[size];
+        const label = document.createElementNS(SVG_NS, 'text');
+        label.setAttribute('x', '8');
+        label.setAttribute('y', '16');
+        label.classList.add('nm-page-outline-label');
+        label.textContent = (def ? def.label : size) + ' ' + orient;
+        g.appendChild(label);
+
+        // Place above <defs> but below connectors. defs is the first child
+        // already; inserting after it puts the page-outline group second.
+        const defs = elSvgLayer.querySelector('defs');
+        if (defs && defs.nextSibling) elSvgLayer.insertBefore(g, defs.nextSibling);
+        else elSvgLayer.appendChild(g);
+    }
+
+    // =========================================================
     //  Save
     // =========================================================
     async function save(isAutoSave) {
@@ -1659,6 +1845,10 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     id: diagramId,
+                    // Paper-outline settings: NULL clears the overlay; whitelisted
+                    // server-side. Always sent so toggling Off persists too.
+                    paper_size: diagram && diagram.paper_size ? diagram.paper_size : null,
+                    paper_orientation: diagram && diagram.paper_orientation ? diagram.paper_orientation : null,
                     nodes: nodes.map(n => ({
                         // tempId is critical here — save_diagram's nodeIdMap is
                         // keyed by id ?? tempId; without it, a connector that
@@ -1706,6 +1896,8 @@
                 // panel needs to refresh with the new instance.
                 selectedNodeKey = null;
                 renderNodes();
+                updatePageButtonLabel();
+                renderPageOutline();
                 if (selectedCmdbId) {
                     const reselect = nodes.find(n => n.cmdb_object_id === selectedCmdbId);
                     if (reselect) selectNode(nodeKey(reselect));
@@ -1832,6 +2024,9 @@
         // versions dropdown
         toggleVersionsDropdown,
         closeVersionsDropdown,
+        // page outline dropdown
+        togglePageDropdown,
+        closePageDropdown,
         // icon picker
         openIconPicker,
         closeIconPicker,

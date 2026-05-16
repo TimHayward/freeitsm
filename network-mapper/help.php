@@ -272,14 +272,17 @@ $path_prefix = '../';
             <a href="#planned" class="nh-nav-link" data-section="planned">
                 <span class="nh-nav-num">6</span> Planned objects
             </a>
+            <a href="#paper" class="nh-nav-link" data-section="paper">
+                <span class="nh-nav-num">7</span> Page size guide
+            </a>
             <a href="#versioning" class="nh-nav-link" data-section="versioning">
-                <span class="nh-nav-num">7</span> Versioning
+                <span class="nh-nav-num">8</span> Versioning
             </a>
             <a href="#saving" class="nh-nav-link" data-section="saving">
-                <span class="nh-nav-num">8</span> Saving
+                <span class="nh-nav-num">9</span> Saving
             </a>
             <a href="#tips" class="nh-nav-link" data-section="tips">
-                <span class="nh-nav-num">9</span> Quick tips
+                <span class="nh-nav-num">10</span> Quick tips
             </a>
         </div>
 
@@ -442,10 +445,23 @@ $path_prefix = '../';
                     <p class="nh-tip"><strong>Workflow:</strong> mark CMDB objects as planned during design, draw them into the diagram alongside your real estate, then flip the planned flag off in CMDB when they go live &mdash; the diagram styling updates on its next load. No edits to the diagram needed.</p>
                 </div>
 
-                <!-- 7. Versioning -->
-                <div class="nh-section" id="versioning">
+                <!-- 7. Page size guide -->
+                <div class="nh-section" id="paper">
                     <div class="nh-section-header">
                         <span class="nh-section-num">7</span>
+                        <div>
+                            <h3>Page size guide</h3>
+                            <p>Use the <strong>Page</strong> dropdown in the editor toolbar to overlay a paper outline on the canvas (A4, A3, A2, Letter, or Tabloid &mdash; portrait or landscape). Anything inside the dashed cyan box will print or export cleanly; anything outside gets cropped or scrolled past. Useful as a layout guide before sharing or screenshotting the diagram. Default is <strong>Off</strong> &mdash; no overlay shown.</p>
+                        </div>
+                    </div>
+                    <p class="nh-tip"><strong>Per-diagram setting:</strong> each diagram remembers its own paper size, so a service map can use A3 landscape while a small workflow diagram uses A4 portrait without any setup each time. The setting is also carried forward when you save as a new version &mdash; you don't need to re-pick.</p>
+                    <p class="nh-tip"><strong>Why not just export at the right size?</strong> Picking it up front means you can compose the diagram inside the printable area as you go &mdash; no surprise crops after the fact. PNG / PDF export will use this outline as the bounds when added in a future release.</p>
+                </div>
+
+                <!-- 8. Versioning -->
+                <div class="nh-section" id="versioning">
+                    <div class="nh-section-header">
+                        <span class="nh-section-num">8</span>
                         <div>
                             <h3>Versioning</h3>
                             <p>Every diagram is part of a linear version chain. The leaf (no children) is the editable <span class="nh-pill current">v? (current)</span> version; older nodes in the chain are read-only history <span class="nh-pill readonly">v? (read-only)</span>. Saving as a new version clones the current state forward into a new editable leaf and demotes the old leaf to historical.</p>
@@ -459,10 +475,10 @@ $path_prefix = '../';
                     <p class="nh-warn"><strong>No branching:</strong> a parent can have at most one child in the chain &mdash; the history is strictly linear. If you need to explore an alternative architecture, create a separate diagram rather than forking the chain.</p>
                 </div>
 
-                <!-- 8. Saving -->
+                <!-- 9. Saving -->
                 <div class="nh-section" id="saving">
                     <div class="nh-section-header">
-                        <span class="nh-section-num">8</span>
+                        <span class="nh-section-num">9</span>
                         <div>
                             <h3>Saving</h3>
                             <p>Two modes. <strong>Autosave</strong> (toggle in the toolbar) saves around 2 seconds after your last edit &mdash; the Word-style status indicator next to the toggle shows <em>Unsaved</em>, <em>Saving&hellip;</em>, then <em>Saved</em>. Toggle state is remembered per analyst. <strong>Manual save</strong> via the Save button or <span class="nh-kbd">Ctrl</span>+<span class="nh-kbd">S</span> works in either mode.</p>
@@ -472,10 +488,10 @@ $path_prefix = '../';
                     <p class="nh-warn"><strong>Unsaved changes:</strong> if you try to navigate away with unsaved edits, the browser will prompt you. Don't ignore that prompt unless you really mean to discard.</p>
                 </div>
 
-                <!-- 9. Quick tips -->
+                <!-- 10. Quick tips -->
                 <div class="nh-section" id="tips">
                     <div class="nh-section-header">
-                        <span class="nh-section-num">9</span>
+                        <span class="nh-section-num">10</span>
                         <div>
                             <h3>Quick tips</h3>
                         </div>

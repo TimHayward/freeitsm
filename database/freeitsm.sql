@@ -2259,6 +2259,11 @@ CREATE TABLE IF NOT EXISTS `network_diagrams` (
     `created_by_analyst_id` INT NULL,
     `created_datetime`      DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_datetime`      DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    -- Optional paper-size guide overlay (off when NULL). Sets up the
+    -- WYSIWYG bounds for PNG/PDF export and shows a dashed outline on the
+    -- canvas so analysts know what'll fit. Persisted per-diagram.
+    `paper_size`            VARCHAR(20) NULL,
+    `paper_orientation`     VARCHAR(20) NULL,
     PRIMARY KEY (`id`),
     KEY `ix_net_diag_parent` (`parent_diagram_id`),
     KEY `ix_net_diag_author` (`created_by_analyst_id`),

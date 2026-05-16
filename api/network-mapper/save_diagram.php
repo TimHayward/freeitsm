@@ -64,6 +64,28 @@ try {
         $sets[] = 'version_label = ?';
         $params[] = $v === '' ? null : $v;
     }
+    if (array_key_exists('paper_size', $data)) {
+        // Whitelist — keep stored values within the set the UI knows how to
+        // render. Empty/null means "no overlay".
+        $allowedSizes = ['A4', 'A3', 'A2', 'Letter', 'Tabloid'];
+        $ps = $data['paper_size'];
+        $ps = ($ps === null || $ps === '') ? null : (string)$ps;
+        if ($ps !== null && !in_array($ps, $allowedSizes, true)) {
+            throw new Exception('Invalid paper_size');
+        }
+        $sets[] = 'paper_size = ?';
+        $params[] = $ps;
+    }
+    if (array_key_exists('paper_orientation', $data)) {
+        $allowedOrients = ['portrait', 'landscape'];
+        $po = $data['paper_orientation'];
+        $po = ($po === null || $po === '') ? null : (string)$po;
+        if ($po !== null && !in_array($po, $allowedOrients, true)) {
+            throw new Exception('Invalid paper_orientation');
+        }
+        $sets[] = 'paper_orientation = ?';
+        $params[] = $po;
+    }
     $sets[] = 'updated_datetime = UTC_TIMESTAMP()';
     $params[] = $id;
     $upd = $conn->prepare("UPDATE network_diagrams SET " . implode(', ', $sets) . " WHERE id = ?");

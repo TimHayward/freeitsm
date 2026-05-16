@@ -445,6 +445,30 @@ $path_prefix = '../';
             pointer-events: none;
             opacity: 0.8;
         }
+        /* Page-size guide (anchored at canvas origin, scaled to paper size) */
+        .nm-page-outline-fill {
+            fill: white;
+            opacity: 0.55;          /* lets the dot-grid bleed through, distinguishes page from off-page */
+            pointer-events: none;
+        }
+        .nm-page-outline-border {
+            fill: none;
+            stroke: #06b6d4;
+            stroke-width: 1.5;
+            stroke-dasharray: 8 5;
+            opacity: 0.75;
+            pointer-events: none;
+        }
+        .nm-page-outline-label {
+            fill: #0e7490;
+            font-size: 11px;
+            font-family: inherit;
+            font-weight: 600;
+            text-transform: capitalize;
+            opacity: 0.85;
+            pointer-events: none;
+            user-select: none;
+        }
         .nm-connector-label-bg {
             fill: white;
             stroke: #e5e7eb;
@@ -1142,6 +1166,13 @@ $path_prefix = '../';
                 </div>
                 <span class="nm-status" id="saveStatus"></span>
                 <div class="nm-versions-wrap">
+                    <button class="nm-btn secondary" id="pageBtn" onclick="NM.togglePageDropdown(event)" title="Show a paper-size outline on the canvas — useful before exporting to PNG/PDF">
+                        <span id="pageBtnLabel">Page: Off</span>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left: 4px; vertical-align: -1px;"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="nm-versions-dropdown" id="pageDropdown" style="display:none;"></div>
+                </div>
+                <div class="nm-versions-wrap">
                     <button class="nm-btn secondary" id="versionsBtn" onclick="NM.toggleVersionsDropdown(event)" title="Browse the version history of this diagram">
                         Versions
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left: 4px; vertical-align: -1px;"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1325,6 +1356,7 @@ $path_prefix = '../';
                 NM.closeObjectPicker();
                 NM.closeRelatedModal();
                 NM.closeVersionsDropdown();
+                NM.closePageDropdown();
                 NM.closeIconPicker();
             }
         });
