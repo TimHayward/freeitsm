@@ -328,6 +328,148 @@ $path_prefix = '../';
         }
         .nm-canvas-empty h3 { color: #6b7280; font-weight: 600; margin: 0 0 6px 0; }
 
+        /* ---- Placed nodes ---- */
+        .nm-node {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: grab;
+            user-select: none;
+            padding: 6px;
+            border-radius: 8px;
+            border: 1.5px solid transparent;
+            background: rgba(255, 255, 255, 0.85);
+            transition: border-color 0.12s, box-shadow 0.12s, background 0.12s;
+            z-index: 2;
+        }
+        .nm-node:hover {
+            background: white;
+            border-color: #a5f3fc;
+        }
+        .nm-node:active { cursor: grabbing; }
+        .nm-node.selected {
+            border-color: #06b6d4;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(6,182,212,0.18), 0 4px 12px rgba(6,182,212,0.18);
+            z-index: 3;
+        }
+        .nm-node-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0e7490;
+        }
+        .nm-node-label {
+            margin-top: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #1f2937;
+            text-align: center;
+            line-height: 1.2;
+            max-width: 110px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            word-break: break-word;
+        }
+        /* Planned-node styling — dashed border + amber tint, matching the CMDB browse/detail treatment */
+        .nm-node.is-planned {
+            background: #fffbeb;
+            border-style: dashed;
+            border-color: #fcd34d;
+        }
+        .nm-node.is-planned .nm-node-icon { color: #92400e; }
+        .nm-node.is-planned .nm-node-label { font-style: italic; color: #78350f; }
+        .nm-node.is-planned.selected {
+            border-style: solid;
+            border-color: #06b6d4;
+        }
+        .nm-node-planned-pill {
+            display: inline-block;
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+            padding: 1px 6px;
+            border-radius: 999px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        /* ---- Object picker modal ---- */
+        .nm-picker-search-wrap { margin-bottom: 12px; }
+        .nm-picker-search {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .nm-picker-search:focus {
+            outline: none;
+            border-color: #06b6d4;
+            box-shadow: 0 0 0 3px rgba(6,182,212,0.12);
+        }
+        .nm-picker-results {
+            max-height: 320px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            background: #fafbfc;
+        }
+        .nm-picker-row {
+            padding: 9px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: #1f2937;
+            background: white;
+        }
+        .nm-picker-row:last-child { border-bottom: 0; }
+        .nm-picker-row:hover,
+        .nm-picker-row.highlighted {
+            background: #ecfeff;
+            color: #0e7490;
+        }
+        .nm-picker-name {
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nm-picker-parent {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+        .nm-picker-planned {
+            display: inline-block;
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+            padding: 1px 6px;
+            border-radius: 999px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .nm-picker-empty {
+            padding: 28px 16px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 13px;
+            background: white;
+        }
+        .nm-picker-empty a { color: #06b6d4; }
+
         /* ---- Modal (Save as new version) ---- */
         .nm-modal-overlay {
             position: fixed; inset: 0;
@@ -434,10 +576,28 @@ $path_prefix = '../';
                 </div>
             </aside>
             <div class="nm-canvas" id="canvas">
-                <div class="nm-canvas-empty">
+                <div class="nm-canvas-empty" id="canvasEmpty">
                     <h3>Empty diagram</h3>
-                    <p>Drag a class from the palette onto the canvas to start placing nodes. Drop-handling lands in the next chunk &mdash; for now, the palette + autosave + versioning are wired up so you can save metadata changes and fork versions.</p>
+                    <p>Drag a class from the palette onto the canvas to start placing nodes. You'll be asked which CMDB object to bind it to.</p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CMDB object picker (opened on drop) -->
+    <div class="nm-modal-overlay" id="objectPickerModal">
+        <div class="nm-modal">
+            <div class="nm-modal-header">
+                Pick a <span id="pickerClassLabel">CMDB object</span> to place
+            </div>
+            <div class="nm-modal-body">
+                <div class="nm-picker-search-wrap">
+                    <input type="text" class="nm-picker-search" id="pickerSearch" placeholder="Type to filter&hellip;" oninput="NM.onPickerSearchInput(this.value)" onkeydown="NM.onPickerKeyDown(event)">
+                </div>
+                <div class="nm-picker-results" id="pickerResults"></div>
+            </div>
+            <div class="nm-modal-actions">
+                <button class="nm-btn secondary" onclick="NM.closeObjectPicker()">Cancel</button>
             </div>
         </div>
     </div>
@@ -484,12 +644,16 @@ $path_prefix = '../';
             }
             if (e.key === 'Escape') {
                 NM.closeNewVersionModal();
+                NM.closeObjectPicker();
             }
         });
 
-        // Click-out to close modal
+        // Click-out to close modals
         document.getElementById('newVersionModal').addEventListener('click', function (e) {
             if (e.target === e.currentTarget) NM.closeNewVersionModal();
+        });
+        document.getElementById('objectPickerModal').addEventListener('click', function (e) {
+            if (e.target === e.currentTarget) NM.closeObjectPicker();
         });
 
         // Warn on unload if there are unsaved changes — guard against the user
