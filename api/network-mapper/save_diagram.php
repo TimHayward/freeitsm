@@ -86,6 +86,29 @@ try {
         $sets[] = 'paper_orientation = ?';
         $params[] = $po;
     }
+    // Header/footer override slots. NULL = inherit the org-wide default;
+    // anything else (incl. empty string '') = explicit override. Empty string
+    // is meaningful — it lets the user blank a slot that the org default
+    // would otherwise populate. Each slot is capped at 200 chars to match
+    // the schema VARCHAR(200) and the save_branding.php cap so per-diagram
+    // overrides can't exceed what the org-wide page allows.
+    $brandFields = ['header_left', 'header_center', 'header_right',
+                    'footer_left', 'footer_center', 'footer_right'];
+    foreach ($brandFields as $bf) {
+        if (!array_key_exists($bf, $data)) continue;
+        $v = $data[$bf];
+        if ($v === null) {
+            $sets[] = "$bf = ?";
+            $params[] = null;
+        } else {
+            $s = (string)$v;
+            if (mb_strlen($s) > 200) {
+                throw new Exception("'$bf' too long (max 200 characters)");
+            }
+            $sets[] = "$bf = ?";
+            $params[] = $s;
+        }
+    }
     $sets[] = 'updated_datetime = UTC_TIMESTAMP()';
     $params[] = $id;
     $upd = $conn->prepare("UPDATE network_diagrams SET " . implode(', ', $sets) . " WHERE id = ?");

@@ -469,6 +469,94 @@ $path_prefix = '../';
             pointer-events: none;
             user-select: none;
         }
+        /* Header/footer branding overlay — absolute-positioned inside .nm-canvas
+           so it aligns with the page outline at SVG coords 0..dims.w. HTML
+           (not SVG) so the {{logo}} token can render as an <img>. */
+        .nm-brand-header, .nm-brand-footer {
+            position: absolute;
+            left: 0;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            pointer-events: none;
+            z-index: 1;
+            color: #334155;
+            font-size: 12px;
+            box-sizing: border-box;
+            gap: 12px;
+        }
+        .nm-brand-slot {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+        }
+        .nm-brand-slot.left   { text-align: left; }
+        .nm-brand-slot.center { text-align: center; }
+        .nm-brand-slot.right  { text-align: right; }
+        .nm-brand-logo {
+            max-height: 28px;
+            max-width: 140px;
+            vertical-align: middle;
+        }
+        /* Branding settings modal — 6 slot inputs in a 3-column header/footer grid */
+        .nm-brand-grid {
+            display: grid;
+            grid-template-columns: 70px 1fr 1fr 1fr;
+            gap: 8px 10px;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .nm-brand-grid .row-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569;
+            text-align: right;
+            padding-right: 4px;
+        }
+        .nm-brand-grid .col-head {
+            font-size: 10px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+        .nm-brand-grid input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .nm-brand-grid input:focus {
+            outline: none;
+            border-color: #06b6d4;
+            box-shadow: 0 0 0 3px rgba(6,182,212,0.12);
+        }
+        .nm-brand-tokens {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-top: 14px;
+            font-size: 11px;
+            color: #075985;
+            line-height: 1.7;
+        }
+        .nm-brand-tokens code {
+            background: #ffffff;
+            border: 1px solid #bae6fd;
+            border-radius: 3px;
+            padding: 1px 5px;
+            font-size: 10px;
+            color: #0891b2;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
         .nm-connector-label-bg {
             fill: white;
             stroke: #e5e7eb;
@@ -1172,6 +1260,7 @@ $path_prefix = '../';
                     </button>
                     <div class="nm-versions-dropdown" id="pageDropdown" style="display:none;"></div>
                 </div>
+                <button class="nm-btn secondary" id="brandingBtn" onclick="NM.openBrandingModal()" title="Override the org-wide header/footer for this diagram (set a page size first)">Branding</button>
                 <div class="nm-versions-wrap">
                     <button class="nm-btn secondary" id="versionsBtn" onclick="NM.toggleVersionsDropdown(event)" title="Browse the version history of this diagram">
                         Versions
@@ -1312,6 +1401,43 @@ $path_prefix = '../';
     </div>
 
     <!-- Save as new version modal -->
+    <div class="nm-modal-overlay" id="brandingModal">
+        <div class="nm-modal nm-modal-wide">
+            <div class="nm-modal-header">Diagram branding &mdash; header &amp; footer</div>
+            <div class="nm-modal-body">
+                <p style="font-size:13px;color:#6b7280;margin:0 0 12px 0;line-height:1.5;">
+                    Override the organisation-wide header/footer for this diagram only. Placeholders show the default values that would be inherited &mdash; clear a slot and Save to <em>explicitly</em> blank it, or click <strong>Reset</strong> to clear all overrides and inherit the org-wide defaults configured in <a href="../system/branding/" target="_blank">System &rsaquo; Branding</a>.
+                </p>
+                <div class="nm-brand-grid">
+                    <div></div>
+                    <div class="col-head">Left</div>
+                    <div class="col-head">Centre</div>
+                    <div class="col-head">Right</div>
+
+                    <div class="row-label">Header</div>
+                    <input type="text" id="bmHeaderLeft" maxlength="200">
+                    <input type="text" id="bmHeaderCenter" maxlength="200">
+                    <input type="text" id="bmHeaderRight" maxlength="200">
+
+                    <div class="row-label">Footer</div>
+                    <input type="text" id="bmFooterLeft" maxlength="200">
+                    <input type="text" id="bmFooterCenter" maxlength="200">
+                    <input type="text" id="bmFooterRight" maxlength="200">
+                </div>
+                <div class="nm-brand-tokens">
+                    <strong>Tokens</strong> resolved at render time:
+                    <code>{{logo}}</code> &middot; <code>{{title}}</code> &middot; <code>{{author}}</code> &middot; <code>{{version}}</code> &middot; <code>{{modified}}</code>.
+                    Header/footer only renders when a page outline is set &mdash; use the <strong>Page</strong> dropdown to pick one.
+                </div>
+            </div>
+            <div class="nm-modal-actions">
+                <button class="nm-btn secondary" onclick="NM.resetBrandingOverrides()" title="Clear all overrides — slots will inherit the org-wide defaults">Reset</button>
+                <button class="nm-btn secondary" onclick="NM.closeBrandingModal()">Cancel</button>
+                <button class="nm-btn" onclick="NM.commitBrandingOverrides()">Save</button>
+            </div>
+        </div>
+    </div>
+
     <div class="nm-modal-overlay" id="newVersionModal">
         <div class="nm-modal">
             <div class="nm-modal-header">Save as new version</div>
@@ -1358,6 +1484,7 @@ $path_prefix = '../';
                 NM.closeVersionsDropdown();
                 NM.closePageDropdown();
                 NM.closeIconPicker();
+                NM.closeBrandingModal();
             }
         });
 
@@ -1373,6 +1500,9 @@ $path_prefix = '../';
         });
         document.getElementById('iconPickerModal').addEventListener('click', function (e) {
             if (e.target === e.currentTarget) NM.closeIconPicker();
+        });
+        document.getElementById('brandingModal').addEventListener('click', function (e) {
+            if (e.target === e.currentTarget) NM.closeBrandingModal();
         });
 
         // Warn on unload if there are unsaved changes — guard against the user

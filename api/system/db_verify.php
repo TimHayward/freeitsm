@@ -1649,6 +1649,15 @@ $schema = [
         // will fit before exporting to PNG/PDF. Persisted per-diagram.
         'paper_size'            => 'VARCHAR(20) NULL',
         'paper_orientation'     => 'VARCHAR(20) NULL',
+        // Per-diagram header/footer override slots. NULL = inherit the
+        // org-wide default from system_settings (`branding_header_left` etc.);
+        // non-NULL = explicit override. Renders only when paper_size is set.
+        'header_left'           => 'VARCHAR(200) NULL',
+        'header_center'         => 'VARCHAR(200) NULL',
+        'header_right'          => 'VARCHAR(200) NULL',
+        'footer_left'           => 'VARCHAR(200) NULL',
+        'footer_center'         => 'VARCHAR(200) NULL',
+        'footer_right'          => 'VARCHAR(200) NULL',
     ],
 
     'network_diagram_nodes' => [

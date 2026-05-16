@@ -94,6 +94,14 @@
     let iconPickerNode = null;    // node whose icon we're editing
     let iconPickerFilter = '';    // current search filter
 
+    // ---- branding state ----
+    // Org-wide defaults fetched once on init from api/system/get_branding.php.
+    // Shape: { logo_path, header_left, header_center, header_right,
+    //          footer_left, footer_center, footer_right } — strings (defaults
+    // applied server-side). null until the fetch resolves; renderBrandHeaderFooter
+    // bails out until then so we don't flash an unbranded overlay.
+    let brandingDefaults = null;
+
     // ---- DOM refs (filled in init) ----
     let elTitle, elVersionPill, elMetaRow, elMetaAuthor, elMetaCreated, elMetaUpdated;
     let elStatus, elSaveBtn, elSaveVersionBtn, elAutosaveToggle, elAutosaveWrap;
@@ -182,8 +190,33 @@
         ensureSvgLayer();
         bindCanvasEvents();
 
-        // Load diagram + palette + autosave preference in parallel
-        Promise.all([loadDiagram(), loadClasses(), loadAutosavePreference()]).catch(() => {});
+        // Load diagram + palette + autosave preference + org branding in
+        // parallel. Branding feeds into renderBrandHeaderFooter (header/footer
+        // overlay on the canvas); if it lands after loadDiagram the render
+        // function re-fires once defaults are cached.
+        Promise.all([
+            loadDiagram(),
+            loadClasses(),
+            loadAutosavePreference(),
+            loadBrandingDefaults(),
+        ]).catch(() => {});
+    }
+
+    async function loadBrandingDefaults() {
+        try {
+            const resp = await fetch('../api/system/get_branding.php', { credentials: 'same-origin' });
+            const data = await resp.json();
+            if (data && data.success && data.branding) {
+                brandingDefaults = data.branding;
+                // If the diagram already rendered before branding came back,
+                // refresh the overlay now so the user sees the org-default
+                // header/footer without having to nudge the page setting.
+                if (diagram) renderBrandHeaderFooter();
+            }
+        } catch (e) {
+            // Silently fall back to "no overlay" — branding is a polish layer,
+            // not a load-blocker. The diagram still works without it.
+        }
     }
 
     function bindCanvasEvents() {
@@ -270,6 +303,7 @@
             renderNodes();
             updatePageButtonLabel();
             renderPageOutline();
+            renderBrandHeaderFooter();
             setStatus(autosaveOn ? 'saved' : 'off');
         } catch (e) {
             elTitle.textContent = 'Failed to load diagram';
@@ -1753,6 +1787,9 @@
         diagram.paper_orientation = orient;
         updatePageButtonLabel();
         renderPageOutline();
+        // Header/footer is gated on the page outline being set, so it
+        // appears/disappears in lockstep with the paper choice.
+        renderBrandHeaderFooter();
         markDirty();
     }
 
@@ -1830,6 +1867,199 @@
     }
 
     // =========================================================
+    //  Header / footer branding overlay
+    //  Per-diagram override (six nullable columns on network_diagrams) sits
+    //  on top of the org-wide defaults loaded from system_settings via
+    //  api/system/get_branding.php. NULL on the diagram column = inherit
+    //  the default; non-NULL (including '') = explicit override. Renders
+    //  only when a page outline is set so the overlay has clean bounds.
+    // =========================================================
+
+    // Resolve the effective text for a slot — per-diagram override wins, then
+    // org-wide default, then empty string. The null-check is deliberate:
+    // empty string is an explicit override ("blank this slot"), null is
+    // "inherit". `diagram[key] != null` (loose !=) matches both null and
+    // undefined which is what we want when the field hasn't been set on
+    // a diagram created before this column existed.
+    function resolveBrandingSlot(key) {
+        if (diagram && diagram[key] != null) return diagram[key];
+        if (brandingDefaults && brandingDefaults[key] != null) return brandingDefaults[key];
+        return '';
+    }
+
+    function brandingTokenContext() {
+        return {
+            title:    diagram && diagram.title          ? diagram.title          : '',
+            author:   diagram && diagram.author_name    ? diagram.author_name    : '',
+            version:  diagram && diagram.version_label  ? diagram.version_label  : '',
+            modified: diagram && diagram.updated_datetime ? formatDate(diagram.updated_datetime) : '',
+            // diagram.php lives at network-mapper/diagram.php so the relative
+            // prefix back to app root is ../ — same one used by the other
+            // ../api/* fetches in this module. logo_path is stored relative to
+            // the app root (e.g. system/uploads/branding/logo.svg).
+            logoUrl:  brandingDefaults && brandingDefaults.logo_path ? '../' + brandingDefaults.logo_path : null,
+        };
+    }
+
+    // Token resolver — walks the slot text once with a single regex,
+    // HTML-escaping non-token segments and the substituted values; logo
+    // renders as an <img>. Tokens that don't have a value in ctx come back
+    // as empty strings so the slot collapses gracefully.
+    function renderSlotHtml(text, ctx) {
+        if (!text) return '';
+        let html = '';
+        let pos = 0;
+        const re = /\{\{(title|author|version|modified|logo)\}\}/g;
+        let m;
+        while ((m = re.exec(text)) !== null) {
+            html += escapeHtml(text.slice(pos, m.index));
+            switch (m[1]) {
+                case 'title':    html += escapeHtml(ctx.title); break;
+                case 'author':   html += escapeHtml(ctx.author); break;
+                case 'version':  html += escapeHtml(ctx.version); break;
+                case 'modified': html += escapeHtml(ctx.modified); break;
+                case 'logo':
+                    if (ctx.logoUrl) {
+                        html += '<img src="' + escapeAttr(ctx.logoUrl) + '" alt="" class="nm-brand-logo">';
+                    }
+                    break;
+            }
+            pos = re.lastIndex;
+        }
+        html += escapeHtml(text.slice(pos));
+        return html;
+    }
+
+    function renderBrandHeaderFooter() {
+        if (!elCanvas) return;
+        // Tear down previous overlays — re-renders are full rebuilds since
+        // the slot count is tiny and computing per-slot diffs isn't worth it.
+        Array.from(elCanvas.querySelectorAll('.nm-brand-header, .nm-brand-footer')).forEach(el => el.remove());
+
+        if (!diagram) return;
+        // Gated on page outline being on. Without bounds, "header" and
+        // "footer" don't have anchor points — they'd float in canvas space.
+        if (!diagram.paper_size) return;
+        const dims = pageDimensionsPx(diagram.paper_size, diagram.paper_orientation);
+        if (!dims) return;
+
+        const ctx = brandingTokenContext();
+        const hL = resolveBrandingSlot('header_left');
+        const hC = resolveBrandingSlot('header_center');
+        const hR = resolveBrandingSlot('header_right');
+        const fL = resolveBrandingSlot('footer_left');
+        const fC = resolveBrandingSlot('footer_center');
+        const fR = resolveBrandingSlot('footer_right');
+
+        // Skip the strip entirely if all three slots are empty — no point
+        // reserving 32px of vertical space for nothing.
+        if (hL || hC || hR) {
+            const header = document.createElement('div');
+            header.className = 'nm-brand-header';
+            header.style.top = '0px';
+            header.style.width = dims.w + 'px';
+            header.innerHTML =
+                '<div class="nm-brand-slot left">'   + renderSlotHtml(hL, ctx) + '</div>' +
+                '<div class="nm-brand-slot center">' + renderSlotHtml(hC, ctx) + '</div>' +
+                '<div class="nm-brand-slot right">'  + renderSlotHtml(hR, ctx) + '</div>';
+            elCanvas.appendChild(header);
+        }
+        if (fL || fC || fR) {
+            const footer = document.createElement('div');
+            footer.className = 'nm-brand-footer';
+            footer.style.top = (dims.h - 32) + 'px';
+            footer.style.width = dims.w + 'px';
+            footer.innerHTML =
+                '<div class="nm-brand-slot left">'   + renderSlotHtml(fL, ctx) + '</div>' +
+                '<div class="nm-brand-slot center">' + renderSlotHtml(fC, ctx) + '</div>' +
+                '<div class="nm-brand-slot right">'  + renderSlotHtml(fR, ctx) + '</div>';
+            elCanvas.appendChild(footer);
+        }
+    }
+
+    // =========================================================
+    //  Branding modal — per-diagram override of the org-wide header/footer
+    // =========================================================
+    const BRAND_SLOT_MAP = [
+        ['bmHeaderLeft',   'header_left'],
+        ['bmHeaderCenter', 'header_center'],
+        ['bmHeaderRight',  'header_right'],
+        ['bmFooterLeft',   'footer_left'],
+        ['bmFooterCenter', 'footer_center'],
+        ['bmFooterRight',  'footer_right'],
+    ];
+
+    function openBrandingModal() {
+        if (!diagram) return;
+        if (!diagram.is_current) {
+            if (window.showToast) showToast('Historical versions are read-only', 'info');
+            return;
+        }
+        const modal = document.getElementById('brandingModal');
+        if (!modal) return;
+        // Inputs show the per-diagram override (or empty if inheriting).
+        // Placeholder shows the org-wide default — that's what the slot
+        // would render if the field were null. Lets the user see at a glance
+        // what they're overriding without having to leave the page.
+        BRAND_SLOT_MAP.forEach(pair => {
+            const inputId = pair[0]; const key = pair[1];
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            input.value = (diagram[key] != null) ? diagram[key] : '';
+            const fallback = (brandingDefaults && brandingDefaults[key] != null) ? brandingDefaults[key] : '';
+            input.placeholder = fallback || '(blank by default)';
+        });
+        modal.classList.add('active');
+    }
+
+    function closeBrandingModal() {
+        const modal = document.getElementById('brandingModal');
+        if (modal) modal.classList.remove('active');
+    }
+
+    // Save commits whatever's in the inputs as per-diagram overrides. Empty
+    // input = '' (explicit blank); to inherit the org default again use Reset.
+    function commitBrandingOverrides() {
+        if (!diagram || !diagram.is_current) { closeBrandingModal(); return; }
+        let changed = false;
+        BRAND_SLOT_MAP.forEach(pair => {
+            const inputId = pair[0]; const key = pair[1];
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const v = input.value;
+            // Treat null/undefined and '' as different (one means inherit,
+            // the other means explicit blank), so any change between them
+            // counts as dirty.
+            if ((diagram[key] == null ? null : diagram[key]) !== v) {
+                changed = true;
+            }
+            diagram[key] = v;
+        });
+        closeBrandingModal();
+        if (changed) {
+            renderBrandHeaderFooter();
+            markDirty();
+        }
+    }
+
+    // Reset clears all six overrides (sets them to null on the diagram object)
+    // so the slots inherit the org-wide defaults again. Marks the diagram
+    // dirty so the change persists on next save.
+    function resetBrandingOverrides() {
+        if (!diagram || !diagram.is_current) { closeBrandingModal(); return; }
+        let changed = false;
+        ['header_left','header_center','header_right','footer_left','footer_center','footer_right'].forEach(key => {
+            if (diagram[key] != null) { changed = true; }
+            diagram[key] = null;
+        });
+        closeBrandingModal();
+        if (changed) {
+            renderBrandHeaderFooter();
+            markDirty();
+        }
+    }
+
+    // =========================================================
     //  Save
     // =========================================================
     async function save(isAutoSave) {
@@ -1849,6 +2079,17 @@
                     // server-side. Always sent so toggling Off persists too.
                     paper_size: diagram && diagram.paper_size ? diagram.paper_size : null,
                     paper_orientation: diagram && diagram.paper_orientation ? diagram.paper_orientation : null,
+                    // Per-diagram header/footer overrides. NULL = inherit the
+                    // org-wide default; non-NULL (including '') = explicit
+                    // override. We always send all 6 so toggling between
+                    // override → inherit also persists, not just override →
+                    // different-override.
+                    header_left:   diagram && diagram.header_left   !== undefined ? diagram.header_left   : null,
+                    header_center: diagram && diagram.header_center !== undefined ? diagram.header_center : null,
+                    header_right:  diagram && diagram.header_right  !== undefined ? diagram.header_right  : null,
+                    footer_left:   diagram && diagram.footer_left   !== undefined ? diagram.footer_left   : null,
+                    footer_center: diagram && diagram.footer_center !== undefined ? diagram.footer_center : null,
+                    footer_right:  diagram && diagram.footer_right  !== undefined ? diagram.footer_right  : null,
                     nodes: nodes.map(n => ({
                         // tempId is critical here — save_diagram's nodeIdMap is
                         // keyed by id ?? tempId; without it, a connector that
@@ -1898,6 +2139,7 @@
                 renderNodes();
                 updatePageButtonLabel();
                 renderPageOutline();
+                renderBrandHeaderFooter();
                 if (selectedCmdbId) {
                     const reselect = nodes.find(n => n.cmdb_object_id === selectedCmdbId);
                     if (reselect) selectNode(nodeKey(reselect));
@@ -2031,6 +2273,11 @@
         openIconPicker,
         closeIconPicker,
         onIconSearchInput,
-        resetIconOverride
+        resetIconOverride,
+        // branding (header/footer overrides per diagram)
+        openBrandingModal,
+        closeBrandingModal,
+        commitBrandingOverrides,
+        resetBrandingOverrides
     };
 })();

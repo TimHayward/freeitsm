@@ -44,12 +44,22 @@ try {
         throw new Exception('Can only create a new version from the current (leaf) version of the chain');
     }
 
-    // Pull the parent's paper settings so the new version inherits the same
-    // page overlay — analysts don't want to re-pick A3 landscape on every
+    // Pull the parent's paper + header/footer overrides so the new version
+    // inherits the same page setup and branding — analysts don't want to
+    // re-pick A3 landscape or re-type a per-diagram footer override on every
     // version fork.
-    $papStmt = $conn->prepare("SELECT paper_size, paper_orientation FROM network_diagrams WHERE id = ?");
+    $papStmt = $conn->prepare(
+        "SELECT paper_size, paper_orientation,
+                header_left, header_center, header_right,
+                footer_left, footer_center, footer_right
+           FROM network_diagrams WHERE id = ?"
+    );
     $papStmt->execute([$parentId]);
-    $paper = $papStmt->fetch(PDO::FETCH_ASSOC) ?: ['paper_size' => null, 'paper_orientation' => null];
+    $paper = $papStmt->fetch(PDO::FETCH_ASSOC) ?: [
+        'paper_size' => null, 'paper_orientation' => null,
+        'header_left' => null, 'header_center' => null, 'header_right' => null,
+        'footer_left' => null, 'footer_center' => null, 'footer_right' => null,
+    ];
 
     $conn->beginTransaction();
 
@@ -57,8 +67,10 @@ try {
         "INSERT INTO network_diagrams
               (parent_diagram_id, title, description, version_label,
                paper_size, paper_orientation,
+               header_left, header_center, header_right,
+               footer_left, footer_center, footer_right,
                created_by_analyst_id, created_datetime, updated_datetime)
-         VALUES (?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())"
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())"
     );
     $ins->execute([
         $parentId,
@@ -67,6 +79,12 @@ try {
         $versionLabel === '' ? null : $versionLabel,
         $paper['paper_size'],
         $paper['paper_orientation'],
+        $paper['header_left'],
+        $paper['header_center'],
+        $paper['header_right'],
+        $paper['footer_left'],
+        $paper['footer_center'],
+        $paper['footer_right'],
         (int)$_SESSION['analyst_id'],
     ]);
     $newId = (int)$conn->lastInsertId();

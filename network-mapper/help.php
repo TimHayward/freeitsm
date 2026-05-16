@@ -275,14 +275,17 @@ $path_prefix = '../';
             <a href="#paper" class="nh-nav-link" data-section="paper">
                 <span class="nh-nav-num">7</span> Page size guide
             </a>
+            <a href="#branding" class="nh-nav-link" data-section="branding">
+                <span class="nh-nav-num">8</span> Header &amp; footer
+            </a>
             <a href="#versioning" class="nh-nav-link" data-section="versioning">
-                <span class="nh-nav-num">8</span> Versioning
+                <span class="nh-nav-num">9</span> Versioning
             </a>
             <a href="#saving" class="nh-nav-link" data-section="saving">
-                <span class="nh-nav-num">9</span> Saving
+                <span class="nh-nav-num">10</span> Saving
             </a>
             <a href="#tips" class="nh-nav-link" data-section="tips">
-                <span class="nh-nav-num">10</span> Quick tips
+                <span class="nh-nav-num">11</span> Quick tips
             </a>
         </div>
 
@@ -458,10 +461,29 @@ $path_prefix = '../';
                     <p class="nh-tip"><strong>Why not just export at the right size?</strong> Picking it up front means you can compose the diagram inside the printable area as you go &mdash; no surprise crops after the fact. PNG / PDF export will use this outline as the bounds when added in a future release.</p>
                 </div>
 
-                <!-- 8. Versioning -->
-                <div class="nh-section" id="versioning">
+                <!-- 8. Header &amp; footer -->
+                <div class="nh-section" id="branding">
                     <div class="nh-section-header">
                         <span class="nh-section-num">8</span>
+                        <div>
+                            <h3>Header &amp; footer</h3>
+                            <p>Render the company logo, document title, author, version, and modified date along the top and bottom of the page outline &mdash; the same six slots you'd configure in Word's header and footer (left / centre / right, top and bottom). Each slot is free text that can mix in template tokens which get resolved at render time.</p>
+                        </div>
+                    </div>
+                    <div class="nh-steps">
+                        <div class="nh-step-item"><span class="nh-step-num">1</span><div>Set up the org-wide defaults once at <strong>System &rsaquo; Branding</strong> &mdash; upload your company logo and decide what each of the 6 slots should contain. Every diagram inherits these by default.</div></div>
+                        <div class="nh-step-item"><span class="nh-step-num">2</span><div>On any individual diagram, click <strong>Branding</strong> in the editor toolbar to override one or more slots for that diagram only. The modal's input placeholders show what each slot would inherit from the org default, so you can see what you're overriding.</div></div>
+                        <div class="nh-step-item"><span class="nh-step-num">3</span><div><strong>Reset</strong> in the modal clears all overrides on this diagram and re-inherits the org-wide defaults.</div></div>
+                    </div>
+                    <p class="nh-tip"><strong>Available tokens:</strong> <code>{{logo}}</code> (the uploaded company logo), <code>{{title}}</code>, <code>{{author}}</code>, <code>{{version}}</code>, and <code>{{modified}}</code>. Mix tokens with plain text &mdash; e.g. <code>Author: {{author}}</code> renders as <em>Author: Ed Mozley</em>.</p>
+                    <p class="nh-tip"><strong>Page outline required:</strong> the header/footer only renders when a paper size is set via the <strong>Page</strong> dropdown &mdash; the outline gives the overlay its anchor points. Turn the page off and the branding hides too.</p>
+                    <p class="nh-tip"><strong>Empty vs inherit:</strong> a blank slot in the modal is an <em>explicit</em> blank (overrides the org default with nothing). To go back to inheriting, click Reset.</p>
+                </div>
+
+                <!-- 9. Versioning -->
+                <div class="nh-section" id="versioning">
+                    <div class="nh-section-header">
+                        <span class="nh-section-num">9</span>
                         <div>
                             <h3>Versioning</h3>
                             <p>Every diagram is part of a linear version chain. The leaf (no children) is the editable <span class="nh-pill current">v? (current)</span> version; older nodes in the chain are read-only history <span class="nh-pill readonly">v? (read-only)</span>. Saving as a new version clones the current state forward into a new editable leaf and demotes the old leaf to historical.</p>
@@ -475,10 +497,10 @@ $path_prefix = '../';
                     <p class="nh-warn"><strong>No branching:</strong> a parent can have at most one child in the chain &mdash; the history is strictly linear. If you need to explore an alternative architecture, create a separate diagram rather than forking the chain.</p>
                 </div>
 
-                <!-- 9. Saving -->
+                <!-- 10. Saving -->
                 <div class="nh-section" id="saving">
                     <div class="nh-section-header">
-                        <span class="nh-section-num">9</span>
+                        <span class="nh-section-num">10</span>
                         <div>
                             <h3>Saving</h3>
                             <p>Two modes. <strong>Autosave</strong> (toggle in the toolbar) saves around 2 seconds after your last edit &mdash; the Word-style status indicator next to the toggle shows <em>Unsaved</em>, <em>Saving&hellip;</em>, then <em>Saved</em>. Toggle state is remembered per analyst. <strong>Manual save</strong> via the Save button or <span class="nh-kbd">Ctrl</span>+<span class="nh-kbd">S</span> works in either mode.</p>
@@ -488,10 +510,10 @@ $path_prefix = '../';
                     <p class="nh-warn"><strong>Unsaved changes:</strong> if you try to navigate away with unsaved edits, the browser will prompt you. Don't ignore that prompt unless you really mean to discard.</p>
                 </div>
 
-                <!-- 10. Quick tips -->
+                <!-- 11. Quick tips -->
                 <div class="nh-section" id="tips">
                     <div class="nh-section-header">
-                        <span class="nh-section-num">10</span>
+                        <span class="nh-section-num">11</span>
                         <div>
                             <h3>Quick tips</h3>
                         </div>

@@ -2264,6 +2264,15 @@ CREATE TABLE IF NOT EXISTS `network_diagrams` (
     -- canvas so analysts know what'll fit. Persisted per-diagram.
     `paper_size`            VARCHAR(20) NULL,
     `paper_orientation`     VARCHAR(20) NULL,
+    -- Per-diagram header/footer override slots. NULL = inherit the org-wide
+    -- default from system_settings (`branding_header_left` etc.); non-NULL
+    -- (including '') = explicit override. Renders only when paper_size is set.
+    `header_left`           VARCHAR(200) NULL,
+    `header_center`         VARCHAR(200) NULL,
+    `header_right`          VARCHAR(200) NULL,
+    `footer_left`           VARCHAR(200) NULL,
+    `footer_center`         VARCHAR(200) NULL,
+    `footer_right`          VARCHAR(200) NULL,
     PRIMARY KEY (`id`),
     KEY `ix_net_diag_parent` (`parent_diagram_id`),
     KEY `ix_net_diag_author` (`created_by_analyst_id`),
