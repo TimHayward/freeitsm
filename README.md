@@ -657,6 +657,12 @@ System administration and configuration.
   - System module cannot be disabled (always accessible)
   - Auto-saves on toggle with debounced API calls and toast notifications
   - Permissions enforced on homepage cards and waffle menu navigation
+- **Branding** (`system/branding/`): Organisation-wide logo and default header/footer text used by Network Mapper diagrams (and future PDF/PNG exporters)
+  - Logo upload supports PNG, JPG, or SVG (2 MB cap, extension + mime whitelist); SVG recommended for crisp print/export; old logos are torn down before the new file is saved
+  - Six header/footer slots (header left/centre/right, footer left/centre/right) accept free text mixed with template tokens — `{{logo}}`, `{{title}}`, `{{author}}`, `{{version}}`, `{{modified}}` — resolved client-side at render time
+  - Sensible defaults preloaded on a fresh install (logo top-left, title top-centre, author + version + modified along the bottom); per-page "Reset to defaults" button
+  - Stored as seven `system_settings` key/value rows (`branding_logo_path`, `branding_header_left`, …, `branding_footer_right`) so no new table is needed; uploads land in `system/uploads/branding/` (gitignored)
+  - Logo path is sanity-checked against disk on every read — a stale DB row pointing at a deleted file surfaces as "no logo" rather than 404ing every diagram open
 - **Toast Notifications** (`assets/js/toast.js`): Global notification system used across all modules
   - Four types: success (green), error (red), warning (amber), info (blue) — each with icon and colour bar
   - 9 configurable screen positions via visual grid picker in System Settings → General
