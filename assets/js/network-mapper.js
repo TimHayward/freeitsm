@@ -84,6 +84,7 @@
     let elPickerModal, elPickerClassLabel, elPickerSearch, elPickerResults;
     let elDetailPanel, elNdIcon, elNdName, elNdClass, elNdClassValue, elNdPlannedRow, elNdCmdbLink, elNdAddRelatedBtn;
     let elRelatedModal, elRmSourceName, elRmResults, elRmAddBtn;
+    let elVersionsBtn, elVersionsDropdown;
 
     // =========================================================
     //  Initialisation
@@ -122,6 +123,18 @@
         elRmSourceName    = document.getElementById('rmSourceName');
         elRmResults       = document.getElementById('rmResults');
         elRmAddBtn        = document.getElementById('rmAddBtn');
+        elVersionsBtn     = document.getElementById('versionsBtn');
+        elVersionsDropdown = document.getElementById('versionsDropdown');
+
+        // Close the versions dropdown on outside click (capture the click on
+        // body and check whether the target is inside the dropdown or its
+        // anchor button — clean way to dismiss without a global modal pattern)
+        document.addEventListener('mousedown', e => {
+            if (!elVersionsDropdown || elVersionsDropdown.style.display === 'none') return;
+            if (elVersionsBtn && elVersionsBtn.contains(e.target)) return;
+            if (elVersionsDropdown.contains(e.target)) return;
+            closeVersionsDropdown();
+        });
 
         ensureSvgLayer();
         bindCanvasEvents();
@@ -1288,6 +1301,73 @@
     }
 
     // =========================================================
+    //  Versions dropdown — anchored to the toolbar Versions button.
+    //  Lazy-fetches the chain each open so save-as-new-version mutations
+    //  show up next time. Click a version to navigate.
+    // =========================================================
+    function toggleVersionsDropdown(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (!elVersionsDropdown) return;
+        if (elVersionsDropdown.style.display !== 'none') {
+            closeVersionsDropdown();
+            return;
+        }
+        elVersionsDropdown.innerHTML = '<div class="nm-vd-loading">Loading version history&hellip;</div>';
+        elVersionsDropdown.style.display = '';
+        fetchVersionList();
+    }
+
+    function closeVersionsDropdown() {
+        if (elVersionsDropdown) elVersionsDropdown.style.display = 'none';
+    }
+
+    async function fetchVersionList() {
+        try {
+            const resp = await fetch(API + 'list_versions.php?id=' + diagramId, { credentials: 'same-origin' });
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.error || 'Failed to load');
+            renderVersionList(data.versions || []);
+        } catch (e) {
+            elVersionsDropdown.innerHTML = '<div class="nm-vd-empty">Failed to load: ' + escapeHtml(e.message) + '</div>';
+        }
+    }
+
+    function renderVersionList(versions) {
+        if (!versions.length) {
+            elVersionsDropdown.innerHTML = '<div class="nm-vd-empty">No version history yet.</div>';
+            return;
+        }
+        // Latest version at the top reads more naturally for a history list —
+        // users want to scan "what's the newest" first. list_versions returns
+        // oldest-first (chain order); reverse for display.
+        const ordered = versions.slice().reverse();
+        const html = ordered.map(v => {
+            const isViewing = v.id === diagramId;
+            const isCurrent = v.is_current;
+            // Pill priority: viewing > current > readonly. Viewing wins when both
+            // apply (you're on the current version) so the row clearly highlights.
+            let pill;
+            if (isViewing && isCurrent) pill = '<span class="nm-vd-pill viewing">Viewing &middot; current</span>';
+            else if (isViewing)         pill = '<span class="nm-vd-pill viewing">Viewing</span>';
+            else if (isCurrent)         pill = '<span class="nm-vd-pill current">Current</span>';
+            else                        pill = '<span class="nm-vd-pill readonly">Read-only</span>';
+            const label = v.version_label || ('v?' + (v.id));
+            const meta = (v.author_name || 'Unknown') + ' &middot; ' + formatDate(v.updated_datetime || v.created_datetime);
+            const rowCls = isViewing ? 'nm-vd-row active' : 'nm-vd-row';
+            // Hard link rather than JS navigation so middle-click / Ctrl-click
+            // opens in a new tab — useful when comparing two versions side-by-side
+            return '<a class="' + rowCls + '" href="diagram.php?id=' + v.id + '">' +
+                '<div class="nm-vd-row-top">' +
+                    '<span class="nm-vd-label">' + escapeHtml(label) + '</span>' +
+                    pill +
+                '</div>' +
+                '<div class="nm-vd-row-meta">' + meta + '</div>' +
+            '</a>';
+        }).join('');
+        elVersionsDropdown.innerHTML = html;
+    }
+
+    // =========================================================
     //  Save
     // =========================================================
     async function save(isAutoSave) {
@@ -1472,6 +1552,9 @@
         // related-objects modal
         openRelatedModal,
         closeRelatedModal,
-        commitRelatedSelections
+        commitRelatedSelections,
+        // versions dropdown
+        toggleVersionsDropdown,
+        closeVersionsDropdown
     };
 })();

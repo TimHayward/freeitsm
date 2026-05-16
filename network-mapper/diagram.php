@@ -488,6 +488,77 @@ $path_prefix = '../';
         .nm-node.selected .nm-edge-handle { opacity: 1; }
         .nm-edge-handle:hover { transform: translate(-50%, -50%) scale(1.3); background: #0891b2; }
 
+        /* ---- Versions dropdown (anchored to the Versions button in the toolbar) ---- */
+        .nm-versions-wrap { position: relative; }
+        .nm-versions-dropdown {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            min-width: 320px;
+            max-width: 400px;
+            max-height: 380px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            z-index: 100;
+        }
+        .nm-vd-loading,
+        .nm-vd-empty {
+            padding: 20px 16px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 13px;
+        }
+        .nm-vd-row {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 10px 14px;
+            border-bottom: 1px solid #f3f4f6;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            transition: background 0.12s;
+        }
+        .nm-vd-row:last-child { border-bottom: 0; }
+        .nm-vd-row:hover { background: #ecfeff; }
+        .nm-vd-row.active { background: #ecfeff; }
+        .nm-vd-row-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        .nm-vd-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #111827;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            min-width: 0;
+        }
+        .nm-vd-row-meta {
+            font-size: 11px;
+            color: #6b7280;
+        }
+        .nm-vd-pill {
+            display: inline-block;
+            padding: 1px 7px;
+            border-radius: 999px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+        .nm-vd-pill.current  { background: #ecfeff; color: #0e7490; border: 1px solid #a5f3fc; }
+        .nm-vd-pill.readonly { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+        .nm-vd-pill.viewing  { background: #06b6d4; color: white; }
+
         /* ---- Node detail panel (slides in beside canvas when a node is selected) ---- */
         .nm-detail-panel {
             width: 0;
@@ -864,6 +935,13 @@ $path_prefix = '../';
                     </label>
                 </div>
                 <span class="nm-status" id="saveStatus"></span>
+                <div class="nm-versions-wrap">
+                    <button class="nm-btn secondary" id="versionsBtn" onclick="NM.toggleVersionsDropdown(event)" title="Browse the version history of this diagram">
+                        Versions
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left: 4px; vertical-align: -1px;"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="nm-versions-dropdown" id="versionsDropdown" style="display:none;"></div>
+                </div>
                 <button class="nm-btn secondary" id="saveVersionBtn" onclick="NM.openNewVersionModal()" title="Clone the current version forward into a new editable version">Save as new version</button>
                 <button class="nm-btn" id="saveBtn" onclick="NM.save()" title="Save (Ctrl+S)">Save</button>
             </div>
@@ -1010,6 +1088,7 @@ $path_prefix = '../';
                 NM.closeNewVersionModal();
                 NM.closeObjectPicker();
                 NM.closeRelatedModal();
+                NM.closeVersionsDropdown();
             }
         });
 
