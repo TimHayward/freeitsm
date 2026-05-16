@@ -400,6 +400,77 @@ $path_prefix = '../';
             margin-top: 2px;
         }
 
+        /* ---- Connector layer ---- */
+        .nm-svg-layer {
+            position: absolute;
+            top: 0; left: 0;
+            pointer-events: none;       /* paths re-enable on themselves */
+            z-index: 1;                 /* under nodes (z:2) and selected nodes (z:3) */
+            overflow: visible;
+        }
+        .nm-connector-line {
+            fill: none;
+            stroke: #64748b;
+            stroke-width: 2;
+            pointer-events: none;       /* the .nm-connector-hit underneath catches clicks */
+        }
+        .nm-connector-line.selected {
+            stroke: #06b6d4;
+            stroke-width: 2.5;
+        }
+        .nm-connector-line.dashed {
+            stroke-dasharray: 6 4;
+        }
+        .nm-connector-hit {
+            fill: none;
+            stroke: transparent;
+            stroke-width: 14;
+            pointer-events: stroke;
+            cursor: pointer;
+        }
+        .nm-temp-connector {
+            fill: none;
+            stroke: #06b6d4;
+            stroke-width: 2;
+            stroke-dasharray: 6 4;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+        .nm-connector-label-bg {
+            fill: white;
+            stroke: #e5e7eb;
+            stroke-width: 1;
+            cursor: pointer;
+        }
+        .nm-connector-label {
+            fill: #1f2937;
+            font-size: 11px;
+            font-family: inherit;
+            text-anchor: middle;
+            user-select: none;
+            cursor: pointer;
+        }
+
+        /* ---- Edge handles (start a connector drag) ---- */
+        .nm-edge-handle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #06b6d4;
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            cursor: crosshair;
+            opacity: 0;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.12s, transform 0.12s;
+            z-index: 5;
+            pointer-events: auto;
+        }
+        .nm-node:hover .nm-edge-handle,
+        .nm-node.selected .nm-edge-handle { opacity: 1; }
+        .nm-edge-handle:hover { transform: translate(-50%, -50%) scale(1.3); background: #0891b2; }
+
         /* ---- Object picker modal ---- */
         .nm-picker-search-wrap { margin-bottom: 12px; }
         .nm-picker-search {

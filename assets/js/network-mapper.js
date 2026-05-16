@@ -1,24 +1,25 @@
 /**
- * Network Mapper — editor module (chunks A + B + C).
+ * Network Mapper — editor module (chunks A + B + C + D part 1).
  *
- * Chunk C adds the drag-to-canvas → bind → place loop:
- *   - dragging a class tile onto the canvas opens a CMDB object picker
- *     scoped to that class
- *   - picking an object places a node at the drop coordinates (snapped
- *     to the 20px grid)
- *   - nodes render as icon + name with planned-object styling preserved
- *     (dashed border + amber tint when is_planned)
- *   - click selects, drag moves (with autosave deferred mid-drag exactly
- *     like Process Mapper), Delete removes (and tears down its connectors
- *     so save_diagram doesn't refuse the payload)
- *   - after every save, get_diagram is re-fetched so temp ids resolve into
- *     real ids — necessary now that connectors will reference nodes in
- *     chunk D, but harmless for chunk C
- *
- * What still ships in later chunks:
- *   - connector drawing + relationships pull-in (chunk D)
- *   - detail panel for selected node + relationships modal (chunk D)
- *   - zoom, PNG export, size variants UI, icon override (phase 2)
+ * Chunk D Part 1 adds connectors:
+ *   - SVG layer behind nodes hosts connector paths + arrowhead defs
+ *   - 4 edge handles per node (top/right/bottom/left), invisible until the
+ *     node is hovered or selected. mousedown on a handle starts a connect
+ *     drag — a dashed temp line tracks the cursor until mouseup. If mouseup
+ *     lands on another node, a connector is created between source and
+ *     target (free-form by default; cmdb_relationship_id stays NULL until
+ *     part 2's relationships pull-in populates it from CMDB)
+ *   - connectors store from_node_id/to_node_id as either the real node id
+ *     (positive int from the server) or the tempId (negative int for nodes
+ *     placed but not yet saved). save_diagram.php resolves both through
+ *     its nodeIdMap, so connecting two brand-new nodes and hitting save
+ *     works in a single round-trip
+ *   - click a connector to select (cyan + thicker stroke); Delete removes
+ *     it. Connector and node selections are mutually exclusive
+ *   - double-click on a connector prompts for a label which renders mid-line
+ *   - renderConnectors() is called after every node move/place/delete so
+ *     lines track their endpoints; arrowheads are SVG markers (the same
+ *     pattern Process Mapper uses)
  *
  * Convention: every exported entry point goes on window.NM so the inline
  * HTML can call NM.save(), NM.toggleAutosave() etc. without scope concerns.
@@ -37,6 +38,9 @@
     const NODE_SIZES = {            // pixel icon size per node.size enum value
         small: 40, medium: 56, large: 80
     };
+    const NODE_PADDING = 6;         // matches .nm-node padding in diagram.php
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const SVG_SIZE = 5000;          // SVG layer width/height (matches Process Mapper)
 
     // ---- state ----
     let diagramId = 0;
@@ -54,8 +58,11 @@
     let lastSavingShownAt = 0;
 
     // ---- selection + drag state ----
-    let selectedNodeKey = null;  // nodeKey() of currently selected node, or null
-    let nodeDrag = null;         // { key, offsetX, offsetY, startX, startY, moved }
+    let selectedNodeKey = null;       // nodeKey() of currently selected node, or null
+    let selectedConnectorKey = null;  // connectorKey() of currently selected connector, or null
+    let nodeDrag = null;              // { key, offsetX, offsetY, startX, startY, moved }
+    let connectDrag = null;           // { fromRef, startX, startY } while drawing a new connector
+    let elSvgLayer = null;            // populated by ensureSvgLayer()
 
     // ---- picker state ----
     let pickerClassId = null;
@@ -97,6 +104,7 @@
         elPickerSearch    = document.getElementById('pickerSearch');
         elPickerResults   = document.getElementById('pickerResults');
 
+        ensureSvgLayer();
         bindCanvasEvents();
 
         // Load diagram + palette + autosave preference in parallel
@@ -112,26 +120,63 @@
         });
         elCanvas.addEventListener('drop', onCanvasDrop);
 
-        // Click on empty canvas clears selection
+        // Click on empty canvas / SVG-layer empty space clears selection
         elCanvas.addEventListener('mousedown', e => {
-            if (e.target === elCanvas || e.target.classList.contains('nm-canvas-empty')) {
+            // Treat the canvas background, the empty-state element, or the SVG
+            // layer itself (not its children) as "empty space" — clicking
+            // anything else (node, connector path, edge handle) deselects via
+            // its own handler instead.
+            const t = e.target;
+            const isCanvasBg = t === elCanvas || t.classList.contains('nm-canvas-empty');
+            const isSvgBg    = t === elSvgLayer;
+            if (isCanvasBg || isSvgBg) {
                 selectNode(null);
+                selectConnector(null);
             }
         });
 
-        // Document-level keyboard: Delete/Backspace removes selected node when
-        // the canvas (or one of its node children) has focus / nothing else does
+        // Document-level keyboard: Delete/Backspace removes whichever of node or
+        // connector is selected, when the canvas (or one of its node children)
+        // has focus / nothing else does
         document.addEventListener('keydown', e => {
             if (e.key !== 'Delete' && e.key !== 'Backspace') return;
             const tag = (document.activeElement && document.activeElement.tagName) || '';
             if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
             // Don't fire if a modal is open (search inputs inside the picker etc.)
             if (document.querySelector('.nm-modal-overlay.active')) return;
-            if (selectedNodeKey != null) {
+            if (selectedConnectorKey != null) {
+                e.preventDefault();
+                deleteSelectedConnector();
+            } else if (selectedNodeKey != null) {
                 e.preventDefault();
                 deleteSelectedNode();
             }
         });
+    }
+
+    // =========================================================
+    //  SVG layer (connectors live here)
+    // =========================================================
+    function ensureSvgLayer() {
+        if (elSvgLayer) return elSvgLayer;
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.classList.add('nm-svg-layer');
+        svg.setAttribute('width', String(SVG_SIZE));
+        svg.setAttribute('height', String(SVG_SIZE));
+        const defs = document.createElementNS(SVG_NS, 'defs');
+        defs.innerHTML =
+            '<marker id="nm-arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">' +
+                '<polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>' +
+            '</marker>' +
+            '<marker id="nm-arrow-sel" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">' +
+                '<polygon points="0 0, 10 3.5, 0 7" fill="#06b6d4"/>' +
+            '</marker>';
+        svg.appendChild(defs);
+        // Insert before .nm-canvas-empty so the empty-state overlays the (empty)
+        // SVG, and so future nodes (appended later by renderNodes) sit on top.
+        elCanvas.insertBefore(svg, elCanvas.firstChild);
+        elSvgLayer = svg;
+        return svg;
     }
 
     // =========================================================
@@ -398,17 +443,19 @@
     }
 
     function renderNodes() {
-        // Clear existing node DOM; keep the empty-state element + any future
-        // SVG layer that chunk D's connectors will live in.
+        // Clear existing node DOM; keep the empty-state element + the SVG
+        // layer (connectors render into it separately via renderConnectors).
         Array.from(elCanvas.querySelectorAll('.nm-node')).forEach(el => el.remove());
 
         if (!nodes.length) {
             if (elCanvasEmpty) elCanvasEmpty.style.display = '';
+            renderConnectors();
             return;
         }
         if (elCanvasEmpty) elCanvasEmpty.style.display = 'none';
 
         nodes.forEach(n => elCanvas.appendChild(buildNodeEl(n)));
+        renderConnectors();
     }
 
     function buildNodeEl(n) {
@@ -424,7 +471,25 @@
         el.style.top  = n.y + 'px';
         el.style.width = sizePx + 'px';
         el.dataset.key = nodeKey(n);
+
+        // Edge-handle positions: anchored to the icon's bounding box (which is
+        // sizePx square, offset by NODE_PADDING inside the node element). The
+        // label can extend wider/lower than the icon — anchoring to the icon
+        // keeps the handles in predictable spots regardless of label length.
+        const pad = NODE_PADDING;
+        const cx  = pad + sizePx / 2;
+        const cy  = pad + sizePx / 2;
+        const x1  = pad + sizePx;
+        const y1  = pad + sizePx;
+        const handleHtml = (diagram && diagram.is_current) ? (
+            '<div class="nm-edge-handle" data-side="top"    style="left:' + cx + 'px; top:'  + pad + 'px;"></div>' +
+            '<div class="nm-edge-handle" data-side="right"  style="left:' + x1 + 'px; top:'  + cy  + 'px;"></div>' +
+            '<div class="nm-edge-handle" data-side="bottom" style="left:' + cx + 'px; top:'  + y1  + 'px;"></div>' +
+            '<div class="nm-edge-handle" data-side="left"   style="left:' + pad + 'px; top:' + cy  + 'px;"></div>'
+        ) : '';
+
         el.innerHTML =
+            handleHtml +
             '<div class="nm-node-icon" style="height:' + sizePx + 'px;">' + iconSvg + '</div>' +
             (n.is_planned ? '<span class="nm-node-planned-pill">PLANNED</span>' : '') +
             '<div class="nm-node-label" title="' + escapeAttr(n.name + ' (' + (n.class_name || '') + ')') + '">' +
@@ -432,12 +497,55 @@
             '</div>';
 
         el.addEventListener('mousedown', onNodeMouseDown);
+        // Edge handles initiate connector drag (separate from node move drag —
+        // startConnectDrag stopPropagation()s so the node's own mousedown
+        // doesn't also fire)
+        el.querySelectorAll('.nm-edge-handle').forEach(h => {
+            h.addEventListener('mousedown', e => startConnectDrag(e, n, h.dataset.side));
+        });
         return el;
+    }
+
+    function nodeRef(n) {
+        // Stable cross-save identifier for connector references. Real id wins;
+        // tempId (negative integer) for newly-placed nodes. save_diagram.php
+        // looks up both forms in its nodeIdMap, so a connector between two
+        // brand-new nodes resolves cleanly on the first save.
+        return n.id || n.tempId;
+    }
+
+    function findNodeByRef(ref) {
+        if (ref == null) return null;
+        return nodes.find(n => n.id === ref || n.tempId === ref) || null;
+    }
+
+    function nodeIconBBox(n) {
+        // Icon-only bounding box, used for connector endpoint placement and
+        // edge-handle anchoring. We use icon bbox (not the full node bbox)
+        // because the label below the icon can wrap to 2 lines of variable
+        // height — anchoring to the icon keeps connector endpoints stable
+        // regardless of label content.
+        const sizePx = NODE_SIZES[n.size] || NODE_SIZES.medium;
+        const pad = NODE_PADDING;
+        return {
+            x: n.x + pad,
+            y: n.y + pad,
+            w: sizePx,
+            h: sizePx,
+            cx: n.x + pad + sizePx / 2,
+            cy: n.y + pad + sizePx / 2
+        };
     }
 
     function selectNode(key) {
         if (selectedNodeKey === key) return;
         selectedNodeKey = key;
+        if (key != null && selectedConnectorKey != null) {
+            // node + connector selection are mutually exclusive; redraw to drop
+            // the connector's selected stroke
+            selectedConnectorKey = null;
+            renderConnectors();
+        }
         // Cheap DOM swap rather than full re-render
         Array.from(elCanvas.querySelectorAll('.nm-node')).forEach(el => {
             el.classList.toggle('selected', el.dataset.key === key);
@@ -486,6 +594,9 @@
             el.style.left = newX + 'px';
             el.style.top  = newY + 'px';
         }
+        // Connectors anchored to this node need to redraw to track its new
+        // position. Cheap to re-render the whole set each frame for v1.
+        renderConnectors();
     }
 
     function onNodeMouseUp() {
@@ -503,8 +614,7 @@
         const n = findNodeByKey(selectedNodeKey);
         if (!n) return;
         // Drop any connectors touching this node so save_diagram doesn't reject
-        // the payload as having dangling refs. Chunk C has no connectors so this
-        // is a no-op now but the wiring is here for chunk D.
+        // the payload as having dangling refs.
         connectors = connectors.filter(c => {
             // Connectors reference nodes by their id (real or temp). Build the
             // node we're deleting's key form on both sides for the comparison.
@@ -515,8 +625,249 @@
         });
         nodes = nodes.filter(other => other !== n);
         selectedNodeKey = null;
+        selectedConnectorKey = null;
         renderNodes();
         markDirty();
+    }
+
+    // =========================================================
+    //  Connectors — render, select, delete, label, draw-new
+    // =========================================================
+    function connectorKey(c) {
+        // Real id wins. Brand-new connectors get a transient JS-side key
+        // (assigned in commitConnectorDrag) so they survive selection until
+        // save→reload promotes them to real ids.
+        return c.id ? 'cr' + c.id : 'ct' + c._tempKey;
+    }
+
+    function findConnectorByKey(key) {
+        if (key == null) return null;
+        return connectors.find(c => connectorKey(c) === key) || null;
+    }
+
+    function selectConnector(key) {
+        if (selectedConnectorKey === key) return;
+        selectedConnectorKey = key;
+        if (key != null) selectNode(null);
+        renderConnectors();
+    }
+
+    function renderConnectors() {
+        if (!elSvgLayer) return;
+        // Clear all rendered connector <g>s; keep the <defs> markers in place
+        Array.from(elSvgLayer.querySelectorAll('.nm-connector-group')).forEach(g => g.remove());
+
+        connectors.forEach(c => {
+            const from = findNodeByRef(c.from_node_id);
+            const to   = findNodeByRef(c.to_node_id);
+            if (!from || !to) return; // node was deleted but connector lingered — skip silently
+
+            const fromBox = nodeIconBBox(from);
+            const toBox   = nodeIconBBox(to);
+            const pts = calcConnectorPoints(fromBox, toBox);
+
+            const g = document.createElementNS(SVG_NS, 'g');
+            g.classList.add('nm-connector-group');
+            const cKey = connectorKey(c);
+            g.dataset.connKey = cKey;
+            const isSel = selectedConnectorKey === cKey;
+
+            // Wide invisible hit-area underneath for easier clicking
+            const hit = document.createElementNS(SVG_NS, 'path');
+            hit.setAttribute('d', 'M' + pts.x1 + ',' + pts.y1 + ' L' + pts.x2 + ',' + pts.y2);
+            hit.classList.add('nm-connector-hit');
+            hit.addEventListener('mousedown', e => {
+                e.stopPropagation();
+                selectConnector(cKey);
+            });
+            hit.addEventListener('dblclick', e => {
+                e.stopPropagation();
+                promptConnectorLabel(c);
+            });
+            g.appendChild(hit);
+
+            const path = document.createElementNS(SVG_NS, 'path');
+            path.setAttribute('d', 'M' + pts.x1 + ',' + pts.y1 + ' L' + pts.x2 + ',' + pts.y2);
+            path.classList.add('nm-connector-line');
+            if (c.line_style === 'dashed') path.classList.add('dashed');
+            if (isSel) path.classList.add('selected');
+            path.setAttribute('marker-end', isSel ? 'url(#nm-arrow-sel)' : 'url(#nm-arrow)');
+            g.appendChild(path);
+
+            if (c.label) {
+                const mx = (pts.x1 + pts.x2) / 2;
+                const my = (pts.y1 + pts.y2) / 2;
+                const textLen = c.label.length * 6.5 + 14;
+
+                const bg = document.createElementNS(SVG_NS, 'rect');
+                bg.classList.add('nm-connector-label-bg');
+                bg.setAttribute('x', String(mx - textLen / 2));
+                bg.setAttribute('y', String(my - 10));
+                bg.setAttribute('width', String(textLen));
+                bg.setAttribute('height', '20');
+                bg.setAttribute('rx', '3');
+                bg.addEventListener('mousedown', e => {
+                    e.stopPropagation();
+                    selectConnector(cKey);
+                });
+                bg.addEventListener('dblclick', e => {
+                    e.stopPropagation();
+                    promptConnectorLabel(c);
+                });
+                g.appendChild(bg);
+
+                const text = document.createElementNS(SVG_NS, 'text');
+                text.classList.add('nm-connector-label');
+                text.setAttribute('x', String(mx));
+                text.setAttribute('y', String(my + 4));
+                text.textContent = c.label;
+                text.addEventListener('dblclick', e => {
+                    e.stopPropagation();
+                    promptConnectorLabel(c);
+                });
+                g.appendChild(text);
+            }
+
+            elSvgLayer.appendChild(g);
+        });
+    }
+
+    function calcConnectorPoints(from, to) {
+        // Endpoints land on the side of each icon bbox that faces the other
+        // node. Whichever axis (horizontal/vertical) has the larger separation
+        // wins — same pattern Process Mapper uses for its connector geometry.
+        const dx = to.cx - from.cx;
+        const dy = to.cy - from.cy;
+        let x1, y1, x2, y2;
+        if (Math.abs(dx) > Math.abs(dy)) {
+            if (dx > 0) {
+                x1 = from.x + from.w; y1 = from.cy;
+                x2 = to.x;            y2 = to.cy;
+            } else {
+                x1 = from.x;          y1 = from.cy;
+                x2 = to.x + to.w;     y2 = to.cy;
+            }
+        } else {
+            if (dy > 0) {
+                x1 = from.cx; y1 = from.y + from.h;
+                x2 = to.cx;   y2 = to.y;
+            } else {
+                x1 = from.cx; y1 = from.y;
+                x2 = to.cx;   y2 = to.y + to.h;
+            }
+        }
+        return { x1: x1, y1: y1, x2: x2, y2: y2 };
+    }
+
+    function deleteSelectedConnector() {
+        if (!diagram || !diagram.is_current) return;
+        if (selectedConnectorKey == null) return;
+        const c = findConnectorByKey(selectedConnectorKey);
+        if (!c) return;
+        connectors = connectors.filter(x => x !== c);
+        selectedConnectorKey = null;
+        renderConnectors();
+        markDirty();
+    }
+
+    function promptConnectorLabel(c) {
+        if (!diagram || !diagram.is_current) return;
+        const next = window.prompt('Connector label (leave blank to remove):', c.label || '');
+        if (next === null) return; // cancelled
+        const trimmed = next.trim();
+        const newLabel = trimmed === '' ? null : trimmed.slice(0, 255);
+        if (newLabel === c.label || (newLabel == null && !c.label)) return;
+        c.label = newLabel;
+        renderConnectors();
+        markDirty();
+    }
+
+    // ---- Connect drag (edge handle → target node) ----
+    function startConnectDrag(e, fromNode, side) {
+        if (!diagram || !diagram.is_current) return;
+        e.stopPropagation();
+        e.preventDefault();
+
+        const box = nodeIconBBox(fromNode);
+        let sx, sy;
+        switch (side) {
+            case 'top':    sx = box.cx;         sy = box.y; break;
+            case 'bottom': sx = box.cx;         sy = box.y + box.h; break;
+            case 'left':   sx = box.x;          sy = box.cy; break;
+            case 'right':
+            default:       sx = box.x + box.w;  sy = box.cy; break;
+        }
+        connectDrag = { fromRef: nodeRef(fromNode), startX: sx, startY: sy };
+        document.addEventListener('mousemove', onConnectDragMove);
+        document.addEventListener('mouseup',   onConnectDragUp);
+    }
+
+    function onConnectDragMove(e) {
+        if (!connectDrag || !elSvgLayer) return;
+        const rect = elCanvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left + elCanvas.scrollLeft;
+        const my = e.clientY - rect.top  + elCanvas.scrollTop;
+        let line = elSvgLayer.querySelector('.nm-temp-connector');
+        if (!line) {
+            line = document.createElementNS(SVG_NS, 'line');
+            line.classList.add('nm-temp-connector');
+            elSvgLayer.appendChild(line);
+        }
+        line.setAttribute('x1', String(connectDrag.startX));
+        line.setAttribute('y1', String(connectDrag.startY));
+        line.setAttribute('x2', String(mx));
+        line.setAttribute('y2', String(my));
+    }
+
+    function onConnectDragUp(e) {
+        document.removeEventListener('mousemove', onConnectDragMove);
+        document.removeEventListener('mouseup',   onConnectDragUp);
+        if (!connectDrag) return;
+        if (elSvgLayer) {
+            elSvgLayer.querySelectorAll('.nm-temp-connector').forEach(el => el.remove());
+        }
+        // Resolve drop target: look for the closest .nm-node element under the
+        // cursor. Using elementFromPoint with a temporary hide of the SVG layer
+        // would also work, but the bbox hit-test is cheaper and avoids reflow.
+        const rect = elCanvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left + elCanvas.scrollLeft;
+        const my = e.clientY - rect.top  + elCanvas.scrollTop;
+        const target = findNodeAt(mx, my);
+        const fromRef = connectDrag.fromRef;
+        connectDrag = null;
+        if (!target) return;
+        const toRef = nodeRef(target);
+        if (toRef === fromRef) return; // self-loop not supported
+        // Idempotent: if an identical connector already exists in this direction,
+        // don't add a duplicate
+        if (connectors.some(c => c.from_node_id === fromRef && c.to_node_id === toRef)) return;
+        commitConnectorDrag(fromRef, toRef);
+    }
+
+    function commitConnectorDrag(fromRef, toRef) {
+        const c = {
+            id: null,
+            _tempKey: nextTempId--,           // JS-side selection key, never sent
+            from_node_id: fromRef,
+            to_node_id: toRef,
+            cmdb_relationship_id: null,        // free-form by default; part 2 populates this
+            label: null,
+            line_style: 'solid'
+        };
+        connectors.push(c);
+        renderConnectors();
+        selectConnector(connectorKey(c));
+        markDirty();
+    }
+
+    function findNodeAt(x, y) {
+        // Hit-test the icon bounding box, not the full node element — matches
+        // how connectors anchor and feels more precise when dropping near a
+        // node edge.
+        return nodes.find(n => {
+            const b = nodeIconBBox(n);
+            return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
+        }) || null;
     }
 
     function cssEscape(s) {
@@ -632,14 +983,18 @@
                 body: JSON.stringify({
                     id: diagramId,
                     nodes: nodes.map(n => ({
+                        // tempId is critical here — save_diagram's nodeIdMap is
+                        // keyed by id ?? tempId; without it, a connector that
+                        // references a brand-new node by its tempId can't
+                        // resolve and gets silently dropped on the server.
                         id: n.id,
+                        tempId: n.tempId || null,
                         cmdb_object_id: n.cmdb_object_id,
                         x: n.x, y: n.y,
                         size: n.size || 'medium',
                         icon_override: n.icon_override || null
                     })),
                     connectors: connectors.map(c => ({
-                        id: c.id,
                         from_node_id: c.from_node_id,
                         to_node_id: c.to_node_id,
                         cmdb_relationship_id: c.cmdb_relationship_id || null,
@@ -664,6 +1019,10 @@
                 diagram = data2.diagram;
                 nodes = data2.nodes || [];
                 connectors = data2.connectors || [];
+                // Connector selection used a transient _tempKey for newly-drawn
+                // connectors; after reload everything has a real id so any
+                // existing selection key is stale by definition. Drop it.
+                selectedConnectorKey = null;
                 renderNodes();
                 if (selectedCmdbId) {
                     const reselect = nodes.find(n => n.cmdb_object_id === selectedCmdbId);
