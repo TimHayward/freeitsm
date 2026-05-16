@@ -2376,6 +2376,159 @@
     }
 
     // =========================================================
+    //  PNG / PDF export
+    //  Snapshot the canvas via html2canvas, optionally wrap into a paper-
+    //  sized PDF via jsPDF. Driven entirely from the live DOM: temporarily
+    //  reset zoom to 1, hide selection/edge-handle chrome via .is-exporting,
+    //  render the clipped rect, restore everything. The page outline drives
+    //  the clip rect when a paper size is set (WYSIWYG export); otherwise
+    //  we crop to the bounding box of placed nodes + 40px padding.
+    // =========================================================
+    function exportFilename(ext) {
+        const title = (diagram && diagram.title) ? diagram.title : 'diagram';
+        const vers = (diagram && diagram.version_label) ? diagram.version_label : '';
+        const slug = (title + (vers ? '-' + vers : ''))
+            .replace(/[^a-z0-9._-]+/gi, '-')
+            .replace(/^-+|-+$/g, '')
+            .toLowerCase();
+        return (slug || 'diagram') + '.' + ext;
+    }
+
+    function computeExportRect() {
+        if (!diagram) return null;
+        if (diagram.paper_size) {
+            const dims = pageDimensionsPx(diagram.paper_size, diagram.paper_orientation);
+            if (dims) return { x: 0, y: 0, width: dims.w, height: dims.h };
+        }
+        if (!nodes.length) return null;
+        // Bounding box of nodes — approximate using medium icon size, +40px
+        // for the label below the icon so it isn't clipped. Pad each side
+        // by 40px so the export doesn't feel cramped at the edges.
+        const sz = NODE_SIZES.medium;
+        let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
+        nodes.forEach(n => {
+            if (n.x < minX) minX = n.x;
+            if (n.y < minY) minY = n.y;
+            if (n.x + sz > maxX) maxX = n.x + sz;
+            if (n.y + sz + 40 > maxY) maxY = n.y + sz + 40;
+        });
+        const PAD = 40;
+        const x = Math.max(0, minX - PAD);
+        const y = Math.max(0, minY - PAD);
+        return { x, y, width: (maxX + PAD) - x, height: (maxY + PAD) - y };
+    }
+
+    async function captureCanvas() {
+        if (!diagram) return null;
+        if (typeof html2canvas !== 'function') {
+            if (window.showToast) showToast('Export library failed to load — check your network and refresh', 'error');
+            return null;
+        }
+        const rect = computeExportRect();
+        if (!rect) {
+            if (window.showToast) showToast('Nothing to export — place some nodes or set a page size first', 'info');
+            return null;
+        }
+
+        // Stash state so we can restore exactly what was on screen before
+        const stashed = {
+            zoom,
+            scrollLeft: elCanvas ? elCanvas.scrollLeft : 0,
+            scrollTop:  elCanvas ? elCanvas.scrollTop  : 0,
+            selectedNode: selectedNodeKey,
+            selectedConnector: selectedConnectorKey,
+        };
+
+        // Clear selection so the export doesn't include cyan rings/strokes
+        selectedNodeKey = null;
+        selectedConnectorKey = null;
+        if (elCanvasInner) {
+            Array.from(elCanvasInner.querySelectorAll('.nm-node.selected')).forEach(el => el.classList.remove('selected'));
+        }
+        renderConnectors();
+
+        // Reset zoom to 1 so html2canvas captures at the model's native
+        // resolution. The `scale: 2` option below then upsamples for crisp
+        // print output independent of the user's editor zoom.
+        zoom = 1;
+        applyZoom();
+
+        // Capture mode hides edge handles + selection chrome via CSS
+        if (elCanvasInner) elCanvasInner.classList.add('is-exporting');
+
+        try {
+            const canvas = await html2canvas(elCanvasInner, {
+                x: rect.x,
+                y: rect.y,
+                width:  rect.width,
+                height: rect.height,
+                scale: 2,                  // 2× for crisp print/PDF output
+                backgroundColor: '#ffffff', // page is white in print, not the dot-grid
+                logging: false,
+                useCORS: true,             // permit cross-origin logo if ever hosted off-domain
+            });
+            return { canvas, rect };
+        } catch (err) {
+            if (window.showToast) showToast('Export failed: ' + (err && err.message ? err.message : 'unknown error'), 'error');
+            return null;
+        } finally {
+            if (elCanvasInner) elCanvasInner.classList.remove('is-exporting');
+            zoom = stashed.zoom;
+            applyZoom();
+            if (elCanvas) {
+                elCanvas.scrollLeft = stashed.scrollLeft;
+                elCanvas.scrollTop  = stashed.scrollTop;
+            }
+            if (stashed.selectedNode != null) selectNode(stashed.selectedNode);
+            if (stashed.selectedConnector != null) {
+                selectedConnectorKey = stashed.selectedConnector;
+                renderConnectors();
+            }
+        }
+    }
+
+    async function exportPng() {
+        const result = await captureCanvas();
+        if (!result) return;
+        // Browser-native download via a one-shot <a download> click
+        const link = document.createElement('a');
+        link.download = exportFilename('png');
+        link.href = result.canvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        if (window.showToast) showToast('PNG exported', 'success');
+    }
+
+    async function exportPdf() {
+        // jsPDF UMD exposes its constructor under window.jspdf.jsPDF
+        const jsPDF = (window.jspdf && window.jspdf.jsPDF) || null;
+        if (!jsPDF) {
+            if (window.showToast) showToast('PDF library failed to load — check your network and refresh', 'error');
+            return;
+        }
+        const result = await captureCanvas();
+        if (!result) return;
+        // PDF page setup mirrors the diagram's paper choice. With no paper
+        // size we fall back to A4 portrait — the rasterised image gets
+        // scaled to fit the page, which is fine for content-bbox exports.
+        const paperSize  = (diagram && diagram.paper_size)        || 'A4';
+        const orient     = (diagram && diagram.paper_orientation) || 'portrait';
+        const doc = new jsPDF({
+            orientation: orient === 'landscape' ? 'l' : 'p',
+            unit: 'pt',
+            // jsPDF accepts paper sizes lowercased; our stored values are
+            // capitalised so .toLowerCase() bridges the convention gap.
+            format: paperSize.toLowerCase(),
+        });
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+        doc.addImage(result.canvas.toDataURL('image/png'), 'PNG', 0, 0, pageW, pageH);
+        doc.save(exportFilename('pdf'));
+        if (window.showToast) showToast('PDF exported', 'success');
+    }
+
+    // =========================================================
     //  Helpers
     // =========================================================
     function formatDate(s) {
@@ -2432,6 +2585,9 @@
         zoomReset,
         zoomFit,
         enterPresent,
-        exitPresent
+        exitPresent,
+        // export
+        exportPng,
+        exportPdf
     };
 })();

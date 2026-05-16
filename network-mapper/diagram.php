@@ -218,6 +218,24 @@ $path_prefix = '../';
         }
         .nm-zoom-fit { font-size: 12px; }
 
+        /* Export buttons — same segmented look as zoom, two buttons (PNG/PDF) */
+        .nm-export-group {
+            display: inline-flex;
+            align-items: stretch;
+            gap: 0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .nm-export-group .nm-btn {
+            border-radius: 0;
+            border-right-width: 0;
+            padding: 7px 10px;
+            font-size: 12px;
+        }
+        .nm-export-group .nm-btn:first-child { border-radius: 4px 0 0 4px; }
+        .nm-export-group .nm-btn:last-child  { border-radius: 0 4px 4px 0; border-right-width: 1px; }
+        .nm-export-btn { min-width: 40px; font-weight: 600; }
+
         /* ---- Meta row ---- */
         .nm-meta-row {
             font-size: 12px;
@@ -1314,6 +1332,23 @@ $path_prefix = '../';
            keeps its dot-grid + scroll behaviour — we're only hiding chrome
            around it, not changing the canvas itself. */
         .nm-editor.is-presenting .nm-canvas-wrap { padding: 0; }
+
+        /* ---- Export capture mode: applied to .nm-canvas-inner during a
+           PNG/PDF snapshot so the rasterised image doesn't pick up
+           edit-time chrome (selection rings, edge handles, the empty-state
+           placeholder). ---- */
+        .nm-canvas-inner.is-exporting .nm-node-edge-handle,
+        .nm-canvas-inner.is-exporting .nm-canvas-empty { display: none !important; }
+        .nm-canvas-inner.is-exporting .nm-node.selected {
+            border-color: transparent !important;
+            box-shadow: none !important;
+        }
+        .nm-canvas-inner.is-exporting .nm-connector-line.selected {
+            stroke: #64748b !important;
+            stroke-width: 2 !important;
+        }
+        /* Use the cyan default arrowhead in non-selected form too */
+        .nm-canvas-inner.is-exporting .nm-connector-line { marker-end: url(#nm-arrow) !important; }
     </style>
 </head>
 <body>
@@ -1349,6 +1384,10 @@ $path_prefix = '../';
                     <button class="nm-btn secondary nm-zoom-fit" id="zoomFitBtn" onclick="NM.zoomFit()" title="Fit page (or all nodes) to the visible canvas">Fit</button>
                 </div>
                 <button class="nm-btn secondary" id="brandingBtn" onclick="NM.openBrandingModal()" title="Override the org-wide header/footer for this diagram (set a page size first)">Branding</button>
+                <div class="nm-export-group" role="group" aria-label="Export">
+                    <button class="nm-btn secondary nm-export-btn" id="exportPngBtn" onclick="NM.exportPng()" title="Export the diagram as a PNG image (clipped to the page outline if set)">PNG</button>
+                    <button class="nm-btn secondary nm-export-btn" id="exportPdfBtn" onclick="NM.exportPdf()" title="Export the diagram as a PDF (uses the chosen paper size + orientation)">PDF</button>
+                </div>
                 <button class="nm-btn secondary" id="presentBtn" onclick="NM.enterPresent()" title="Hide the toolbar and panels to show just the diagram (Esc to exit, then F11 for full-screen)">Present</button>
                 <div class="nm-versions-wrap">
                     <button class="nm-btn secondary" id="versionsBtn" onclick="NM.toggleVersionsDropdown(event)" title="Browse the version history of this diagram">
@@ -1569,6 +1608,12 @@ $path_prefix = '../';
         </div>
     </div>
 
+    <!-- Vendor: PNG/PDF export. html2canvas rasterises the diagram canvas;
+         jsPDF wraps the rasterised image into a paper-sized PDF document.
+         Loaded eagerly because the editor is a heavy page already and lazy
+         loading adds complexity for marginal gain. -->
+    <script src="../assets/js/vendor/html2canvas.min.js"></script>
+    <script src="../assets/js/vendor/jspdf.umd.min.js"></script>
     <script src="../assets/js/network-mapper-icons.js"></script>
     <script src="../assets/js/network-mapper.js"></script>
     <script>
