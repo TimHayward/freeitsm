@@ -20,6 +20,7 @@ try {
     $name          = trim($data['name'] ?? '');
     $colour        = trim($data['colour'] ?? '');
     $is_closed     = !empty($data['is_closed']) ? 1 : 0;
+    $pauses_sla    = !empty($data['pauses_sla']) ? 1 : 0;
     $is_default    = !empty($data['is_default']) ? 1 : 0;
     $display_order = (int)($data['display_order'] ?? 0);
     $is_active     = !empty($data['is_active']) ? 1 : 0;
@@ -54,15 +55,15 @@ try {
 
     if ($id) {
         $sql = "UPDATE ticket_statuses
-                   SET name = ?, colour = ?, is_closed = ?, is_default = ?, display_order = ?, is_active = ?
+                   SET name = ?, colour = ?, is_closed = ?, pauses_sla = ?, is_default = ?, display_order = ?, is_active = ?
                  WHERE id = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->execute([$name, $colour ?: null, $is_closed, $is_default, $display_order, $is_active, $id]);
+        $stmt->execute([$name, $colour ?: null, $is_closed, $pauses_sla, $is_default, $display_order, $is_active, $id]);
     } else {
-        $sql = "INSERT INTO ticket_statuses (name, colour, is_closed, is_default, display_order, is_active)
-                VALUES (?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO ticket_statuses (name, colour, is_closed, pauses_sla, is_default, display_order, is_active)
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
-        $stmt->execute([$name, $colour ?: null, $is_closed, $is_default, $display_order, $is_active]);
+        $stmt->execute([$name, $colour ?: null, $is_closed, $pauses_sla, $is_default, $display_order, $is_active]);
     }
 
     // Guarantee at least one default exists

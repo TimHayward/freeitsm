@@ -16,7 +16,7 @@ if (!isset($_SESSION['analyst_id'])) {
 try {
     $conn = connectToDatabase();
 
-    $sql = "SELECT id, name, is_closed, colour, is_default, display_order, is_active, created_datetime
+    $sql = "SELECT id, name, is_closed, pauses_sla, colour, is_default, display_order, is_active, created_datetime
             FROM ticket_statuses
             ORDER BY display_order, name";
 
@@ -26,6 +26,7 @@ try {
 
     foreach ($statuses as &$s) {
         $s['is_closed']  = (bool)$s['is_closed'];
+        $s['pauses_sla'] = (bool)$s['pauses_sla'];
         $s['is_default'] = (bool)$s['is_default'];
         $s['is_active']  = (bool)$s['is_active'];
     }

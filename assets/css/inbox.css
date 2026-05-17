@@ -405,8 +405,50 @@ body {
 .email-time {
     color: #999;
     font-size: 11px;
-    margin-top: 4px;
 }
+
+.email-footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+    gap: 8px;
+}
+
+.email-sla-slot {
+    flex: 0 0 auto;
+    min-height: 16px;
+}
+
+.email-sla-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #f3f4f6;
+    color: #444;
+    white-space: nowrap;
+}
+
+.email-sla-pill .email-sla-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #999;
+}
+
+.email-sla-pill.sla-ok        { background: #dcfce7; color: #166534; }
+.email-sla-pill.sla-ok        .email-sla-dot { background: #16a34a; }
+.email-sla-pill.sla-achieved  { background: #dcfce7; color: #166534; }
+.email-sla-pill.sla-achieved  .email-sla-dot { background: #16a34a; }
+.email-sla-pill.sla-warning   { background: #fef3c7; color: #92400e; }
+.email-sla-pill.sla-warning   .email-sla-dot { background: #f59e0b; }
+.email-sla-pill.sla-breached  { background: #fee2e2; color: #991b1b; }
+.email-sla-pill.sla-breached  .email-sla-dot { background: #dc2626; }
 
 .email-count-badge {
     display: inline-block;

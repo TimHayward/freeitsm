@@ -842,6 +842,8 @@ function renderEmailList() {
         const emailCount = email.email_count || 1;
         const countBadge = emailCount > 1 ? `<span class="email-count-badge">${emailCount}</span>` : '';
         const ticketId = email.ticket_id || email.id;
+        // Reserve a slot for the SLA dot; populated asynchronously by loadInboxSlaIndicators()
+        // once the batch endpoint responds. Stays empty (and invisible) for tickets without SLA.
         return `
             <div class="email-item ${email.id === selectedEmailId ? 'selected' : ''} ${!email.is_read ? 'unread' : ''}"
                  draggable="true" data-ticket-id="${ticketId}" data-ticket-number="${escapeHtml(email.ticket_number || '')}"
@@ -850,13 +852,92 @@ function renderEmailList() {
                 <div class="email-from">${escapeHtml(email.ticket_number || '')} - ${escapeHtml(email.from_name || email.from_address)} ${countBadge}</div>
                 <div class="email-subject">${escapeHtml(email.subject)}</div>
                 <div class="email-preview">${escapeHtml(email.body_preview || '')}</div>
-                <div class="email-time">${formatDateTime(email.received_datetime)}</div>
+                <div class="email-footer-row">
+                    <div class="email-time">${formatDateTime(email.received_datetime)}</div>
+                    <div class="email-sla-slot" data-sla-slot="${ticketId}"></div>
+                </div>
             </div>
         `;
     }).join('');
 
     // Wire drag handlers on freshly rendered email rows
     attachEmailDragHandlers();
+
+    // Fire-and-forget batch SLA fetch to colour the dots in
+    loadInboxSlaIndicators();
+}
+
+/**
+ * Populate the SLA dot in each email row via the batch endpoint.
+ *
+ * One request per render covers every visible row (cap = 200 server-side).
+ * Tickets without SLA simply don't come back in the response, so their slot
+ * stays empty. Re-rendering the list (e.g. on filter change) re-runs this.
+ */
+async function loadInboxSlaIndicators() {
+    const slots = document.querySelectorAll('#emailList [data-sla-slot]');
+    if (!slots.length) return;
+    const ids = Array.from(slots).map(el => el.getAttribute('data-sla-slot')).filter(Boolean);
+    if (!ids.length) return;
+    try {
+        const res = await fetch(API_BASE + 'get_tickets_sla_batch.php?ticket_ids=' + encodeURIComponent(ids.join(',')));
+        const data = await res.json();
+        if (!data.success || !data.sla) return;
+        slots.forEach(slot => {
+            const id = slot.getAttribute('data-sla-slot');
+            const row = data.sla[id];
+            if (!row) return;
+            slot.innerHTML = renderInboxSlaIndicator(row);
+        });
+    } catch (e) {
+        console.error('Batch SLA load failed:', e);
+    }
+}
+
+/**
+ * Build the inline dot + label for one email row.
+ *
+ * Surfaces the *more urgent* of response / resolution — if response is still
+ * outstanding it wins (analysts care about the first thing on the clock).
+ * Once response is achieved, we follow the resolution target until it lands.
+ */
+function renderInboxSlaIndicator(row) {
+    const pickTarget = () => {
+        const r = row.response;
+        const f = row.resolution;
+        if (r && r.achieved_at === null) return { t: r, label: 'R' };
+        if (f && f.achieved_at === null) return { t: f, label: 'F' };
+        if (f) return { t: f, label: 'F' };
+        if (r) return { t: r, label: 'R' };
+        return null;
+    };
+    const pick = pickTarget();
+    if (!pick) return '';
+    const { t, label } = pick;
+    let cls = 'sla-ok';
+    if (t.achieved_at !== null) {
+        cls = t.breached ? 'sla-breached' : 'sla-achieved';
+    } else if (t.breached) {
+        cls = 'sla-breached';
+    } else if (t.percent >= 80) {
+        cls = 'sla-warning';
+    }
+    const fmt = (mins) => {
+        if (mins === null || mins === undefined) return '';
+        const n = Math.abs(mins);
+        const sign = mins < 0 ? '-' : '';
+        if (n < 60) return sign + n + 'm';
+        const h = Math.floor(n / 60), r = n % 60;
+        return sign + (r ? `${h}h${r}m` : `${h}h`);
+    };
+    const text = t.achieved_at !== null
+        ? (t.breached ? 'breached' : 'met')
+        : (t.breached ? `+${fmt(Math.abs(t.remaining_minutes))}` : fmt(t.remaining_minutes));
+    const priorityName = row.priority ? row.priority.name : '';
+    const title = `${priorityName} SLA · ${label === 'R' ? 'Response' : 'Resolution'} · ${text}`;
+    return `<span class="email-sla-pill ${cls}" title="${escapeHtml(title)}">
+                <span class="email-sla-dot"></span>${escapeHtml(label)} ${escapeHtml(text)}
+            </span>`;
 }
 
 // Select and display email by email ID

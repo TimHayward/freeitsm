@@ -769,6 +769,13 @@ $translationNamespaces = ['common', 'tickets'];
                     <small style="display: block; color: #666; margin-top: 4px;"><?php echo htmlspecialchars(t('tickets.settings.modals.lookup.closed_help')); ?></small>
                 </div>
 
+                <div class="form-group" id="itemPausesSlaGroup" style="display: none;">
+                    <label>
+                        <input type="checkbox" id="itemPausesSla"> Pauses SLA clock
+                    </label>
+                    <small style="display: block; color: #666; margin-top: 4px;">When a ticket is in this status, the SLA clock stops ticking. Used for statuses where the ticket isn't being actively worked (e.g. <em>On Hold</em>, <em>Awaiting Response</em>).</small>
+                </div>
+
                 <div class="form-group" id="itemDefaultGroup" style="display: none;">
                     <label>
                         <input type="checkbox" id="itemDefault"> <?php echo htmlspecialchars(t('tickets.settings.modals.lookup.default_label')); ?>
@@ -1340,9 +1347,12 @@ $translationNamespaces = ['common', 'tickets'];
                     : '<span style="color:#999;">—</span>';
                 const closed  = s.is_closed  ? '<span class="status-badge status-active">Yes</span>' : '<span style="color:#999;">No</span>';
                 const def     = s.is_default ? '<span class="status-badge status-active">Yes</span>' : '<span style="color:#999;">No</span>';
+                const pauseBadge = s.pauses_sla
+                    ? '<span style="display:inline-block;margin-left:6px;padding:2px 6px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:10px;font-size:10px;font-weight:600;letter-spacing:0.3px;" title="SLA clock pauses while a ticket is in this status">⏸ Pauses SLA</span>'
+                    : '';
                 return `
                 <tr>
-                    <td><strong>${escapeHtml(s.name)}</strong></td>
+                    <td><strong>${escapeHtml(s.name)}</strong>${pauseBadge}</td>
                     <td>${swatch}</td>
                     <td>${closed}</td>
                     <td>${def}</td>
@@ -1465,6 +1475,7 @@ $translationNamespaces = ['common', 'tickets'];
             document.getElementById('itemDescriptionGroup').style.display = isColouredLookup ? 'none' : '';
             document.getElementById('itemColourGroup').style.display      = isColouredLookup ? '' : 'none';
             document.getElementById('itemClosedGroup').style.display      = isStatus ? '' : 'none';
+            document.getElementById('itemPausesSlaGroup').style.display   = isStatus ? '' : 'none';
             document.getElementById('itemDefaultGroup').style.display     = isColouredLookup ? '' : 'none';
         }
 
@@ -1670,6 +1681,7 @@ $translationNamespaces = ['common', 'tickets'];
             document.getElementById('itemActive').checked = true;
             document.getElementById('itemColour').value = type === 'status' ? '#2563eb' : '#2563eb';
             document.getElementById('itemClosed').checked = false;
+            document.getElementById('itemPausesSla').checked = false;
             document.getElementById('itemDefault').checked = false;
             configureModalFields(type);
             document.getElementById('editModal').classList.add('active');
@@ -1723,6 +1735,7 @@ $translationNamespaces = ['common', 'tickets'];
                         document.getElementById('itemActive').checked = item.is_active;
                         document.getElementById('itemColour').value = item.colour || '#2563eb';
                         document.getElementById('itemClosed').checked = !!item.is_closed;
+                        document.getElementById('itemPausesSla').checked = !!item.pauses_sla;
                         document.getElementById('itemDefault').checked = !!item.is_default;
                         configureModalFields(type);
                         document.getElementById('editModal').classList.add('active');
@@ -1920,6 +1933,7 @@ $translationNamespaces = ['common', 'tickets'];
                     name: document.getElementById('itemName').value,
                     colour: document.getElementById('itemColour').value,
                     is_closed: document.getElementById('itemClosed').checked ? 1 : 0,
+                    pauses_sla: document.getElementById('itemPausesSla').checked ? 1 : 0,
                     is_default: document.getElementById('itemDefault').checked ? 1 : 0,
                     display_order: parseInt(document.getElementById('itemOrder').value),
                     is_active: document.getElementById('itemActive').checked ? 1 : 0
