@@ -25,7 +25,7 @@ $path_prefix = '../../';
     <style>
         body { overflow: auto; height: auto; }
 
-        .container { max-width: 900px; margin: 0 auto; padding: 30px; }
+        .container { max-width: none; margin: 0; padding: 30px; }
 
         /* Tasks-purple theme for tabs */
         .tab:hover { color: #9333ea; }
