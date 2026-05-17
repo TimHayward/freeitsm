@@ -6,12 +6,15 @@
  */
 session_start();
 require_once '../../config.php';
+require_once '../../includes/functions.php';
+require_once '../../includes/i18n.php';
+I18n::initFromSession();
 
 $current_page = 'dashboard';
 $path_prefix = '../../';
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -223,11 +226,11 @@ $path_prefix = '../../';
     <?php require_once '../includes/header.php'; ?>
 
     <div class="dashboard-toolbar">
-        <h2>Dashboard</h2>
+        <h2><?php echo htmlspecialchars(t('tickets.nav.dashboard')); ?></h2>
         <div class="dashboard-toolbar-actions">
             <button class="btn btn-primary" onclick="window.location.href='library.php'">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                Add
+                <?php echo htmlspecialchars(t('common.add')); ?>
             </button>
         </div>
     </div>
@@ -244,7 +247,7 @@ $path_prefix = '../../';
         <p>Add widgets from the library to build your dashboard</p>
         <button class="btn btn-primary" onclick="window.location.href='library.php'">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Add
+            <?php echo htmlspecialchars(t('common.add')); ?>
         </button>
     </div>
 
