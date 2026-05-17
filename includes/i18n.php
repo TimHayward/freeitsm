@@ -25,6 +25,7 @@ class I18n {
     /** Map of locale code -> native-language display name. Add a new locale here AND create lang/<code>/. */
     const SUPPORTED_LOCALES = [
         'en'    => 'English',
+        'af'    => 'Afrikaans',
         'fr'    => 'Français',
         'de'    => 'Deutsch',
         'es'    => 'Español',
