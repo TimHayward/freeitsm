@@ -95,6 +95,17 @@ body {
     justify-content: center;
 }
 
+/* Reporting nav: equal-width buttons, centred as a group between waffle and avatar */
+.reporting-header .header-nav {
+    flex: 1;
+    justify-content: center;
+    margin-left: 0;
+}
+.reporting-header .header-nav .nav-btn {
+    min-width: 130px;
+    justify-content: center;
+}
+
 .header-right {
     display: flex;
     align-items: center;
