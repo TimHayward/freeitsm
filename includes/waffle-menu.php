@@ -19,6 +19,11 @@ require_once __DIR__ . '/module-colors.php';
 
 // Bootstrap i18n so every module that includes this header gets t() for free.
 // Idempotent — pages that already initialised it (tickets, process-mapper) are fine.
+// functions.php must load first: I18n::initFromSession() reads the user's
+// interface_language preference via connectToDatabase(), which is defined there.
+// Without this, pages that don't pre-load functions.php (like index.php) silently
+// fall back to Accept-Language → English and ignore the user's saved locale.
+require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/i18n.php';
 I18n::initFromSession();
 
