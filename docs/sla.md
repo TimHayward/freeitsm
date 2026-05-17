@@ -83,9 +83,9 @@ A table with one row per priority showing:
 E.g. P1: 15 min / 4 h / 24×7 calendar; P2: 1 h / 8 h / London calendar; etc.
 
 ### 3. Pause behaviour
-Multi-select: which ticket statuses pause the SLA clock. Sensible defaults: *Pending Customer*, *On Hold*.
+Each row in the existing **Statuses** settings tab gets a new **"Pauses SLA"** checkbox column. Tick any number of statuses — all ticked statuses pause the clock. No new screen / multi-select widget needed; the column naturally supports 1-or-more pausing statuses.
 
-(Each ticket status row in the existing Statuses tab gets a "Pauses SLA" flag — or this lives as its own multi-select inside the SLA tab, TBD.)
+Sensible defaults seeded on migration: *Pending Customer*, *On Hold*.
 
 ### 4. Mid-ticket priority change behaviour
 Radio button, one of:
@@ -100,6 +100,21 @@ When a closed ticket is reopened, does the SLA continue from where it paused, or
 - **Warning threshold** — at what % of the SLA elapsed should the ticket flag visually in the inbox (default 80%)
 - **Notify assignee at warning** — toggle, sends email
 - **Notify team lead at breach** — toggle, sends email
+
+### 7. Enforce SLAs from date/time
+A single nullable datetime field. Semantics:
+- **NULL** → SLA enforcement disabled entirely. No ticket is evaluated. No breach warnings, no UI badges.
+- **Set to a datetime** → the SLA engine skips any ticket whose `created_at < sla_enforce_from`. Tickets created at or after the cutoff are evaluated normally.
+
+Why a datetime, not a launch-time flag baked into deployment: it's admin-controlled and predictable. To grandfather in all open tickets when first enabling SLAs, the admin sets the cutoff to *now*. To retroactively apply SLAs from an earlier point (e.g. the start of a contract period), they set an earlier date. To disable SLA enforcement temporarily, they NULL it out.
+
+Equivalent to ServiceNow's "Effective from" pattern.
+
+### 8. First-response definition
+Radio button, one of:
+- **Outbound email only** (Reply or Forward to the requester counts; nothing else does)
+- **Status change away from default** (e.g. ticket moves from *New*/*Open* to *In Progress* counts; outbound email alone doesn't)
+- **Either, whichever first** (default — analyst-acknowledgement of any kind stops the response clock)
 
 ---
 
@@ -148,7 +163,14 @@ Plus columns on existing tables:
 | `ticket_priorities` | `sla_response_minutes`, `sla_resolution_minutes` (nullable), `sla_calendar_id` (FK) |
 | `ticket_statuses` | `pauses_sla` TINYINT(1) DEFAULT 0 |
 
-Plus a `system_settings` group for the global toggles (mid-ticket-change behaviour, reopen behaviour, warning %, breach notifications).
+Plus a `system_settings` group for the global toggles:
+- `sla_enforce_from` (DATETIME NULL) — see section 7 above; NULL disables the whole SLA engine
+- `sla_priority_change_behaviour` (VARCHAR enum: `forward` / `recompute` / `reset`) — section 4
+- `sla_reopen_behaviour` (VARCHAR enum: `continue` / `reset`) — section 5
+- `sla_warning_threshold_percent` (TINYINT, default 80) — section 6
+- `sla_notify_assignee_at_warning` (TINYINT(1)) — section 6
+- `sla_notify_lead_at_breach` (TINYINT(1)) — section 6
+- `sla_first_response_definition` (VARCHAR enum: `outbound_email` / `status_change` / `either`) — section 8
 
 **No table for "current SLA state per ticket"** — that's the deliberate compute-on-read decision. If we want a denormalised flag (e.g. `is_breached`) for fast list filtering, we add it later as a snapshot updated on status change.
 
@@ -169,10 +191,10 @@ Each step is a separate PR and a separate changelog entry.
 
 ---
 
-## Open questions
+## Decisions log
 
-Things we explicitly haven't decided yet:
+For posterity / future-Ed-or-me wondering why we did things this way:
 
-- **Does the "Pauses SLA" flag live on the ticket_statuses row, or as a multi-select on the SLA tab?** Probably on the status row (less indirection, the existing Statuses tab can grow a column). Confirm before building.
-- **What happens to existing tickets when the SLA module first ships?** Are they "exempt", or do they get back-computed against the new SLA policy? Probably: open tickets get SLA from "now"; closed tickets stay exempt.
-- **First-response definition** — does an internal note count as "response", or does it have to be an outbound email? Common pattern: outbound email or status-change-to-In-Progress, whichever first. Confirm before building.
+- **Pauses-SLA flag** lives on the `ticket_statuses` row (boolean column). Multiple statuses can be flagged; all pause the clock. Decided over an SLA-tab multi-select widget because the data belongs naturally to the status and the existing Statuses settings tab can grow a column without a new screen.
+- **Pre-existing tickets** are handled by the `sla_enforce_from` datetime (section 7). Admin-controlled cutoff: NULL disables everything; setting it makes the engine skip any ticket created before that point. Picked over a launch-flag baked into deployment because it's predictable and re-configurable.
+- **First-response definition** is an admin choice (section 8), with the recommended default being "either outbound email or status change — whichever happens first". Picked over a hardcoded definition because different desks have different conventions.

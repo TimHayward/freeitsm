@@ -132,17 +132,46 @@ $schema = [
         'is_default'        => 'TINYINT(1) NOT NULL DEFAULT 0',
         'display_order'     => 'INT NOT NULL DEFAULT 0',
         'is_active'         => 'TINYINT(1) NOT NULL DEFAULT 1',
+        'pauses_sla'        => 'TINYINT(1) NOT NULL DEFAULT 0',
         'created_datetime'  => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
     ],
 
     'ticket_priorities' => [
+        'id'                      => 'INT NOT NULL AUTO_INCREMENT',
+        'name'                    => 'VARCHAR(50) NOT NULL',
+        'colour'                  => 'VARCHAR(20) NULL',
+        'is_default'              => 'TINYINT(1) NOT NULL DEFAULT 0',
+        'display_order'           => 'INT NOT NULL DEFAULT 0',
+        'is_active'               => 'TINYINT(1) NOT NULL DEFAULT 1',
+        'sla_response_minutes'    => 'INT NULL',
+        'sla_resolution_minutes'  => 'INT NULL',
+        'sla_calendar_id'         => 'INT NULL',
+        'created_datetime'        => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
+    'sla_calendars' => [
         'id'                => 'INT NOT NULL AUTO_INCREMENT',
-        'name'              => 'VARCHAR(50) NOT NULL',
-        'colour'            => 'VARCHAR(20) NULL',
+        'name'              => 'VARCHAR(100) NOT NULL',
+        'timezone'          => "VARCHAR(50) NOT NULL DEFAULT 'Europe/London'",
         'is_default'        => 'TINYINT(1) NOT NULL DEFAULT 0',
-        'display_order'     => 'INT NOT NULL DEFAULT 0',
         'is_active'         => 'TINYINT(1) NOT NULL DEFAULT 1',
         'created_datetime'  => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
+        'updated_datetime'  => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+    ],
+
+    'sla_calendar_hours' => [
+        'id'           => 'INT NOT NULL AUTO_INCREMENT',
+        'calendar_id'  => 'INT NOT NULL',
+        'weekday'      => 'TINYINT NOT NULL',
+        'start_time'   => 'TIME NOT NULL',
+        'end_time'     => 'TIME NOT NULL',
+    ],
+
+    'sla_calendar_holidays' => [
+        'id'            => 'INT NOT NULL AUTO_INCREMENT',
+        'calendar_id'   => 'INT NOT NULL',
+        'holiday_date'  => 'DATE NOT NULL',
+        'name'          => 'VARCHAR(100) NULL',
     ],
 
     'tickets' => [
@@ -1919,6 +1948,66 @@ try {
                 ('Urgent',   '#b91c1c', 0, 50)");
             $results[] = ['table' => 'ticket_priorities', 'status' => 'seeded', 'details' => ['Inserted 5 default ticket priorities']];
         }
+    }
+
+    // ----------------------------------------------------------
+    // SLA setup — see docs/sla.md
+    // ----------------------------------------------------------
+
+    // Unique key + FK constraints for the SLA hours/holidays tables (columns
+    // alone aren't enough). Add idempotently.
+    if ($tableExists('sla_calendar_hours') && $tableExists('sla_calendars')) {
+        if (!$idxExists('sla_calendar_hours', 'uq_sla_calendar_hours')) {
+            try { $conn->exec("ALTER TABLE sla_calendar_hours ADD UNIQUE KEY uq_sla_calendar_hours (calendar_id, weekday)"); } catch (Exception $e) {}
+        }
+        if (!$fkExists('sla_calendar_hours', 'fk_sla_hours_calendar')) {
+            try { $conn->exec("ALTER TABLE sla_calendar_hours ADD CONSTRAINT fk_sla_hours_calendar FOREIGN KEY (calendar_id) REFERENCES sla_calendars (id) ON DELETE CASCADE"); } catch (Exception $e) {}
+        }
+    }
+    if ($tableExists('sla_calendar_holidays') && $tableExists('sla_calendars')) {
+        if (!$idxExists('sla_calendar_holidays', 'uq_sla_holidays')) {
+            try { $conn->exec("ALTER TABLE sla_calendar_holidays ADD UNIQUE KEY uq_sla_holidays (calendar_id, holiday_date)"); } catch (Exception $e) {}
+        }
+        if (!$fkExists('sla_calendar_holidays', 'fk_sla_holidays_calendar')) {
+            try { $conn->exec("ALTER TABLE sla_calendar_holidays ADD CONSTRAINT fk_sla_holidays_calendar FOREIGN KEY (calendar_id) REFERENCES sla_calendars (id) ON DELETE CASCADE"); } catch (Exception $e) {}
+        }
+    }
+    if ($tableExists('ticket_priorities') && $tableExists('sla_calendars') && $colExists('ticket_priorities', 'sla_calendar_id')) {
+        if (!$fkExists('ticket_priorities', 'fk_ticket_priorities_sla_calendar')) {
+            try { $conn->exec("ALTER TABLE ticket_priorities ADD CONSTRAINT fk_ticket_priorities_sla_calendar FOREIGN KEY (sla_calendar_id) REFERENCES sla_calendars (id) ON DELETE SET NULL"); } catch (Exception $e) {}
+        }
+    }
+
+    // Seed a default Mon-Fri 09:00-17:00 calendar in Europe/London if no
+    // calendars exist yet. Detected installs that pre-date the SLA module
+    // will pick this up on first verify; the freeitsm.sql seed handles fresh.
+    if ($tableExists('sla_calendars')) {
+        $cnt = (int) $conn->query("SELECT COUNT(*) FROM sla_calendars")->fetchColumn();
+        if ($cnt === 0) {
+            $conn->exec("INSERT INTO sla_calendars (name, timezone, is_default) VALUES ('Default Business Hours', 'Europe/London', 1)");
+            $newCalId = (int)$conn->lastInsertId();
+            if ($newCalId && $tableExists('sla_calendar_hours')) {
+                $stmt = $conn->prepare("INSERT INTO sla_calendar_hours (calendar_id, weekday, start_time, end_time) VALUES (?, ?, '09:00:00', '17:00:00')");
+                foreach ([1, 2, 3, 4, 5] as $wd) { $stmt->execute([$newCalId, $wd]); }
+            }
+            $results[] = ['table' => 'sla_calendars', 'status' => 'seeded', 'details' => ['Inserted default Mon-Fri 09:00-17:00 calendar (Europe/London)']];
+        }
+    }
+
+    // Seed default system_settings rows for the SLA toggles. INSERT IGNORE
+    // so they only land on first run; existing values aren't overwritten.
+    if ($tableExists('system_settings')) {
+        $defaults = [
+            'sla_enforce_from'                => null, // NULL = SLA enforcement disabled
+            'sla_priority_change_behaviour'   => 'forward',
+            'sla_reopen_behaviour'            => 'reset',
+            'sla_warning_threshold_percent'   => '80',
+            'sla_notify_assignee_at_warning'  => '1',
+            'sla_notify_lead_at_breach'       => '1',
+            'sla_first_response_definition'   => 'either',
+        ];
+        $stmt = $conn->prepare("INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES (?, ?)");
+        foreach ($defaults as $k => $v) { $stmt->execute([$k, $v]); }
     }
 
     // Backfill tickets.status_id from legacy tickets.status

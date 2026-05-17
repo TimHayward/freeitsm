@@ -156,26 +156,31 @@ CREATE TABLE IF NOT EXISTS `ticket_statuses` (
     `is_default`        TINYINT(1) NOT NULL DEFAULT 0,
     `display_order`     INT NOT NULL DEFAULT 0,
     `is_active`         TINYINT(1) NOT NULL DEFAULT 1,
+    `pauses_sla`        TINYINT(1) NOT NULL DEFAULT 0,
     `created_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_ticket_statuses_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT IGNORE INTO `ticket_statuses` (`name`, `is_closed`, `colour`, `is_default`, `display_order`) VALUES
-    ('Open',              0, '#2563eb', 1, 10),
-    ('In Progress',       0, '#9333ea', 0, 20),
-    ('On Hold',           0, '#f59e0b', 0, 30),
-    ('Awaiting Response', 0, '#0891b2', 0, 40),
-    ('Closed',            1, '#6b7280', 0, 50);
+-- Seed defaults: On Hold and Awaiting Response pause the SLA clock by default.
+INSERT IGNORE INTO `ticket_statuses` (`name`, `is_closed`, `colour`, `is_default`, `display_order`, `pauses_sla`) VALUES
+    ('Open',              0, '#2563eb', 1, 10, 0),
+    ('In Progress',       0, '#9333ea', 0, 20, 0),
+    ('On Hold',           0, '#f59e0b', 0, 30, 1),
+    ('Awaiting Response', 0, '#0891b2', 0, 40, 1),
+    ('Closed',            1, '#6b7280', 0, 50, 0);
 
 CREATE TABLE IF NOT EXISTS `ticket_priorities` (
-    `id`                INT NOT NULL AUTO_INCREMENT,
-    `name`              VARCHAR(50) NOT NULL,
-    `colour`            VARCHAR(20) NULL,
-    `is_default`        TINYINT(1) NOT NULL DEFAULT 0,
-    `display_order`     INT NOT NULL DEFAULT 0,
-    `is_active`         TINYINT(1) NOT NULL DEFAULT 1,
-    `created_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    `id`                      INT NOT NULL AUTO_INCREMENT,
+    `name`                    VARCHAR(50) NOT NULL,
+    `colour`                  VARCHAR(20) NULL,
+    `is_default`              TINYINT(1) NOT NULL DEFAULT 0,
+    `display_order`           INT NOT NULL DEFAULT 0,
+    `is_active`               TINYINT(1) NOT NULL DEFAULT 1,
+    `sla_response_minutes`    INT NULL,
+    `sla_resolution_minutes`  INT NULL,
+    `sla_calendar_id`         INT NULL,
+    `created_datetime`        DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_ticket_priorities_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -186,6 +191,58 @@ INSERT IGNORE INTO `ticket_priorities` (`name`, `colour`, `is_default`, `display
     ('High',     '#f59e0b', 0, 30),
     ('Critical', '#dc2626', 0, 40),
     ('Urgent',   '#b91c1c', 0, 50);
+
+-- ----------------------------------------------------------
+-- SLA (Service Level Agreements) — see docs/sla.md for design
+-- ----------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `sla_calendars` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `name`              VARCHAR(100) NOT NULL,
+    `timezone`          VARCHAR(50) NOT NULL DEFAULT 'Europe/London',
+    `is_default`        TINYINT(1) NOT NULL DEFAULT 0,
+    `is_active`         TINYINT(1) NOT NULL DEFAULT 1,
+    `created_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_sla_calendars_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Weekly working-hours pattern for a calendar. One row per (calendar, weekday).
+-- weekday: 1=Mon, 2=Tue, ..., 7=Sun (ISO 8601). Absence of a row = closed.
+CREATE TABLE IF NOT EXISTS `sla_calendar_hours` (
+    `id`           INT NOT NULL AUTO_INCREMENT,
+    `calendar_id`  INT NOT NULL,
+    `weekday`      TINYINT NOT NULL,
+    `start_time`   TIME NOT NULL,
+    `end_time`     TIME NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_sla_calendar_hours` (`calendar_id`, `weekday`),
+    CONSTRAINT `fk_sla_hours_calendar` FOREIGN KEY (`calendar_id`) REFERENCES `sla_calendars` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Per-calendar holiday list. Dates that override the weekly working pattern.
+CREATE TABLE IF NOT EXISTS `sla_calendar_holidays` (
+    `id`            INT NOT NULL AUTO_INCREMENT,
+    `calendar_id`   INT NOT NULL,
+    `holiday_date`  DATE NOT NULL,
+    `name`          VARCHAR(100) NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_sla_holidays` (`calendar_id`, `holiday_date`),
+    CONSTRAINT `fk_sla_holidays_calendar` FOREIGN KEY (`calendar_id`) REFERENCES `sla_calendars` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Seed a default Mon-Fri 09:00-17:00 calendar in Europe/London. db_verify.php
+-- handles seeding for existing installs.
+INSERT IGNORE INTO `sla_calendars` (`id`, `name`, `timezone`, `is_default`) VALUES
+    (1, 'Default Business Hours', 'Europe/London', 1);
+
+INSERT IGNORE INTO `sla_calendar_hours` (`calendar_id`, `weekday`, `start_time`, `end_time`) VALUES
+    (1, 1, '09:00:00', '17:00:00'),
+    (1, 2, '09:00:00', '17:00:00'),
+    (1, 3, '09:00:00', '17:00:00'),
+    (1, 4, '09:00:00', '17:00:00'),
+    (1, 5, '09:00:00', '17:00:00');
 
 CREATE TABLE IF NOT EXISTS `tickets` (
     `id`                    INT NOT NULL AUTO_INCREMENT,
