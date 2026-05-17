@@ -575,7 +575,7 @@ Thu 09:30 UK &mdash; analyst replies. Response SLA met right at the wire (60 min
                     <h5>The cross-timezone case <span class="tag amber">3 ways to define "fair"</span></h5>
                     <p><strong>Setup:</strong> UK customers (<span class="tk-help-code">Europe/London</span>, GMT/BST), Estonia service desk (<span class="tk-help-code">Europe/Tallinn</span>, EET/EEST &mdash; <strong>2 hours ahead of UK</strong>). Both desks nominally work 09:00-17:00 local time.</p>
 
-                    <p><strong>Scenario:</strong> UK customer raises a P2 ticket at <strong>16:00 UK on Friday</strong> (= 18:00 Estonia, after Estonia close). The next opportunity for an Estonia analyst to work it is Monday 09:00 Estonia (= 07:00 UK).</p>
+                    <p><strong>Scenario:</strong> UK customer raises a P2 ticket at <strong>16:30 UK on Friday</strong> (= 18:30 Estonia, after Estonia close). The next opportunity for an Estonia analyst to work it is Monday 09:00 Estonia (= 07:00 UK). The response target is 1 hour.</p>
 
                     <p>What should the SLA say? There are three defensible answers, each fair in a different sense. You pick which calendar to assign to the priority based on what your service contract promises.</p>
                 </div>
@@ -583,7 +583,7 @@ Thu 09:30 UK &mdash; analyst replies. Response SLA met right at the wire (60 min
                 <div class="tk-help-option-card">
                     <span class="label customer">Option A &mdash; Customer-centric</span>
                     <p><strong>Set the priority to use a calendar with <em>UK</em> hours.</strong> The clock ticks against UK 09:00-17:00, regardless of where the analyst is.</p>
-                    <p>In the scenario above, ticket raised at 16:00 UK Friday: clock runs 16:00&ndash;17:00 UK Friday (1h consumed), pauses overnight + weekend, resumes Mon 09:00 UK. If the response target is 1h and an Estonia analyst replies at 11:00 Estonia Monday (= 09:00 UK), the clock has only consumed 1 hour of the working window &mdash; <strong>SLA met</strong>.</p>
+                    <p>In the scenario above, ticket raised at 16:30 UK Friday: clock runs 16:30&ndash;17:00 UK Friday (30 min consumed), pauses overnight + weekend, resumes Mon 09:00 UK. If an Estonia analyst replies at 10:00 Estonia Monday (= 08:00 UK), the UK calendar is still paused (UK office opens at 09:00 UK), so no additional minutes tick &mdash; consumption stays at 30 min. <strong>SLA met with 30 min margin</strong>. Any reply after 09:30 UK (= 11:30 Estonia) would breach.</p>
                     <p><em>Fair to:</em> the customer. Their experience matches their working day.<br>
                     <em>Trade-off:</em> Estonia analysts are expected to be available 09:00-17:00 UK time (= 11:00-19:00 Estonia), which extends their working day by 2 hours.</p>
                 </div>
@@ -591,7 +591,7 @@ Thu 09:30 UK &mdash; analyst replies. Response SLA met right at the wire (60 min
                 <div class="tk-help-option-card">
                     <span class="label analyst">Option B &mdash; Analyst-centric</span>
                     <p><strong>Set the priority to use a calendar with <em>Estonia</em> hours.</strong> The clock ticks against Estonia 09:00-17:00.</p>
-                    <p>Same scenario: ticket raised 18:00 Estonia Friday (after close), clock paused all weekend, starts ticking Mon 09:00 Estonia (= 07:00 UK). If the analyst responds at 10:00 Estonia, the response SLA has consumed 1 hour &mdash; met if the target is 1h. The UK customer raised at 16:00 Friday UK and got a reply at 08:00 UK Monday &mdash; their wall-clock wait was much longer than the SLA suggests.</p>
+                    <p>Same scenario: ticket raised 18:30 Estonia Friday (after close), clock paused all weekend, starts ticking Mon 09:00 Estonia (= 07:00 UK). If the analyst responds at 09:30 Estonia Monday (= 07:30 UK), the response SLA has consumed 30 min of the 60 min target &mdash; <strong>met with 30 min margin</strong>. The UK customer raised at 16:30 UK Friday and got a reply at 07:30 UK Monday &mdash; their wall-clock wait was much longer than the SLA suggests.</p>
                     <p><em>Fair to:</em> the analysts. They work normal hours.<br>
                     <em>Trade-off:</em> Customers in the UK can feel like the SLA is "lying" if a Friday-afternoon ticket isn't acknowledged until Monday morning Estonia time but the report says response SLA was 1 hour. Make sure your service contract is explicit that the SLA runs against support-desk hours.</p>
                 </div>
@@ -599,7 +599,7 @@ Thu 09:30 UK &mdash; analyst replies. Response SLA met right at the wire (60 min
                 <div class="tk-help-option-card">
                     <span class="label overlap">Option C &mdash; Overlap window (strictest)</span>
                     <p><strong>Set the priority to use a calendar covering only the hours where both desks are open.</strong> UK 09:00-17:00 overlaps with Estonia 09:00-17:00 (= UK 07:00-15:00) during the <strong>UK 09:00-15:00 window</strong> &mdash; 6 hours per working day.</p>
-                    <p>Same scenario: ticket raised 16:00 UK Friday (outside the overlap), clock paused over weekend, resumes Mon 09:00 UK (= 11:00 Estonia). If Estonia analyst replies at 11:30 Estonia (= 09:30 UK), the response SLA has consumed 30 minutes. The reply happened during the overlap window so it counts immediately.</p>
+                    <p>Same scenario: ticket raised 16:30 UK Friday (outside the overlap, since overlap closes at 15:00 UK), clock paused over weekend, resumes Mon 09:00 UK (= 11:00 Estonia, the moment the overlap reopens). If Estonia analyst replies at 11:30 Estonia (= 09:30 UK), the response SLA has consumed 30 min of the 60 min target &mdash; <strong>met with 30 min margin</strong>. The reply happened during the overlap window so it counts immediately.</p>
                     <p><em>Fair to:</em> both sides &mdash; the SLA only ticks during hours when the desk could actually progress the ticket AND the customer is at their desk to receive a response.<br>
                     <em>Trade-off:</em> Shorter daily window means longer wall-clock times to meet aggressive targets. A 4-hour resolution target spans 1.5 days of overlap, where with a normal 8-hour calendar it'd be done within a single day.</p>
                 </div>
