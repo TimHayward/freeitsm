@@ -21,7 +21,7 @@ $path_prefix = '../../';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Service Desk - Tasks Settings</title>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
-    <link rel="stylesheet" href="../../assets/css/tasks.css">
+    <link rel="stylesheet" href="../../assets/css/tasks.css?v=2">
     <style>
         body { overflow: auto; height: auto; }
 
