@@ -25,15 +25,24 @@ if (empty($settings)) {
 try {
     $conn = connectToDatabase();
 
-    $allowed = ['calendar_span_mode'];
-    // Per-key value whitelists guard against junk
-    $valid = [
-        'calendar_span_mode' => ['deadline', 'span', 'repeat'],
-    ];
+    $allowed = ['calendar_span_mode', 'card_fields'];
+    $cardFieldKeys = ['priority', 'assignee', 'team', 'start_date',
+                      'due_date', 'description', 'subtasks', 'links'];
 
     foreach ($settings as $key => $value) {
         if (!in_array($key, $allowed, true)) continue;
-        if (isset($valid[$key]) && !in_array($value, $valid[$key], true)) continue;
+
+        if ($key === 'calendar_span_mode') {
+            // Whitelist guards against junk
+            if (!in_array($value, ['deadline', 'span', 'repeat'], true)) continue;
+        } elseif ($key === 'card_fields') {
+            // Rebuild from known keys only, coercing each to 0/1
+            $clean = [];
+            foreach ($cardFieldKeys as $fk) {
+                $clean[$fk] = (is_array($value) && !empty($value[$fk])) ? 1 : 0;
+            }
+            $value = json_encode($clean);
+        }
 
         $dbKey = 'tasks_' . $key;
 

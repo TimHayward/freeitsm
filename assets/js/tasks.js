@@ -17,11 +17,18 @@ let sortDir = 'asc';
 let tinyEditor = null;
 let descSaveTimer = null;
 
+// Which extras appear on board cards — overridden by Settings → Card
+let cardFields = {
+    priority: 1, assignee: 1, team: 0, start_date: 0,
+    due_date: 1, description: 0, subtasks: 1, links: 1
+};
+
 const ANALYST_ID = document.body.dataset.analystId;
 
 // ── Init ───────────────────────────────────────────────────────────
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadCardSettings();
     // Open a task straight away if linked from the calendar/timeline (?task=N)
     loadDropdowns().then(() => {
         const taskParam = new URLSearchParams(location.search).get('task');
@@ -32,6 +39,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Escape') closeDetailPanel();
     });
 });
+
+async function loadCardSettings() {
+    try {
+        const data = await fetch(API_BASE + 'get_settings.php').then(r => r.json());
+        if (data.success && data.settings.card_fields) {
+            cardFields = data.settings.card_fields;
+        }
+    } catch (e) { console.error('Failed to load card settings:', e); }
+}
 
 // ── Data Loading ───────────────────────────────────────────────────
 
@@ -140,26 +156,65 @@ function renderBoard() {
 }
 
 function renderCard(t) {
+    const cf = cardFields;
     const initials = t.analyst_name ? t.analyst_name.split(' ').map(w => w[0]).join('').substring(0, 2) : '';
-    const dueBadge = formatDueBadge(t.due_date);
-    const subtaskHtml = t.subtasks.total > 0
-        ? `<span class="subtask-progress">
+
+    // Meta row — each piece is opt-in via Settings → Card
+    const meta = [];
+    if (cf.priority && t.priority) {
+        meta.push(`<span class="priority-dot ${t.priority.toLowerCase()}" title="${esc(t.priority)}"></span>`);
+    }
+    if (cf.assignee && initials) {
+        meta.push(`<span class="assignee-badge" title="${esc(t.analyst_name)}">${esc(initials)}</span>`);
+    }
+    if (cf.team && t.team_name) {
+        meta.push(`<span class="team-badge" title="Team">${esc(t.team_name)}</span>`);
+    }
+    if (cf.start_date && t.start_date) {
+        meta.push(`<span class="due-badge start-date-badge" title="Start date">${formatShortDate(t.start_date)}</span>`);
+    }
+    if (cf.due_date) {
+        const dueBadge = formatDueBadge(t.due_date);
+        if (dueBadge) meta.push(dueBadge);
+    }
+    if (cf.subtasks && t.subtasks.total > 0) {
+        meta.push(`<span class="subtask-progress">
              <span class="subtask-bar"><span class="subtask-bar-fill" style="width:${Math.round(t.subtasks.done / t.subtasks.total * 100)}%"></span></span>
              ${t.subtasks.done}/${t.subtasks.total}
-           </span>` : '';
-    const linkHtml = (t.ticket_id || t.change_id)
-        ? `<span class="link-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></span>` : '';
+           </span>`);
+    }
+    if (cf.links && (t.ticket_id || t.change_id)) {
+        meta.push(`<span class="link-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></span>`);
+    }
+
+    let descHtml = '';
+    if (cf.description) {
+        const excerpt = descExcerpt(t.description);
+        if (excerpt) descHtml = `<div class="task-card-desc">${esc(excerpt)}</div>`;
+    }
 
     return `<div class="task-card" data-id="${t.id}" onclick="openDetailPanel(${t.id})">
         <div class="task-card-title">${esc(t.title)}</div>
-        <div class="task-card-meta">
-            <span class="priority-dot ${t.priority.toLowerCase()}" title="${esc(t.priority)}"></span>
-            ${initials ? `<span class="assignee-badge" title="${esc(t.analyst_name)}">${esc(initials)}</span>` : ''}
-            ${dueBadge}
-            ${subtaskHtml}
-            ${linkHtml}
-        </div>
+        ${descHtml}
+        ${meta.length ? `<div class="task-card-meta">${meta.join('')}</div>` : ''}
     </div>`;
+}
+
+// Short date for the start badge, e.g. "12 Jun"
+function formatShortDate(dateStr) {
+    if (!dateStr) return '';
+    return new Date(dateStr + 'T00:00:00')
+        .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+// Plain-text excerpt of a (HTML) description, capped at 250 characters.
+// DOMParser keeps it inert — no scripts run and no resources load.
+function descExcerpt(html) {
+    if (!html) return '';
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    let text = (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
+    if (text.length > 250) text = text.slice(0, 250).replace(/\s+\S*$/, '') + '…';
+    return text;
 }
 
 function formatDueBadge(dateStr) {

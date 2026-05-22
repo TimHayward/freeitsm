@@ -21,7 +21,7 @@ $path_prefix = '../../';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Service Desk - Tasks Settings</title>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
-    <link rel="stylesheet" href="../../assets/css/tasks.css?v=2">
+    <link rel="stylesheet" href="../../assets/css/tasks.css?v=3">
     <style>
         body { overflow: auto; height: auto; }
 
@@ -79,6 +79,14 @@ $path_prefix = '../../';
         .span-mode-card input { margin-top: 2px; accent-color: #9333ea; width: 16px; height: 16px; cursor: pointer; }
         .span-mode-name { font-weight: 600; font-size: 14px; color: #333; margin-bottom: 3px; }
         .span-mode-desc { font-size: 13px; color: #777; line-height: 1.45; }
+
+        /* Card field toggles */
+        .card-field-options { display: flex; flex-direction: column; gap: 2px; max-width: 640px; }
+        .card-field-row { display: flex; align-items: flex-start; gap: 12px; padding: 11px 14px; border-radius: 8px; cursor: pointer; transition: background 0.12s; }
+        .card-field-row:hover { background: #faf5ff; }
+        .card-field-row input { margin-top: 1px; accent-color: #9333ea; width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+        .card-field-name { font-weight: 600; font-size: 14px; color: #333; }
+        .card-field-desc { font-size: 13px; color: #888; margin-top: 2px; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -89,6 +97,7 @@ $path_prefix = '../../';
             <button class="tab active" data-tab="statuses" onclick="switchTab('statuses')">Statuses</button>
             <button class="tab" data-tab="priorities" onclick="switchTab('priorities')">Priorities</button>
             <button class="tab" data-tab="calendar" onclick="switchTab('calendar')">Calendar</button>
+            <button class="tab" data-tab="card" onclick="switchTab('card')">Card</button>
         </div>
 
         <!-- Statuses Tab -->
@@ -143,6 +152,72 @@ $path_prefix = '../../';
                     <div class="span-mode-body">
                         <div class="span-mode-name">Every day</div>
                         <div class="span-mode-desc">A chip appears in every day cell the task covers. Thorough, but long tasks can crowd the grid.</div>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Card Tab -->
+        <div class="tab-content" id="card-tab">
+            <div class="section-header">
+                <h2>Card</h2>
+            </div>
+            <p style="color: #666; margin-bottom: 16px;">Choose what extra detail appears on each task card on the board, so you can scan tasks without opening them. The task title always shows. Changes take effect next time the board loads.</p>
+            <div class="card-field-options">
+                <label class="card-field-row">
+                    <input type="checkbox" data-field="priority" onchange="saveCardFields()">
+                    <div>
+                        <div class="card-field-name">Priority</div>
+                        <div class="card-field-desc">Coloured dot showing the task's priority.</div>
+                    </div>
+                </label>
+                <label class="card-field-row">
+                    <input type="checkbox" data-field="assignee" onchange="saveCardFields()">
+                    <div>
+                        <div class="card-field-name">Assignee</div>
+                        <div class="card-field-desc">Initials badge for the analyst the task is assigned to.</div>
+                    </div>
+                </label>
+                <label class="card-field-row">
+                    <input type="checkbox" data-field="team" onchange="saveCardFields()">
+                    <div>
+                        <div class="card-field-name">Team</div>
+                        <div class="card-field-desc">Name of the assigned team.</div>
+                    </div>
+                </label>
+                <label class="card-field-row">
+                    <input type="checkbox" data-field="start_date" onchange="saveCardFields()">
+                    <div>
+                        <div class="card-field-name">Start date</div>
+                        <div class="card-field-desc">When work on the task is due to begin.</div>
+                    </div>
+                </label>
+                <label class="card-field-row">
+                    <input type="checkbox" data-field="due_date" onchange="saveCardFields()">
+                    <div>
+                        <div class="card-field-name">Due date</div>
+                        <div class="card-field-desc">Deadline, highlighted when overdue or due today.</div>
+                    </div>
+                </label>
+                <label class="card-field-row">
+                    <input type="checkbox" data-field="description" onchange="saveCardFields()">
+                    <div>
+                        <div class="card-field-name">Description</div>
+                        <div class="card-field-desc">First 250 characters of the description, as plain text.</div>
+                    </div>
+                </label>
+                <label class="card-field-row">
+                    <input type="checkbox" data-field="subtasks" onchange="saveCardFields()">
+                    <div>
+                        <div class="card-field-name">Subtask progress</div>
+                        <div class="card-field-desc">Completion bar and count for tasks that have subtasks.</div>
+                    </div>
+                </label>
+                <label class="card-field-row">
+                    <input type="checkbox" data-field="links" onchange="saveCardFields()">
+                    <div>
+                        <div class="card-field-name">Linked items</div>
+                        <div class="card-field-desc">Indicator when the task is linked to a ticket or change.</div>
                     </div>
                 </label>
             </div>
@@ -218,7 +293,9 @@ $path_prefix = '../../';
         document.addEventListener('DOMContentLoaded', () => {
             for (const kind of Object.keys(LOOKUP_KINDS)) loadLookup(kind);
             loadSpanMode();
-            if (location.hash === '#calendar') switchTab('calendar');
+            loadCardFields();
+            const tabFromHash = location.hash.replace('#', '');
+            if (['calendar', 'card'].includes(tabFromHash)) switchTab(tabFromHash);
         });
 
         // ── Calendar span mode ──
@@ -249,6 +326,38 @@ $path_prefix = '../../';
             document.querySelectorAll('.span-mode-card').forEach(card => {
                 card.classList.toggle('selected', card.querySelector('input').checked);
             });
+        }
+
+        // ── Card field toggles ──
+        const CARD_FIELDS = ['priority', 'assignee', 'team', 'start_date',
+                             'due_date', 'description', 'subtasks', 'links'];
+
+        async function loadCardFields() {
+            try {
+                const data = await fetch(API_BASE + 'get_settings.php').then(r => r.json());
+                const cf = (data.success && data.settings.card_fields) || {};
+                CARD_FIELDS.forEach(f => {
+                    const cb = document.querySelector(`input[data-field="${f}"]`);
+                    if (cb) cb.checked = !!cf[f];
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        async function saveCardFields() {
+            const cf = {};
+            CARD_FIELDS.forEach(f => {
+                const cb = document.querySelector(`input[data-field="${f}"]`);
+                cf[f] = (cb && cb.checked) ? 1 : 0;
+            });
+            try {
+                const res = await fetch(API_BASE + 'save_settings.php', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ settings: { card_fields: cf } })
+                });
+                const data = await res.json();
+                if (data.success) showToast('Saved');
+                else showToast(data.error || 'Failed to save', true);
+            } catch (e) { showToast('Failed to save', true); }
         }
 
         async function loadLookup(kind) {

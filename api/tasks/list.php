@@ -60,7 +60,7 @@ try {
 
     $whereSql = implode(' AND ', $where);
 
-    $sql = "SELECT t.id, t.title,
+    $sql = "SELECT t.id, t.title, t.description,
                    ts.name AS status, ts.is_closed AS status_is_closed, ts.colour AS status_colour,
                    tp.name AS priority, tp.colour AS priority_colour,
                    t.start_date, t.due_date,

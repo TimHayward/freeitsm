@@ -770,6 +770,7 @@ Visual layer over the CMDB for drawing network and architecture diagrams. Diagra
 Kanban-style task management with board, list, calendar, and timeline views for tracking internal work.
 
 - **Board view**: Three-column Kanban board (To Do, In Progress, Done) with drag-and-drop card movement
+- **Configurable card fields**: Settings → Card toggles which extras show on each board card — priority, assignee, team, start date, due date, description excerpt (first 250 chars), subtask progress, and linked-item indicator — so tasks can be scanned without opening them
 - **List view**: Sortable table with all task fields
 - **Calendar view** (`tasks/calendar/`): Month grid of tasks coloured by status. How a multi-day task (one with a start date earlier than its due date) is drawn is configurable in Settings → Calendar — **Deadline chip** (a single chip on the due date), **Spanning bar** (one continuous bar across the range, wrapping at week rows), or **Every day** (a chip in every day cell of the range)
 - **Timeline view** (`tasks/timeline/`): Gantt-style horizontal bars from each task's start date to its due date, grouped by assignee, status, or flat, with a today marker and day-width zoom

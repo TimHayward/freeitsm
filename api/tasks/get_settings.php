@@ -32,6 +32,29 @@ try {
         $settings['calendar_span_mode'] = 'deadline';
     }
 
+    // card_fields — which extras show on board cards. Stored as JSON;
+    // always returned as a complete object so callers needn't merge defaults.
+    $cardDefaults = [
+        'priority'    => 1,
+        'assignee'    => 1,
+        'team'        => 0,
+        'start_date'  => 0,
+        'due_date'    => 1,
+        'description' => 0,
+        'subtasks'    => 1,
+        'links'       => 1,
+    ];
+    $cardFields = $cardDefaults;
+    if (isset($settings['card_fields'])) {
+        $decoded = json_decode($settings['card_fields'], true);
+        if (is_array($decoded)) {
+            foreach ($cardDefaults as $k => $v) {
+                $cardFields[$k] = empty($decoded[$k]) ? 0 : 1;
+            }
+        }
+    }
+    $settings['card_fields'] = $cardFields;
+
     echo json_encode(['success' => true, 'settings' => $settings]);
 
 } catch (Exception $e) {

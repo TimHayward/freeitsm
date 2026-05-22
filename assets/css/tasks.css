@@ -279,6 +279,33 @@ body { overflow: auto; height: auto; padding-top: 0; }
     gap: 3px;
 }
 
+/* Optional card fields (toggled in Settings → Card) */
+.task-card-desc {
+    font-size: 12px;
+    color: #888;
+    line-height: 1.45;
+    margin: 0 0 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.team-badge {
+    font-size: 11px;
+    color: #666;
+    background: #eef0f4;
+    padding: 1px 8px;
+    border-radius: 10px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.start-date-badge { color: #888; }
+.start-date-badge::before { content: "▸ "; }
+
 /* Drop indicator */
 .drop-indicator {
     height: 3px;
