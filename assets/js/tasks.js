@@ -34,9 +34,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const taskParam = new URLSearchParams(location.search).get('task');
         if (taskParam) openDetailPanel(parseInt(taskParam, 10));
     });
+    loadLookups();
     loadTasks();
+    initContextMenu();
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') closeDetailPanel();
+        if (e.key !== 'Escape') return;
+        if (document.getElementById('ctxMenu').style.display === 'block') closeContextMenu();
+        else closeDetailPanel();
     });
 });
 
@@ -882,6 +886,135 @@ async function deleteCurrentTask() {
             showToast('Task deleted');
         }
     } catch (e) { console.error(e); }
+}
+
+// ── Card Context Menu ──────────────────────────────────────────────
+
+let ctxTaskId = null;
+let statusList = [];
+let priorityList = [];
+
+// Active statuses/priorities for the right-click menu (board columns
+// stay fixed at To Do / In Progress / Done — these drive the menu only)
+async function loadLookups() {
+    try {
+        const [sRes, pRes] = await Promise.all([
+            fetch(API_BASE + 'get_task_statuses.php').then(r => r.json()),
+            fetch(API_BASE + 'get_task_priorities.php').then(r => r.json())
+        ]);
+        if (sRes.success) statusList = (sRes.statuses || []).filter(s => s.is_active);
+        if (pRes.success) priorityList = (pRes.priorities || []).filter(p => p.is_active);
+    } catch (e) { console.error('Failed to load lookups:', e); }
+}
+
+function initContextMenu() {
+    // Right-click a card opens the menu; right-click elsewhere closes it
+    document.addEventListener('contextmenu', e => {
+        const card = e.target.closest('.task-card');
+        if (card) openContextMenu(e, parseInt(card.dataset.id, 10));
+        else closeContextMenu();
+    });
+    // Any click / scroll / resize dismisses it
+    document.addEventListener('click', closeContextMenu);
+    document.addEventListener('scroll', closeContextMenu, true);
+    window.addEventListener('resize', closeContextMenu);
+
+    // Submenu choice or the Create-subtask item
+    document.getElementById('ctxMenu').addEventListener('click', e => {
+        const opt = e.target.closest('.ctx-sub-item');
+        if (opt) {
+            const field = opt.dataset.field;
+            let value = opt.dataset.value;
+            if (field === 'assigned_analyst_id' || field === 'assigned_team_id') {
+                value = value === '' ? null : parseInt(value, 10);
+            }
+            ctxSetField(field, value);
+            return;
+        }
+        if (e.target.closest('[data-action="subtask"]')) ctxCreateSubtask();
+    });
+}
+
+function openContextMenu(e, taskId) {
+    e.preventDefault();
+    const t = tasks.find(x => x.id === taskId);
+    if (!t) return;
+    ctxTaskId = taskId;
+    buildContextSubmenus(t);
+
+    const menu = document.getElementById('ctxMenu');
+    menu.style.display = 'block';
+    const mw = menu.offsetWidth, mh = menu.offsetHeight;
+    const x = Math.min(e.clientX, window.innerWidth - mw - 6);
+    const y = Math.min(e.clientY, window.innerHeight - mh - 6);
+    menu.style.left = Math.max(6, x) + 'px';
+    menu.style.top = Math.max(6, y) + 'px';
+    // Open submenus toward whichever side has room
+    menu.classList.toggle('flip-sub', e.clientX + mw + 190 > window.innerWidth);
+    menu.classList.toggle('flip-sub-v', e.clientY > window.innerHeight * 0.55);
+}
+
+function closeContextMenu() {
+    const menu = document.getElementById('ctxMenu');
+    if (menu) menu.style.display = 'none';
+    ctxTaskId = null;
+}
+
+function buildContextSubmenus(t) {
+    const opt = (field, value, label, current, swatch) =>
+        `<div class="ctx-sub-item${current ? ' current' : ''}" data-field="${field}" data-value="${escAttr(value)}">
+            ${swatch || ''}<span class="ctx-sub-label">${esc(label)}</span>
+            ${current ? '<span class="ctx-check">✓</span>' : ''}
+        </div>`;
+    const swatch = c => `<span class="ctx-swatch" style="background:${escAttr(c || '#888')}"></span>`;
+
+    document.getElementById('ctxAnalyst').innerHTML =
+        opt('assigned_analyst_id', '', 'Unassigned', !t.assigned_analyst_id) +
+        analysts.map(a => opt('assigned_analyst_id', a.id, a.name, t.assigned_analyst_id == a.id)).join('');
+
+    document.getElementById('ctxTeam').innerHTML =
+        opt('assigned_team_id', '', 'No team', !t.assigned_team_id) +
+        teams.map(tm => opt('assigned_team_id', tm.id, tm.name, t.assigned_team_id == tm.id)).join('');
+
+    document.getElementById('ctxStatus').innerHTML =
+        statusList.map(s => opt('status', s.name, s.name, t.status === s.name, swatch(s.colour))).join('')
+        || '<div class="ctx-sub-empty">No statuses</div>';
+
+    document.getElementById('ctxPriority').innerHTML =
+        priorityList.map(p => opt('priority', p.name, p.name, t.priority === p.name, swatch(p.colour))).join('')
+        || '<div class="ctx-sub-empty">No priorities</div>';
+}
+
+async function ctxSetField(field, value) {
+    const id = ctxTaskId;
+    closeContextMenu();
+    if (!id) return;
+    try {
+        const data = await fetch(API_BASE + 'save.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, [field]: value })
+        }).then(r => r.json());
+        if (data.success) { showToast('Task updated'); loadTasks(); }
+        else showToast('Error: ' + (data.error || 'Update failed'));
+    } catch (e) { showToast('Failed to update task'); }
+}
+
+function ctxCreateSubtask() {
+    const id = ctxTaskId;
+    closeContextMenu();
+    if (!id) return;
+    // Open the task and drop the cursor straight into the Add-subtask box
+    openDetailPanel(id).then(() => {
+        const input = document.getElementById('newSubtaskInput');
+        if (input) { input.scrollIntoView({ block: 'center' }); input.focus(); }
+    });
+}
+
+// Escape a value for safe use inside an HTML attribute
+function escAttr(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
 // ── Utilities ──────────────────────────────────────────────────────

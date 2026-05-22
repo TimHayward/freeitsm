@@ -15,7 +15,7 @@ $path_prefix = '../';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Service Desk - Tasks</title>
     <link rel="stylesheet" href="../assets/css/inbox.css">
-    <link rel="stylesheet" href="../assets/css/tasks.css?v=4">
+    <link rel="stylesheet" href="../assets/css/tasks.css?v=5">
     <script src="../assets/js/tinymce/tinymce.min.js"></script>
 </head>
 <body data-analyst-id="<?php echo $_SESSION['analyst_id'] ?? ''; ?>">
@@ -145,10 +145,38 @@ $path_prefix = '../';
         </div>
     </div>
 
+    <!-- Card right-click context menu -->
+    <div class="ctx-menu" id="ctxMenu">
+        <div class="ctx-item ctx-has-sub" data-action="analyst">
+            <span class="ctx-item-label">Assign analyst</span>
+            <span class="ctx-arrow">&rsaquo;</span>
+            <div class="ctx-submenu" id="ctxAnalyst"></div>
+        </div>
+        <div class="ctx-item ctx-has-sub" data-action="team">
+            <span class="ctx-item-label">Assign team</span>
+            <span class="ctx-arrow">&rsaquo;</span>
+            <div class="ctx-submenu" id="ctxTeam"></div>
+        </div>
+        <div class="ctx-item ctx-has-sub" data-action="status">
+            <span class="ctx-item-label">Change status</span>
+            <span class="ctx-arrow">&rsaquo;</span>
+            <div class="ctx-submenu" id="ctxStatus"></div>
+        </div>
+        <div class="ctx-item ctx-has-sub" data-action="priority">
+            <span class="ctx-item-label">Change priority</span>
+            <span class="ctx-arrow">&rsaquo;</span>
+            <div class="ctx-submenu" id="ctxPriority"></div>
+        </div>
+        <div class="ctx-sep"></div>
+        <div class="ctx-item" data-action="subtask">
+            <span class="ctx-item-label">Create subtask</span>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
     <script>window.API_BASE = '../api/tasks/';</script>
-    <script src="../assets/js/tasks.js?v=3"></script>
+    <script src="../assets/js/tasks.js?v=4"></script>
 </body>
 </html>
