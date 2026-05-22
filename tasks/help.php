@@ -441,16 +441,39 @@ $path_prefix = '../';
                         <span class="thp-section-num">8</span>
                         <div>
                             <h3>Settings</h3>
-                            <p>The Settings page has five tabs. Changes apply to everyone &mdash; they shape the board, calendar and cards for the whole team.</p>
+                            <p>The Settings page has five tabs &mdash; Statuses, Priorities, Calendar, Card and Tags. Settings are install-wide: a change here shapes the board, calendar and cards for the whole team, not just for you.</p>
                         </div>
                     </div>
+
+                    <h4>Statuses &amp; Priorities</h4>
+                    <p>These two tabs manage the lookup lists every task draws from. Each row has a name, a colour and a display order, and you add, edit or delete rows with the buttons on the right.</p>
                     <div class="thp-fields">
-                        <div><strong>Statuses</strong> &mdash; the workflow states, which double as board columns. Set a colour, a display order, which one is the default for new tasks, and which count as <em>Closed</em>.</div>
-                        <div><strong>Priorities</strong> &mdash; the priority bands shown on cards, each with a colour and a default.</div>
-                        <div><strong>Calendar</strong> &mdash; choose how multi-day tasks are drawn on the calendar: deadline chip, spanning bar, or every day.</div>
-                        <div><strong>Card</strong> &mdash; toggle which extras appear on board cards: priority, assignee, team, start date, due date, description excerpt, subtask progress, and the linked-item indicator.</div>
-                        <div><strong>Tags</strong> &mdash; manage the tag list and the five tag display options.</div>
+                        <div><strong>Statuses</strong> &mdash; the workflow states, which double as the board columns (shown in display order). One status is the <em>default</em> for new tasks. A status flagged as <em>Closed</em> counts as done &mdash; tasks moved into it stamp a completion time and drop out of open-task counters. A status can also be made inactive to retire it without losing history.</div>
+                        <div><strong>Priorities</strong> &mdash; the priority bands shown as a coloured dot on each card. One priority is the default for new tasks.</div>
                     </div>
+
+                    <h4>Card</h4>
+                    <p>The Card tab is a set of checkboxes controlling what extra detail appears on each board and list card, so you can scan tasks without opening them: priority dot, assignee initials, team, start date, due date, a description excerpt, subtask progress, and the linked-item indicator. The task title always shows. Changes take effect the next time the board loads.</p>
+
+                    <h4>Calendar options</h4>
+                    <p>The Calendar tab has a single decision: how a <strong>multi-day task</strong> &mdash; one whose start date is earlier than its due date &mdash; is drawn on the Tasks calendar. Pick one of three modes:</p>
+                    <div class="thp-fields">
+                        <div><strong>Deadline chip</strong> (the default) &mdash; the task appears once, as a single chip on its due date. This keeps the calendar focused on what needs finishing rather than on durations, and is the tidiest choice when you have lots of tasks. The full span is still visible on the Timeline.</div>
+                        <div><strong>Spanning bar</strong> &mdash; the task is drawn as one continuous bar running from its start date to its due date, wrapping onto the next row at the end of each week. Bars stack into lanes so they never overlap. Best when seeing how long things take, and what overlaps, matters more than a tidy grid.</div>
+                        <div><strong>Every day</strong> &mdash; a chip is repeated in every single day cell the task covers. The most thorough &mdash; the task is impossible to miss on any given day &mdash; but a few long tasks can crowd the grid quickly.</div>
+                    </div>
+                    <p style="margin-top:14px;">Whichever mode you pick, a task that has <em>only</em> a due date (no start date) always shows as a single chip on that date &mdash; the modes only change how a genuine date <em>range</em> is drawn. The calendar itself shows the current mode in its toolbar, with a <strong>Change</strong> link straight back to this tab.</p>
+
+                    <h4>Tag options</h4>
+                    <p>The Tags tab does two jobs. The top half is the <strong>tag list</strong> &mdash; add, edit, delete and recolour the tags your team can apply (each is simply a name and a colour). The bottom half, <strong>Display options</strong>, is five toggles that decide how tagging behaves and where tags surface:</p>
+                    <div class="thp-fields">
+                        <div><strong>Allow new tags from a task</strong> (off by default) &mdash; the managed-vs-open switch. Off, the tag list is a fixed vocabulary: analysts can only pick existing tags, and new ones are added here in Settings &mdash; best for a governed set like Security or ISO. On, the tag picker on a task also lets an analyst type and create a brand-new tag on the spot.</div>
+                        <div><strong>Card chips</strong> &mdash; show coloured tag chips on board and list cards. Turn off if you'd rather keep cards minimal.</div>
+                        <div><strong>Sidebar filter</strong> &mdash; show a Tag dropdown in the board/list sidebar so you can narrow the view to a single tag.</div>
+                        <div><strong>Search matching</strong> &mdash; include tag names in what the search box matches, so typing a tag name finds every task carrying it.</div>
+                        <div><strong>Calendar &amp; timeline</strong> &mdash; show small tag dots on task bars in the calendar and timeline views. Off by default, since those views are date-focused.</div>
+                    </div>
+                    <p style="margin-top:14px;">The toggles are independent &mdash; you can, for example, keep tags off the cards but still filter and search by them. Tag-display changes take effect the next time a view loads.</p>
                 </div>
 
                 <!-- 9. Quick tips -->
