@@ -2602,8 +2602,15 @@ const PM = (() => {
         return { x, y, width: (maxX + PAD) - x, height: (maxY + PAD) - y };
     }
 
-    // Snapshot the canvas via html2canvas. Stashes scroll state + selection
-    // chrome and restores them afterwards, even if the capture throws.
+    // Snapshot the canvas via html2canvas. Stashes scroll state + canvas
+    // dimensions and restores them afterwards, even if the capture throws.
+    //
+    // The catch with `.pm-canvas`: it's a scroll container (`overflow: auto`)
+    // which means html2canvas treats its viewport box as the rendering
+    // bounds — anything reachable only by scrolling sideways is clipped
+    // (the bug Ed hit). The fix is to temporarily expand the canvas to the
+    // full content size and switch overflow to visible so the export rect
+    // sits entirely inside the rendered box. Restore in `finally`.
     async function captureCanvas() {
         if (typeof html2canvas !== 'function') {
             toast(t('process-mapper.toast.export_lib_missing'), 'error');
@@ -2618,15 +2625,33 @@ const PM = (() => {
         const stashed = {
             scrollLeft: canvas.scrollLeft,
             scrollTop:  canvas.scrollTop,
+            cssWidth:    canvas.style.width,
+            cssHeight:   canvas.style.height,
+            cssOverflow: canvas.style.overflow,
+            cssFlex:     canvas.style.flex,
+            svgWidth:    svg.getAttribute('width'),
+            svgHeight:   svg.getAttribute('height'),
         };
 
-        // Hide chrome that doesn't belong in the print (edge handles,
-        // selection rings, rubber-band, empty-state placeholder, dot-grid).
+        // Expand the canvas so its CSS box covers everything in `rect` plus
+        // existing scroll extent — html2canvas's render bounds follow the
+        // element's computed box, so it only sees what physically fits there.
+        // `.pm-canvas-wrap` has `overflow: hidden`, so the visual oversize is
+        // clipped from the user's view during the brief capture window.
+        const fullW = Math.max(canvas.scrollWidth,  rect.x + rect.width);
+        const fullH = Math.max(canvas.scrollHeight, rect.y + rect.height);
         canvas.classList.add('is-exporting');
-        // Scroll to origin so html2canvas's x/y maps to canvas-content space
-        // without any scroll-offset surprises across browsers.
+        canvas.style.flex     = '0 0 auto';   // break out of the flex:1 in pm-canvas-wrap
+        canvas.style.width    = fullW + 'px';
+        canvas.style.height   = fullH + 'px';
+        canvas.style.overflow = 'visible';
+        // Pin the connector SVG to the expanded size so connectors outside
+        // the original viewport draw — width:100% via CSS would track but
+        // some browsers compute it from the scroll viewport, not the new box.
+        svg.setAttribute('width',  String(fullW));
+        svg.setAttribute('height', String(fullH));
         canvas.scrollLeft = 0;
-        canvas.scrollTop = 0;
+        canvas.scrollTop  = 0;
 
         try {
             const out = await html2canvas(canvas, {
@@ -2645,6 +2670,14 @@ const PM = (() => {
             return null;
         } finally {
             canvas.classList.remove('is-exporting');
+            canvas.style.width    = stashed.cssWidth;
+            canvas.style.height   = stashed.cssHeight;
+            canvas.style.overflow = stashed.cssOverflow;
+            canvas.style.flex     = stashed.cssFlex;
+            if (stashed.svgWidth  != null) svg.setAttribute('width',  stashed.svgWidth);
+            else                            svg.removeAttribute('width');
+            if (stashed.svgHeight != null) svg.setAttribute('height', stashed.svgHeight);
+            else                            svg.removeAttribute('height');
             canvas.scrollLeft = stashed.scrollLeft;
             canvas.scrollTop  = stashed.scrollTop;
         }
