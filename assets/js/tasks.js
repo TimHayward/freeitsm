@@ -16,6 +16,8 @@ let sortField = 'board_position';
 let sortDir = 'asc';
 let tinyEditor = null;
 let descSaveTimer = null;
+let searchQuery = '';
+let searchTerms = [];
 
 // Which extras appear on board cards — overridden by Settings → Card
 let cardFields = {
@@ -85,6 +87,7 @@ async function loadTasks() {
         const data = await fetch(url).then(r => r.json());
         if (data.success) {
             tasks = data.tasks;
+            tasks.forEach(t => t._search = buildSearchText(t));
             if (currentView === 'board') renderBoard();
             else renderList();
         }
@@ -123,6 +126,39 @@ function setAnalystFilter(analystId) {
     loadTasks();
 }
 
+// ── Search ─────────────────────────────────────────────────────────
+
+// Lowercased haystack of a task's title + plain-text description,
+// pre-computed once per load so as-you-type filtering stays cheap
+function buildSearchText(t) {
+    let text = t.title || '';
+    if (t.description) {
+        const doc = new DOMParser().parseFromString(t.description, 'text/html');
+        text += ' ' + (doc.body.textContent || '');
+    }
+    return text.toLowerCase();
+}
+
+function taskMatchesSearch(t) {
+    if (searchTerms.length === 0) return true;
+    const hay = t._search || '';
+    return searchTerms.every(term => hay.includes(term));
+}
+
+// Filters the board/list as you type — no server round-trip
+function setSearch(value) {
+    searchQuery = value;
+    searchTerms = value.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    document.getElementById('searchClear').style.display = value ? 'flex' : 'none';
+    if (currentView === 'board') renderBoard();
+    else renderList();
+}
+
+function clearSearch() {
+    document.getElementById('taskSearch').value = '';
+    setSearch('');
+}
+
 // ── View Toggle ────────────────────────────────────────────────────
 
 function switchView(view) {
@@ -141,7 +177,7 @@ function renderBoard() {
     const statuses = ['To Do', 'In Progress', 'Done'];
     statuses.forEach(status => {
         const container = document.getElementById('cards-' + status);
-        const filtered = tasks.filter(t => t.status === status);
+        const filtered = tasks.filter(t => t.status === status && taskMatchesSearch(t));
         const countEl = document.getElementById('count' + status.replace(/\s/g, ''));
         if (countEl) countEl.textContent = filtered.length;
 
@@ -514,7 +550,7 @@ async function endDrag(e) {
 // ── List Rendering ─────────────────────────────────────────────────
 
 function renderList() {
-    const sorted = [...tasks].sort((a, b) => {
+    const sorted = tasks.filter(taskMatchesSearch).sort((a, b) => {
         let va = a[sortField] || '';
         let vb = b[sortField] || '';
         if (typeof va === 'string') va = va.toLowerCase();

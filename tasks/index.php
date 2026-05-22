@@ -15,7 +15,7 @@ $path_prefix = '../';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Service Desk - Tasks</title>
     <link rel="stylesheet" href="../assets/css/inbox.css">
-    <link rel="stylesheet" href="../assets/css/tasks.css?v=6">
+    <link rel="stylesheet" href="../assets/css/tasks.css?v=7">
     <script src="../assets/js/tinymce/tinymce.min.js"></script>
 </head>
 <body data-analyst-id="<?php echo $_SESSION['analyst_id'] ?? ''; ?>">
@@ -24,6 +24,15 @@ $path_prefix = '../';
     <div class="tasks-container">
         <!-- Sidebar -->
         <div class="tasks-sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-label">Search</div>
+                <div class="search-box">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="taskSearch" class="search-input" placeholder="Search tasks..." oninput="setSearch(this.value)" autocomplete="off">
+                    <button type="button" class="search-clear" id="searchClear" onclick="clearSearch()" title="Clear search">&times;</button>
+                </div>
+            </div>
+
             <div class="sidebar-section">
                 <div class="sidebar-label">View</div>
                 <div class="view-toggle">
@@ -177,6 +186,6 @@ $path_prefix = '../';
     <div class="toast" id="toast"></div>
 
     <script>window.API_BASE = '../api/tasks/';</script>
-    <script src="../assets/js/tasks.js?v=4"></script>
+    <script src="../assets/js/tasks.js?v=5"></script>
 </body>
 </html>

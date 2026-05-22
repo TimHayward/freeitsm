@@ -773,6 +773,7 @@ Kanban-style task management with board, list, calendar, and timeline views for 
 - **Card quick actions**: Right-click any board card for a context menu — assign analyst, assign team, change status, change priority, or create a subtask — without opening the card
 - **Configurable card fields**: Settings → Card toggles which extras show on each board card — priority, assignee, team, start date, due date, description excerpt (first 250 chars), subtask progress, and linked-item indicator — so tasks can be scanned without opening them
 - **List view**: Sortable table with all task fields
+- **Search**: As-you-type search box filters the board and list by task title and description (all words must match), with no server round-trip
 - **Calendar view** (`tasks/calendar/`): Month grid of tasks coloured by status. How a multi-day task (one with a start date earlier than its due date) is drawn is configurable in Settings → Calendar — **Deadline chip** (a single chip on the due date), **Spanning bar** (one continuous bar across the range, wrapping at week rows), or **Every day** (a chip in every day cell of the range)
 - **Timeline view** (`tasks/timeline/`): Gantt-style horizontal bars from each task's start date to its due date, grouped by assignee, status, or flat, with a today marker and day-width zoom
 - **Start & due dates**: Tasks have an optional `start_date` plus the existing `due_date`; together they define the span shown on the calendar and timeline
