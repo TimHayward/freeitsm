@@ -20,7 +20,48 @@
     display: flex;
     height: calc(100vh - 48px);
     overflow: hidden;
+    /* `position: relative` is the anchor for `.sidebar-hover .pm-sidebar`'s
+       absolute positioning — keeping it here even in the default ('always')
+       mode keeps the layout reflow-free when the user toggles the preference. */
+    position: relative;
 }
+
+/* "Show on hover" mode (set via Process Mapper → Settings → Left panel and
+   stored per-analyst in user_preferences). The sidebar becomes a thin
+   16px hot-zone on the left of the canvas; hovering expands it to its full
+   width. Because the sidebar leaves the flex layout (position: absolute),
+   the canvas wrap reflows to fill the space the sidebar used to take. */
+.pm-layout.sidebar-hover .pm-sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 16px;
+    min-width: 16px;
+    z-index: 10;
+    overflow: hidden;
+    transition: width 0.18s ease;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.12);
+}
+.pm-layout.sidebar-hover .pm-sidebar:hover {
+    width: 260px;
+}
+/* A subtle vertical strip on the collapsed sidebar so users know it's
+   hoverable. Fades out when the sidebar expands. */
+.pm-layout.sidebar-hover .pm-sidebar::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 6px;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 36px;
+    border-radius: 2px;
+    background: #bbb;
+    transition: opacity 0.18s;
+    pointer-events: none;
+}
+.pm-layout.sidebar-hover .pm-sidebar:hover::before { opacity: 0; }
 
 /* --- Sidebar ------------------------------------------------ */
 .pm-sidebar {

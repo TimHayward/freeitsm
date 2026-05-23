@@ -48,7 +48,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars(t('process-mapper.title')); ?></title>
     <link rel="stylesheet" href="../assets/css/inbox.css">
-    <link rel="stylesheet" href="../assets/css/process-mapper.css?v=8">
+    <link rel="stylesheet" href="../assets/css/process-mapper.css?v=9">
     <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
     <script src="../assets/js/i18n.js"></script>
 </head>
@@ -451,6 +451,6 @@ try {
          CDN at print time. Same versions used by Network Mapper (#257). -->
     <script src="../assets/js/vendor/html2canvas.min.js"></script>
     <script src="../assets/js/vendor/jspdf.umd.min.js"></script>
-    <script src="../assets/js/process-mapper.js?v=9"></script>
+    <script src="../assets/js/process-mapper.js?v=10"></script>
 </body>
 </html>

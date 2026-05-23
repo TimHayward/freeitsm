@@ -33,7 +33,7 @@ $shapes = include '../includes/shapes.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars(t('process-mapper.title') . ' — ' . t('process-mapper.nav.settings')); ?></title>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
-    <link rel="stylesheet" href="../../assets/css/process-mapper.css?v=8">
+    <link rel="stylesheet" href="../../assets/css/process-mapper.css?v=9">
     <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
     <script src="../../assets/js/i18n.js"></script>
     <script src="../../assets/js/toast.js"></script>
@@ -127,7 +127,14 @@ $shapes = include '../includes/shapes.php';
     <?php include '../includes/header.php'; ?>
 
     <div class="container">
-        <div class="tab-content active">
+        <!-- Tabs strip — matches tickets/settings -->
+        <div class="tabs">
+            <button class="tab active" data-tab="step-types" onclick="PMS.switchTab('step-types')"><?php echo htmlspecialchars(t('process-mapper.settings_tabs.step_types')); ?></button>
+            <button class="tab"        data-tab="left-panel" onclick="PMS.switchTab('left-panel')"><?php echo htmlspecialchars(t('process-mapper.settings_tabs.left_panel')); ?></button>
+        </div>
+
+        <!-- Step types tab (existing content) -->
+        <div class="tab-content active" id="step-types-tab">
             <div class="section-header">
                 <h2><?php echo htmlspecialchars(t('process-mapper.settings.title')); ?></h2>
                 <button class="add-btn" onclick="PMS.openAdd()"><?php echo htmlspecialchars(t('common.add')); ?></button>
@@ -149,6 +156,34 @@ $shapes = include '../includes/shapes.php';
                     <tr><td colspan="6" style="text-align: center;"><?php echo htmlspecialchars(t('common.loading')); ?></td></tr>
                 </tbody>
             </table>
+        </div>
+
+        <!-- Left panel tab — per-analyst preference -->
+        <div class="tab-content" id="left-panel-tab">
+            <div class="section-header">
+                <h2><?php echo htmlspecialchars(t('process-mapper.left_panel.title')); ?></h2>
+            </div>
+            <p style="margin-bottom: 20px; color: #666;"><?php echo htmlspecialchars(t('process-mapper.left_panel.intro')); ?></p>
+
+            <form id="pmsLeftPanelForm" autocomplete="off" onsubmit="event.preventDefault();">
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 500; color: #333;"><?php echo htmlspecialchars(t('process-mapper.left_panel.mode_label')); ?></label>
+                    <label style="display: block; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 8px; cursor: pointer;">
+                        <input type="radio" name="pmsSidebarMode" value="always" onchange="PMS.saveSidebarMode(this.value)">
+                        <strong><?php echo htmlspecialchars(t('process-mapper.left_panel.mode_always')); ?></strong>
+                        <span style="display: block; font-size: 12px; color: #777; margin-top: 4px; margin-left: 22px;">
+                            <?php echo htmlspecialchars(t('process-mapper.left_panel.mode_always_hint')); ?>
+                        </span>
+                    </label>
+                    <label style="display: block; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer;">
+                        <input type="radio" name="pmsSidebarMode" value="hover" onchange="PMS.saveSidebarMode(this.value)">
+                        <strong><?php echo htmlspecialchars(t('process-mapper.left_panel.mode_hover')); ?></strong>
+                        <span style="display: block; font-size: 12px; color: #777; margin-top: 4px; margin-left: 22px;">
+                            <?php echo htmlspecialchars(t('process-mapper.left_panel.mode_hover_hint')); ?>
+                        </span>
+                    </label>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -363,9 +398,53 @@ $shapes = include '../includes/shapes.php';
         document.getElementById('pmsModal').addEventListener('click', e => {
             if (e.target.id === 'pmsModal') closeModal();
         });
+
+        // --- Tabs ---
+        function switchTab(name) {
+            document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === name + '-tab'));
+            // Lazy-load the Left panel preference the first time the tab opens.
+            if (name === 'left-panel') loadSidebarMode();
+        }
+
+        // --- Left panel preference ---
+        const SIDEBAR_MODE_KEY = 'process_mapper_sidebar_mode';
+        let sidebarModeLoaded = false;
+        async function loadSidebarMode() {
+            if (sidebarModeLoaded) return;
+            sidebarModeLoaded = true;
+            try {
+                const r = await fetch('../../api/system/get_user_preference.php?key=' + encodeURIComponent(SIDEBAR_MODE_KEY), { credentials: 'same-origin' });
+                const d = await r.json();
+                // Default to 'always' if the user hasn't set a preference yet.
+                const mode = (d.success && (d.value === 'always' || d.value === 'hover')) ? d.value : 'always';
+                document.querySelectorAll('input[name="pmsSidebarMode"]').forEach(i => { i.checked = (i.value === mode); });
+            } catch (e) {
+                // Fall back to defaulting the first radio if the preference call fails.
+                const first = document.querySelector('input[name="pmsSidebarMode"][value="always"]');
+                if (first) first.checked = true;
+            }
+        }
+
+        async function saveSidebarMode(value) {
+            if (value !== 'always' && value !== 'hover') return;
+            try {
+                const r = await fetch('../../api/system/set_user_preference.php', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: SIDEBAR_MODE_KEY, value: value })
+                });
+                const d = await r.json();
+                if (d.success) toast(window.t('process-mapper.left_panel.saved'));
+                else toast(d.error || 'Save failed', 'error');
+            } catch (e) { toast('Save failed', 'error'); }
+        }
+
         document.addEventListener('DOMContentLoaded', loadTypes);
 
-        return { openAdd, openEdit, pickShape, save, del, move, closeModal };
+        return { openAdd, openEdit, pickShape, save, del, move, closeModal,
+                 switchTab, saveSidebarMode };
     })();
     </script>
 </body>

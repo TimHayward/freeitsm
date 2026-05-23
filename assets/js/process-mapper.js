@@ -111,7 +111,29 @@ const PM = (() => {
         // specific diagram. Browser back/forward navigation is wired below.
         loadProcesses().then(openInitialFromUrl);
         loadAutosavePreference();
+        loadSidebarModePreference();
         window.addEventListener('popstate', onPopState);
+    }
+
+    // Per-analyst left-panel preference. 'always' (default) pins the sidebar
+    // open at 260px; 'hover' collapses it to a thin hot-zone that expands on
+    // cursor approach (CSS does the actual sliding via .sidebar-hover on the
+    // layout container). Set via Process Mapper → Settings → Left panel.
+    const SIDEBAR_MODE_KEY = 'process_mapper_sidebar_mode';
+    async function loadSidebarModePreference() {
+        try {
+            const r = await fetch('../api/system/get_user_preference.php?key=' + encodeURIComponent(SIDEBAR_MODE_KEY), { credentials: 'same-origin' });
+            const d = await r.json();
+            const mode = (d.success && d.value === 'hover') ? 'hover' : 'always';
+            applySidebarMode(mode);
+        } catch (e) {
+            applySidebarMode('always');
+        }
+    }
+    function applySidebarMode(mode) {
+        const layout = document.querySelector('.pm-layout');
+        if (!layout) return;
+        layout.classList.toggle('sidebar-hover', mode === 'hover');
     }
 
     // =========================================================

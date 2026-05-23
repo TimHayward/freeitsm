@@ -16,8 +16,24 @@ return [
         'help'      => 'Help',
     ],
 
+    'settings_tabs' => [
+        'step_types' => 'Step types',
+        'left_panel' => 'Left panel',
+    ],
+
+    'left_panel' => [
+        'title'       => 'Left panel',
+        'intro'       => 'Control whether the left-hand process list is always visible or hidden until you hover the left edge of the canvas. This is a per-analyst preference.',
+        'mode_label'  => 'When to show the left panel',
+        'mode_always' => 'Always show',
+        'mode_always_hint' => 'Pinned 260px wide on the left, like today.',
+        'mode_hover'  => 'Show on hover',
+        'mode_hover_hint' => 'Hidden by default; slides in when the cursor approaches the left edge of the canvas, slides out when it moves away. Gives you more canvas space when working on a diagram.',
+        'saved'       => 'Preference saved.',
+    ],
+
     'sidebar' => [
-        'new_process'        => '+ New Process',
+        'new_process'        => '+ New',
         'search_placeholder' => 'Search processes...',
         'no_processes_yet'   => 'No processes yet',
     ],
