@@ -512,7 +512,8 @@ const WFE = (() => {
      */
     function rebuildOperatorDropdown(n) {
         const opSel = document.getElementById('wfCondOp');
-        const isLookup = !!window.WF_LOOKUP_VALUES[n.field];
+        const type  = window.WF_FIELD_TYPES[n.field] || 'text';
+        const isLookup = (type === 'lookup');
 
         // Silent upgrade from the older single-value ops to the
         // multi-select-friendly ones when the field is a lookup. Keeps the
@@ -535,8 +536,22 @@ const WFE = (() => {
                 ['is_not_empty', 'is not empty'],
             ];
         } else {
-            options = Object.entries(window.WF_OPS);
+            // text: contains/not_contains, no gt/lt.
+            // numeric: gt/lt, no contains/not_contains.
+            const allowed = type === 'numeric'
+                ? ['equals', 'not_equals', 'in', 'not_in', 'gt', 'lt', 'is_empty', 'is_not_empty']
+                : ['equals', 'not_equals', 'in', 'not_in', 'contains', 'not_contains', 'is_empty', 'is_not_empty'];
+            options = allowed.map(k => [k, window.WF_OPS[k] || k]);
         }
+
+        // If the currently-saved op isn't valid for this field type
+        // (e.g. loading an old workflow that had subject gt "foo"), fall
+        // back to a sane default for the type so the dropdown isn't blank.
+        const validSlugs = new Set(options.map(o => o[0]));
+        if (!validSlugs.has(n.op)) {
+            n.op = isLookup ? 'in' : 'equals';
+        }
+
         opSel.innerHTML = options.map(([k, label]) =>
             `<option value="${escAttr(k)}" ${k === n.op ? 'selected' : ''}>${escAttr(label)}</option>`
         ).join('');

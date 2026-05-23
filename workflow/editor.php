@@ -40,6 +40,7 @@ foreach (array_keys($triggers) as $t) {
 // back to a plain text input). Keeps the dropdowns offline-capable without
 // extra AJAX round-trips when the user picks a field.
 $lookupValuesByField = [];
+$fieldTypeByField    = [];
 $_seenFields = [];
 foreach ($fieldsByTrigger as $fields) {
     foreach ($fields as $field) {
@@ -49,6 +50,9 @@ foreach ($fieldsByTrigger as $fields) {
         if ($values !== null) {
             $lookupValuesByField[$field] = $values;
         }
+        // Each field gets a type — 'lookup', 'numeric', or 'text' — driving
+        // which operators the editor offers when that field is picked.
+        $fieldTypeByField[$field] = WorkflowEngine::fieldType($field);
     }
 }
 ?>
@@ -268,9 +272,13 @@ foreach ($fieldsByTrigger as $fields) {
         // table. Drives the condition value control's dropdown / multi-select.
         // Fields not in this map are free-text and use a plain input.
         window.WF_LOOKUP_VALUES  = <?php echo json_encode($lookupValuesByField); ?>;
+        // Field path → type ('lookup' / 'numeric' / 'text'). Drives which
+        // operators the editor offers for each field — text fields don't
+        // get gt/lt, numeric fields don't get contains/not_contains.
+        window.WF_FIELD_TYPES    = <?php echo json_encode($fieldTypeByField); ?>;
         window.WF_ID             = <?php echo (int)$id; ?>;
         window.WF_API            = '../api/workflow/';
     </script>
-    <script src="../assets/js/workflow-editor.js?v=5"></script>
+    <script src="../assets/js/workflow-editor.js?v=6"></script>
 </body>
 </html>

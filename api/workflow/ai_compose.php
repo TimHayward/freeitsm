@@ -57,13 +57,15 @@ try {
         $fieldsByTrigger[$t] = WorkflowEngine::availableFields($t);
     }
 
-    // Per-field lookup values so the AI can pick real ids ("Critical" → 4)
-    // instead of guessing. Only built for fields that actually join to a
-    // lookup table; free-text fields just get listed by name.
-    $lookupsByField = [];
+    // Per-field lookup values + types so the AI can pick real ids
+    // ("Critical" → 4) and only use operators that make sense for the field
+    // (no `gt` on a varchar, no `contains` on a numeric id).
+    $lookupsByField   = [];
+    $typesByField     = [];
     foreach ($fieldsByTrigger as $fields) {
         foreach ($fields as $field) {
-            if (isset($lookupsByField[$field])) continue;
+            if (isset($typesByField[$field])) continue;
+            $typesByField[$field] = WorkflowEngine::fieldType($field);
             $vals = WorkflowEngine::availableValuesForField($field);
             if ($vals !== null) $lookupsByField[$field] = $vals;
         }
@@ -76,16 +78,18 @@ try {
             $triggerLines[] = "  - {$slug} — {$label}. Fields: (none)";
             continue;
         }
-        // Annotate each field with its lookup values where applicable so
-        // the AI sees something like "ticket.priority_id [1=Low, 2=Normal,
-        // 3=High, 4=Critical]" and can pick the right id.
+        // Annotate each field with its type and lookup values where
+        // applicable, so the AI sees "ticket.priority_id (lookup) [1=Low,
+        // 2=Normal, ...]" or "ticket.subject (text)" or "ticket.id (numeric)"
+        // and picks both the right value AND the right operator.
         $annotated = [];
         foreach ($fields as $f) {
+            $type = $typesByField[$f];
             if (isset($lookupsByField[$f])) {
                 $pairs = array_map(fn($v) => "{$v['id']}={$v['label']}", $lookupsByField[$f]);
-                $annotated[] = $f . ' [' . implode(', ', $pairs) . ']';
+                $annotated[] = $f . " ({$type}) [" . implode(', ', $pairs) . ']';
             } else {
-                $annotated[] = $f;
+                $annotated[] = $f . " ({$type})";
             }
         }
         $triggerLines[] = "  - {$slug} — {$label}. Fields:\n      " . implode(";\n      ", $annotated);
@@ -121,12 +125,15 @@ Available actions (slug — description. Args shape shows what keys go in `actio
 
 IMPORTANT — only one action handler is implemented right now: `log_message`. Even if the user describes "send an email" or "create a ticket", the realistic action you can propose today is `log_message` with a message that documents the intent (e.g. "TODO: send email to manager when this fires"). Be honest about this limitation in your explanation if relevant.
 
+Operator rules per field type:
+  - LOOKUP fields (those with id=label annotations): use `in` / `not_in` / `is_empty` / `is_not_empty` only. `in` works fine with a single-value array for an exact match, so don't reach for `equals`. Value is an array of ids as strings.
+  - NUMERIC fields: use `equals` / `not_equals` / `in` / `not_in` / `gt` / `lt` / `is_empty` / `is_not_empty`. NEVER `contains` / `not_contains` (substring match on a number is nonsense).
+  - TEXT fields (varchar like subject, email, title): use `equals` / `not_equals` / `in` / `not_in` / `contains` / `not_contains` / `is_empty` / `is_not_empty`. NEVER `gt` / `lt` (lexicographic string comparison is a footgun).
+
 Condition value semantics:
-  - For most operators (equals, not_equals, contains, not_contains, gt, lt) `value` is a single string.
+  - For single-value operators (equals, not_equals, contains, not_contains, gt, lt) `value` is a single string.
   - For `in` and `not_in` `value` is an ARRAY of strings — OR semantics. Example: priority is Critical OR High → `{"field": "ticket.priority_id", "op": "in", "value": ["4", "3"]}` (using the ids from the field's lookup annotation).
   - For `is_empty` / `is_not_empty` `value` is ignored — set it to "" or null.
-
-For NORMALISED ID fields (those annotated with their lookup values above, like `ticket.priority_id [1=Low, 2=Normal, 3=High, 4=Critical]`), `value` is the id as a string (e.g. "4"), NOT the label. Pick the id that matches the user's plain-English intent. If the user says "Critical or High priority", that's `op: "in", value: ["4", "3"]`.
 
 Output format — respond ONLY with a single JSON object, no markdown fences, no commentary outside it:
 
@@ -184,6 +191,18 @@ SYS;
         // Field validation is soft — accept anything but warn on unknown.
         if ($field !== '' && !in_array($field, $validFields, true)) {
             $warnings[] = "Condition field '{$field}' isn't a known field for trigger '{$triggerEvent}'.";
+        }
+        // Type-aware op check: drop conditions that pair an op with a field
+        // type that doesn't make sense (e.g. `gt` on a varchar `subject`).
+        // The engine would still try to run them but produce nonsense
+        // (lexicographic string compare for gt/lt), so refuse at the gate.
+        if ($field !== '') {
+            $fieldType  = WorkflowEngine::fieldType($field);
+            $validForType = WorkflowEngine::operatorsForFieldType($fieldType);
+            if (!in_array($op, $validForType, true)) {
+                $warnings[] = "Dropped condition: operator '{$op}' doesn't make sense for {$fieldType} field '{$field}'.";
+                continue;
+            }
         }
         // Coerce the value to the right shape for the operator. `in` / `not_in`
         // expect an array; everything else expects a string. If the AI gave

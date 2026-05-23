@@ -149,6 +149,69 @@ class WorkflowEngine
     ];
 
     /**
+     * Field-type catalogue for the non-lookup fields. Drives which operators
+     * the editor offers per field. Lookups are detected via FIELD_LOOKUP_TABLES
+     * and always considered type 'lookup' — they don't need an entry here.
+     *
+     * 'numeric' fields offer equals/not_equals/in/not_in/gt/lt/is_empty/is_not_empty
+     *     (no contains — substring search on a number is meaningless).
+     * 'text' fields offer equals/not_equals/in/not_in/contains/not_contains/
+     *     is_empty/is_not_empty (no gt/lt — lexicographic string comparison
+     *     is a footgun for users who'd expect numeric ordering).
+     */
+    private const FIELD_TYPES = [
+        'ticket.id'              => 'numeric',
+        'ticket.subject'         => 'text',
+        'ticket.requester_email' => 'text',
+        'form.name'              => 'text',
+        'submission.id'          => 'numeric',
+        'submission.email'       => 'text',
+        'task.id'                => 'numeric',
+        'task.title'             => 'text',
+        'change.id'              => 'numeric',
+        'change.title'           => 'text',
+        'change.risk'            => 'text',
+    ];
+
+    /**
+     * Resolve the type of a field path. Lookup fields always win; explicit
+     * entries in FIELD_TYPES take the next precedence; the default is a
+     * mild convention — anything ending in `.id` is treated as numeric,
+     * everything else as text. New fields added to availableFields() get
+     * a sensible default without needing an explicit FIELD_TYPES entry,
+     * but it's the explicit entry that's authoritative.
+     */
+    public static function fieldType(string $fieldPath): string
+    {
+        if (isset(self::FIELD_LOOKUP_TABLES[$fieldPath])) return 'lookup';
+        if (isset(self::FIELD_TYPES[$fieldPath]))         return self::FIELD_TYPES[$fieldPath];
+        // Convention fallback.
+        if (preg_match('/(^|\.)id$/', $fieldPath))         return 'numeric';
+        return 'text';
+    }
+
+    /**
+     * Operator slugs valid for a given field type. The full catalogue lives
+     * in availableOperators(); this is the per-type subset. Drives which
+     * operators the editor shows once the user picks a field. Lookup fields
+     * are handled by the editor with their own friendly relabelling (is /
+     * is not / is empty / is not empty mapping to in / not_in / is_empty /
+     * is_not_empty), so we just return the underlying slugs here.
+     */
+    public static function operatorsForFieldType(string $type): array
+    {
+        switch ($type) {
+            case 'lookup':
+                return ['in', 'not_in', 'is_empty', 'is_not_empty'];
+            case 'numeric':
+                return ['equals', 'not_equals', 'in', 'not_in', 'gt', 'lt', 'is_empty', 'is_not_empty'];
+            case 'text':
+            default:
+                return ['equals', 'not_equals', 'in', 'not_in', 'contains', 'not_contains', 'is_empty', 'is_not_empty'];
+        }
+    }
+
+    /**
      * For a normalised id field, return the list of selectable {id, label}
      * pairs from the joined table. Returns null for free-text fields (the
      * editor falls back to a plain text input in that case). Returns null
