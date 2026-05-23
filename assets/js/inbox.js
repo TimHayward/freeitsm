@@ -61,6 +61,7 @@ let departments = [];
 let ticketTypes = [];
 let ticketOrigins = [];
 let ticketStatuses = [];
+let ticketPriorities = [];   // loaded once at init from get_ticket_priorities.php
 let analysts = [];
 let currentEmail = null;
 let folderCounts = {};
@@ -159,6 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadTicketTypes();
     loadTicketOrigins();
     loadTicketStatuses();
+    loadTicketPriorities();
     loadAnalysts();
     loadFolderGroupingPreference().then(loadFolderCounts);
     initTinyMCE();
@@ -363,6 +365,20 @@ async function loadTicketStatuses() {
         }
     } catch (error) {
         console.error('Error loading ticket statuses:', error);
+    }
+}
+
+// Load ticket priorities (active only) for the reading-pane Priority dropdown
+async function loadTicketPriorities() {
+    try {
+        const response = await fetch(API_BASE + 'get_ticket_priorities.php');
+        const data = await response.json();
+
+        if (data.success) {
+            ticketPriorities = data.priorities.filter(p => p.is_active);
+        }
+    } catch (error) {
+        console.error('Error loading ticket priorities:', error);
     }
 }
 
@@ -1009,6 +1025,13 @@ function displayEmail(email) {
         `<option value="${escapeHtml(s.name)}" ${email.status === s.name ? 'selected' : ''}>${escapeHtml(s.name)}</option>`
     ).join('');
 
+    // Build priority dropdown from the active ticket_priorities lookup.
+    // A blank option lets the user clear the priority — useful since priority
+    // is nullable and not every ticket needs an SLA-driving priority assigned.
+    const priorityOptions = ticketPriorities.map(p =>
+        `<option value="${p.id}" ${email.priority_id == p.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`
+    ).join('');
+
     // Build ticket origin dropdown
     const originOptions = ticketOrigins.map(origin =>
         `<option value="${origin.id}" ${email.origin_id == origin.id ? 'selected' : ''}>${escapeHtml(origin.name)}</option>`
@@ -1080,6 +1103,13 @@ function displayEmail(email) {
                         <label class="toolbar-label">Status</label>
                         <select class="toolbar-select" id="statusSelect" onchange="assignStatus()">
                             ${statusOptions}
+                        </select>
+                    </div>
+                    <div class="toolbar-field">
+                        <label class="toolbar-label">Priority</label>
+                        <select class="toolbar-select" id="prioritySelect" onchange="assignPriority()">
+                            <option value=""></option>
+                            ${priorityOptions}
                         </select>
                     </div>
                     <div class="toolbar-field">
@@ -1317,6 +1347,42 @@ async function assignStatus() {
     } catch (error) {
         console.error('Error:', error);
         alert('Failed to assign status');
+    }
+}
+
+// Assign priority. Sends priority_id (or null for the "no priority" blank
+// option) to assign_ticket.php; the SLA engine recomputes lazily on next
+// read, so we don't need a separate recompute call here.
+async function assignPriority() {
+    const priorityId = document.getElementById('prioritySelect').value;
+    const oldPriority = ticketPriorities.find(p => p.id == currentEmail.priority_id);
+    const newPriority = ticketPriorities.find(p => p.id == priorityId);
+    const oldLabel = oldPriority ? oldPriority.name : '';
+    const newLabel = newPriority ? newPriority.name : '';
+
+    try {
+        const response = await fetch(API_BASE + 'assign_ticket.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ticket_id: currentEmail.ticket_id,
+                priority_id: priorityId === '' ? null : priorityId,
+            })
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            await logAudit(currentEmail.ticket_id, 'Priority', oldLabel, newLabel);
+            currentEmail.priority_id = priorityId === '' ? null : Number(priorityId);
+            currentEmail.priority    = newLabel;
+            updatePropertiesSummary();
+            loadEmails();
+        } else {
+            alert('Error assigning priority: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to assign priority');
     }
 }
 

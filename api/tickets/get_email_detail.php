@@ -50,6 +50,7 @@ try {
                 t.subject,
                 ts.name AS status,
                 tp.name AS priority,
+                t.priority_id,
                 t.department_id,
                 t.ticket_type_id,
                 t.assigned_analyst_id,

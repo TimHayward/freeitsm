@@ -23,6 +23,10 @@ try {
     $origin_id = array_key_exists('origin_id', $data) ? $data['origin_id'] : null;
     $first_time_fix = array_key_exists('first_time_fix', $data) ? $data['first_time_fix'] : null;
     $it_training_provided = array_key_exists('it_training_provided', $data) ? $data['it_training_provided'] : null;
+    // Priority is optional — set explicitly via the detail-panel dropdown.
+    // Empty string / null clears it (no priority assigned).
+    $priority_id = array_key_exists('priority_id', $data) ? $data['priority_id'] : null;
+    $priorityWasSent = array_key_exists('priority_id', $data);
     // When the caller supplies assigned_analyst_id explicitly (e.g. drag-to-analyst-folder),
     // honour it and skip the "auto-assign to current user on dept/status change" behaviour below.
     $explicitAnalyst = array_key_exists('assigned_analyst_id', $data);
@@ -103,6 +107,11 @@ try {
     if (array_key_exists('it_training_provided', $data)) {
         $updates[] = "it_training_provided = ?";
         $params[] = $it_training_provided;
+    }
+
+    if ($priorityWasSent) {
+        $updates[] = "priority_id = ?";
+        $params[] = ($priority_id === '' || $priority_id === null) ? null : (int)$priority_id;
     }
 
     // Add assignment tracking
