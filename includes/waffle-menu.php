@@ -191,7 +191,9 @@ $modules = [
         border-radius: 8px;
         box-shadow: 0 6px 30px rgba(0, 0, 0, 0.25);
         padding: 20px;
-        min-width: 360px;
+        /* Widened to 460px so the 4-column grid (5 rows for 20 modules)
+           has breathing room for the icon + label per cell. */
+        min-width: 460px;
         z-index: 1000;
         display: none;
     }
@@ -211,7 +213,7 @@ $modules = [
 
     .waffle-modules {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 8px;
     }
 

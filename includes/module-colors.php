@@ -24,6 +24,11 @@ $defaultModuleColors = [
     'tasks'          => ['#7c3aed', '#6d28d9'],
     'cmdb'           => ['#be185d', '#9d174d'],
     'network-mapper' => ['#06b6d4', '#0891b2'],
+    // Workflows uses an orange distinct from contracts' amber so the two
+    // icons are tellable apart at a glance in the waffle menu, while
+    // staying in the same "automation" colour family (matches the amber
+    // accents inside the workflow module's own CSS).
+    'workflow'       => ['#ea580c', '#c2410c'],
     'system'        => ['#546e7a', '#37474f'],
 ];
 
