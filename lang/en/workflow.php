@@ -138,6 +138,6 @@ return [
 
     'help' => [
         'page_title' => 'Workflows guide',
-        'intro'      => 'A short overview of how the engine works while it\'s being built out. Visual canvas builder and AI co-author are planned for upcoming releases.',
+        'intro'      => 'Workflows automate the things you find yourself doing manually after a ticket arrives: tagging, escalating, assigning, notifying, fanning out to other systems. A workflow listens for an event, optionally filters with conditions, then runs one or more actions in order.',
     ],
 ];
