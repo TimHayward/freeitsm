@@ -12,6 +12,7 @@ session_start();
 require_once '../../config.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/encryption.php';
+require_once __DIR__ . '/_ai_helpers.php';   // for workflowEffectiveSslVerify()
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['analyst_id'])) {
@@ -75,6 +76,9 @@ function wfTestAnthropic(string $apiKey, string $model, bool $verifySsl): array
         'max_tokens' => 16,
         'messages'   => [['role' => 'user', 'content' => 'Reply with just the word: ok']],
     ]);
+    // Combine the per-form toggle with the global SSL_VERIFY_PEER kill switch
+    // from config.php — set to false on dev installs without a CA bundle.
+    $verifyPeer = workflowEffectiveSslVerify($verifySsl);
     $ch = curl_init('https://api.anthropic.com/v1/messages');
     curl_setopt_array($ch, [
         CURLOPT_POST           => true,
@@ -86,8 +90,8 @@ function wfTestAnthropic(string $apiKey, string $model, bool $verifySsl): array
         ],
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 30,
-        CURLOPT_SSL_VERIFYPEER => $verifySsl,
-        CURLOPT_SSL_VERIFYHOST => $verifySsl ? 2 : 0,
+        CURLOPT_SSL_VERIFYPEER => $verifyPeer,
+        CURLOPT_SSL_VERIFYHOST => $verifyPeer ? 2 : 0,
     ]);
     $resp = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -117,6 +121,7 @@ function wfTestOpenAI(string $apiKey, string $model, bool $verifySsl): array
         'max_tokens' => 16,
         'messages'   => [['role' => 'user', 'content' => 'Reply with just the word: ok']],
     ]);
+    $verifyPeer = workflowEffectiveSslVerify($verifySsl);
     $ch = curl_init('https://api.openai.com/v1/chat/completions');
     curl_setopt_array($ch, [
         CURLOPT_POST           => true,
@@ -127,8 +132,8 @@ function wfTestOpenAI(string $apiKey, string $model, bool $verifySsl): array
         ],
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 30,
-        CURLOPT_SSL_VERIFYPEER => $verifySsl,
-        CURLOPT_SSL_VERIFYHOST => $verifySsl ? 2 : 0,
+        CURLOPT_SSL_VERIFYPEER => $verifyPeer,
+        CURLOPT_SSL_VERIFYHOST => $verifyPeer ? 2 : 0,
     ]);
     $resp = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);

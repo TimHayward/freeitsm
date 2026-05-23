@@ -53,6 +53,26 @@ const WORKFLOW_AI_MODEL_OPTIONS = [
 ];
 
 /**
+ * Resolve the effective SSL_VERIFYPEER flag for an outbound curl call.
+ *
+ * The global `SSL_VERIFY_PEER` constant from `config.php` acts as a
+ * **kill switch** — when set to false (the default for dev installs that
+ * don't have a CA bundle wired into php.ini), all outbound HTTPS skips
+ * verification regardless of any per-form toggle, otherwise the user would
+ * have to remember to flip the toggle for every module's AI key test.
+ *
+ * In production set SSL_VERIFY_PEER = true in config.php and use the
+ * per-form toggle only when you genuinely need to opt out of verification
+ * for a single integration (e.g. corporate inspecting proxy with a
+ * self-signed cert).
+ */
+function workflowEffectiveSslVerify(bool $perCallVerify): bool
+{
+    $global = defined('SSL_VERIFY_PEER') ? (bool)SSL_VERIFY_PEER : true;
+    return $global && $perCallVerify;
+}
+
+/**
  * Load the workflow-specific AI settings from `system_settings`. Throws if
  * no key is configured so the caller can surface "configure your AI provider
  * under Workflow → Settings → AI Integration first" to the user.
@@ -116,6 +136,7 @@ function wfCallAnthropic(array $cfg, string $systemPrompt, string $userMessage, 
         'messages'   => [['role' => 'user', 'content' => $userMessage]],
     ]);
 
+    $verifyPeer = workflowEffectiveSslVerify((bool)$cfg['verify_ssl']);
     $ch = curl_init('https://api.anthropic.com/v1/messages');
     curl_setopt_array($ch, [
         CURLOPT_POST           => true,
@@ -126,8 +147,8 @@ function wfCallAnthropic(array $cfg, string $systemPrompt, string $userMessage, 
             'content-type: application/json',
         ],
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_SSL_VERIFYPEER => $cfg['verify_ssl'],
-        CURLOPT_SSL_VERIFYHOST => $cfg['verify_ssl'] ? 2 : 0,
+        CURLOPT_SSL_VERIFYPEER => $verifyPeer,
+        CURLOPT_SSL_VERIFYHOST => $verifyPeer ? 2 : 0,
         CURLOPT_TIMEOUT        => 60,
     ]);
     $resp = curl_exec($ch);
@@ -160,6 +181,7 @@ function wfCallOpenAI(array $cfg, string $systemPrompt, string $userMessage, int
         ],
     ]);
 
+    $verifyPeer = workflowEffectiveSslVerify((bool)$cfg['verify_ssl']);
     $ch = curl_init('https://api.openai.com/v1/chat/completions');
     curl_setopt_array($ch, [
         CURLOPT_POST           => true,
@@ -169,8 +191,8 @@ function wfCallOpenAI(array $cfg, string $systemPrompt, string $userMessage, int
             'content-type: application/json',
         ],
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_SSL_VERIFYPEER => $cfg['verify_ssl'],
-        CURLOPT_SSL_VERIFYHOST => $cfg['verify_ssl'] ? 2 : 0,
+        CURLOPT_SSL_VERIFYPEER => $verifyPeer,
+        CURLOPT_SSL_VERIFYHOST => $verifyPeer ? 2 : 0,
         CURLOPT_TIMEOUT        => 60,
     ]);
     $resp = curl_exec($ch);
