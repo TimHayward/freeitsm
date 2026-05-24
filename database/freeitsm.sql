@@ -455,6 +455,25 @@ CREATE TABLE IF NOT EXISTS `email_attachments` (
     CONSTRAINT `fk_email_attachments_email` FOREIGN KEY (`email_id`) REFERENCES `emails` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `ticket_recordings` (
+    `id`                  INT NOT NULL AUTO_INCREMENT,
+    `ticket_id`           INT NULL,
+    `recorded_by_user_id` INT NULL,
+    `filename`            VARCHAR(255) NOT NULL,
+    `original_filename`   VARCHAR(255) NULL,
+    `content_type`        VARCHAR(100) NOT NULL,
+    `file_path`           VARCHAR(500) NOT NULL,
+    `file_size`           INT NOT NULL,
+    `duration_seconds`    INT NULL,
+    `has_audio`           TINYINT(1) NOT NULL DEFAULT 0,
+    `created_at`          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `ix_ticket_recordings_ticket_id` (`ticket_id`),
+    KEY `ix_ticket_recordings_pending` (`ticket_id`, `created_at`),
+    CONSTRAINT `fk_ticket_recordings_ticket` FOREIGN KEY (`ticket_id`) REFERENCES `tickets` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_ticket_recordings_user` FOREIGN KEY (`recorded_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS `mailbox_email_whitelist` (
     `id`                INT NOT NULL AUTO_INCREMENT,
     `mailbox_id`        INT NOT NULL,

@@ -67,11 +67,25 @@ try {
     $notesStmt->execute([$ticketId]);
     $notes = $notesStmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // Screen recordings attached to the ticket
+    $recordings = [];
+    try {
+        $recStmt = $conn->prepare(
+            "SELECT id, original_filename, content_type, file_size, duration_seconds, has_audio, created_at
+             FROM ticket_recordings WHERE ticket_id = ? ORDER BY created_at ASC"
+        );
+        $recStmt->execute([$ticketId]);
+        $recordings = $recStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        // Table may not exist on installs that haven't run db_verify yet
+    }
+
     echo json_encode([
         'success' => true,
         'ticket' => $ticket,
         'thread' => $thread,
-        'notes' => $notes
+        'notes' => $notes,
+        'recordings' => $recordings
     ]);
 
 } catch (Exception $e) {

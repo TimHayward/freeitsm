@@ -27,6 +27,7 @@ $description = trim($input['description'] ?? '');
 $priority = $input['priority'] ?? 'Normal';
 $mailboxId = !empty($input['mailbox_id']) ? (int)$input['mailbox_id'] : null;
 $inputAttachments = $input['attachments'] ?? [];
+$recordingIds = array_values(array_filter(array_map('intval', $input['recording_ids'] ?? [])));
 
 if (empty($subject)) {
     echo json_encode(['success' => false, 'error' => 'Subject is required']);
@@ -144,6 +145,38 @@ try {
     }
 
     $conn->commit();
+
+    // Claim any pending recordings this user uploaded for this ticket. File renames
+    // happen outside the transaction (filesystem ops aren't transactional anyway).
+    if (!empty($recordingIds)) {
+        $appRoot = realpath(__DIR__ . '/../../');
+        $ticketDir = $appRoot . DIRECTORY_SEPARATOR . 'recordings' . DIRECTORY_SEPARATOR . (int)$ticketId;
+        if (!is_dir($ticketDir)) {
+            @mkdir($ticketDir, 0755, true);
+        }
+
+        $placeholders = implode(',', array_fill(0, count($recordingIds), '?'));
+        $selSql = "SELECT id, filename, file_path FROM ticket_recordings
+                   WHERE id IN ($placeholders) AND ticket_id IS NULL AND recorded_by_user_id = ?";
+        $selStmt = $conn->prepare($selSql);
+        $selStmt->execute(array_merge($recordingIds, [$userId]));
+        $pending = $selStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $updStmt = $conn->prepare("UPDATE ticket_recordings SET ticket_id = ?, file_path = ? WHERE id = ?");
+        foreach ($pending as $rec) {
+            $srcAbs = $appRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rec['file_path']);
+            $dstAbs = $ticketDir . DIRECTORY_SEPARATOR . $rec['filename'];
+            $dstRel = 'recordings/' . (int)$ticketId . '/' . $rec['filename'];
+            if (is_file($srcAbs) && @rename($srcAbs, $dstAbs)) {
+                $updStmt->execute([(int)$ticketId, $dstRel, (int)$rec['id']]);
+            } else {
+                // File missing or rename failed — still claim the row so the recording
+                // is associated with the ticket; analyst can see it's broken in the UI
+                $updStmt->execute([(int)$ticketId, $rec['file_path'], (int)$rec['id']]);
+                error_log('create_ticket.php: failed to move recording ' . $rec['id'] . ' from ' . $srcAbs);
+            }
+        }
+    }
 
     echo json_encode([
         'success' => true,

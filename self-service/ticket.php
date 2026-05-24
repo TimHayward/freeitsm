@@ -216,6 +216,39 @@ if (!$ticketId) {
             color: #c33;
             font-size: 14px;
         }
+
+        .recordings-section {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin-bottom: 20px;
+        }
+        .recordings-section h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 14px 0;
+            color: #333;
+        }
+        .recording-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #fafafa;
+        }
+        .recording-card:last-child { margin-bottom: 0; }
+        .recording-card video {
+            width: 100%;
+            max-height: 360px;
+            background: #000;
+            border-radius: 4px;
+        }
+        .recording-meta {
+            font-size: 12px;
+            color: #777;
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body>
@@ -256,13 +289,13 @@ if (!$ticketId) {
                     return;
                 }
 
-                renderTicket(data.ticket, data.thread, data.notes);
+                renderTicket(data.ticket, data.thread, data.notes, data.recordings || []);
             } catch (err) {
                 container.innerHTML = '<div class="error-state">Failed to load ticket details</div>';
             }
         }
 
-        function renderTicket(ticket, thread, notes) {
+        function renderTicket(ticket, thread, notes, recordings) {
             const container = document.getElementById('ticketContent');
             const statusStyle = buildStatusBadgeStyle(ticket.status_colour);
             const priorityClass = getPriorityClass(ticket.priority);
@@ -278,8 +311,30 @@ if (!$ticketId) {
                         ${ticket.department_name ? '<span class="ticket-meta-item">' + escapeHtml(ticket.department_name) + '</span>' : ''}
                         <span class="ticket-meta-item">Created ${created}</span>
                     </div>
-                </div>
+                </div>`;
 
+            if (recordings && recordings.length) {
+                html += '<div class="recordings-section"><h2>Screen recordings</h2>';
+                recordings.forEach(r => {
+                    const url = '../api/self-service/get_recording.php?id=' + r.id;
+                    const sizeMb = (r.file_size / 1048576).toFixed(1);
+                    const durLabel = r.duration_seconds ? formatDuration(r.duration_seconds) : '';
+                    const audioLabel = r.has_audio ? ' &middot; with audio' : '';
+                    html +=
+                        '<div class="recording-card">' +
+                            '<video controls preload="metadata" src="' + url + '"></video>' +
+                            '<div class="recording-meta">' +
+                                escapeHtml(r.original_filename || 'recording') +
+                                ' &middot; ' + sizeMb + ' MB' +
+                                (durLabel ? ' &middot; ' + durLabel : '') +
+                                audioLabel +
+                            '</div>' +
+                        '</div>';
+                });
+                html += '</div>';
+            }
+
+            html += `
                 <div class="thread-section">
                     <div class="thread-header">
                         <h2>Conversation</h2>
@@ -347,6 +402,12 @@ if (!$ticketId) {
         function getDirectionClass(direction) {
             const map = { 'Inbound': 'direction-inbound', 'Outbound': 'direction-outbound', 'Portal': 'direction-portal', 'Manual': 'direction-manual' };
             return map[direction] || 'direction-inbound';
+        }
+
+        function formatDuration(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return m + ':' + (s < 10 ? '0' : '') + s;
         }
 
         function formatDate(dateStr) {

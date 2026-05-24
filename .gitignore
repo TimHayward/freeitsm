@@ -101,6 +101,8 @@ tickets/attachments/
 contracts/rfp-builder/uploads/*
 !contracts/rfp-builder/uploads/.htaccess
 system/uploads/branding/
+recordings/*
+!recordings/.htaccess
 
 # ============================================
 # NODE MODULES (if you use npm/Node.js)

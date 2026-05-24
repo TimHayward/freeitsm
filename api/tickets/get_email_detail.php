@@ -111,9 +111,23 @@ try {
         $updateStmt->execute([$emailId]);
     }
 
+    // Screen recordings attached to the ticket
+    $recordings = [];
+    try {
+        $recStmt = $conn->prepare(
+            "SELECT id, original_filename, content_type, file_size, duration_seconds, has_audio, created_at
+             FROM ticket_recordings WHERE ticket_id = ? ORDER BY created_at ASC"
+        );
+        $recStmt->execute([(int)$email['ticket_id']]);
+        $recordings = $recStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        // Table may not exist on installs that haven't run db_verify yet
+    }
+
     echo json_encode([
         'success' => true,
-        'email' => $email
+        'email' => $email,
+        'recordings' => $recordings
     ]);
 
 } catch (Exception $e) {

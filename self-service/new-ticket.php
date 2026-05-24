@@ -223,6 +223,99 @@ require_once 'includes/auth.php';
             line-height: 1;
         }
         .attachment-item .remove-btn:hover { color: #c33; }
+
+        /* Screen recording */
+        .record-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: #fff;
+            color: #0078d4;
+            border: 1px solid #0078d4;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-top: 8px;
+        }
+        .record-toggle:hover { background: #f0f7ff; }
+        .record-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+        .record-toggle .rec-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #dc2626;
+        }
+        .record-panel {
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 10px;
+            background: #fafafa;
+        }
+        .record-panel.hidden { display: none; }
+        .record-panel .mic-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 12px;
+        }
+        .record-panel video {
+            width: 100%;
+            max-height: 360px;
+            background: #000;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .record-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .record-controls button {
+            padding: 8px 14px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .btn-rec-start { background: #dc2626; color: white; }
+        .btn-rec-start:hover { background: #b91c1c; }
+        .btn-rec-stop { background: #1f2937; color: white; }
+        .btn-rec-stop:hover { background: #111827; }
+        .btn-rec-use { background: #0078d4; color: white; }
+        .btn-rec-use:hover { background: #005a9e; }
+        .btn-rec-discard { background: #f3f4f6; color: #333; border-color: #ddd; }
+        .btn-rec-discard:hover { background: #e5e7eb; }
+        .rec-status {
+            font-size: 13px;
+            color: #555;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .rec-status.recording { color: #dc2626; font-weight: 600; }
+        .rec-status .pulse {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #dc2626;
+            animation: rec-pulse 1.2s infinite;
+        }
+        @keyframes rec-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .recording-item .file-info::before {
+            content: '🎥';
+            margin-right: 4px;
+        }
     </style>
 </head>
 <body>
@@ -276,6 +369,23 @@ require_once 'includes/auth.php';
                     </div>
                     <input type="file" id="fileInput" multiple style="display:none">
                     <div class="attachment-list" id="attachmentList"></div>
+
+                    <button type="button" class="record-toggle" id="recordToggle" onclick="toggleRecordPanel()">
+                        <span class="rec-dot"></span> Record screen
+                    </button>
+                    <div class="record-panel hidden" id="recordPanel">
+                        <label class="mic-toggle">
+                            <input type="checkbox" id="recMicToggle"> Include microphone audio
+                        </label>
+                        <div class="record-controls">
+                            <button type="button" class="btn-rec-start" id="recStartBtn" onclick="startRecording()">Start</button>
+                            <button type="button" class="btn-rec-stop" id="recStopBtn" onclick="stopRecording()" style="display:none">Stop</button>
+                            <button type="button" class="btn-rec-use" id="recUseBtn" onclick="useRecording()" style="display:none">Use this</button>
+                            <button type="button" class="btn-rec-discard" id="recDiscardBtn" onclick="discardRecording()" style="display:none">Discard</button>
+                            <span class="rec-status" id="recStatus">Ready &mdash; max 5 minutes</span>
+                        </div>
+                        <video id="recPreview" controls style="display:none"></video>
+                    </div>
                 </div>
                 <div class="form-actions">
                     <a href="index.php" class="btn-cancel">Cancel</a>
@@ -287,10 +397,27 @@ require_once 'includes/auth.php';
 
     <script>
     let attachments = [];
+    let recordings = []; // [{recording_id, name, size_bytes, duration_seconds}]
+
+    // Recording state
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let recordedBlob = null;
+    let recordedMime = null;
+    let recordedDuration = 0;
+    let recordStart = 0;
+    let recordTimer = null;
+    let captureStream = null;
+    const MAX_DURATION_SEC = 300;
 
     document.addEventListener('DOMContentLoaded', function() {
         loadMailboxes();
         initDropzone();
+
+        // Hide the record button entirely if the browser can't do screen capture
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+            document.getElementById('recordToggle').style.display = 'none';
+        }
     });
 
     function initDropzone() {
@@ -333,17 +460,45 @@ require_once 'includes/auth.php';
 
     function renderAttachments() {
         const list = document.getElementById('attachmentList');
-        if (attachments.length === 0) { list.innerHTML = ''; return; }
+        const items = [];
 
-        list.innerHTML = attachments.map((a, i) =>
-            '<div class="attachment-item">' +
-                '<div class="file-info">' +
-                    '<span class="file-name">' + escapeHtml(a.file.name) + '</span>' +
-                    '<span class="file-size">(' + formatFileSize(a.file.size) + ')</span>' +
-                '</div>' +
-                '<button type="button" class="remove-btn" onclick="removeAttachment(' + i + ')">&times;</button>' +
-            '</div>'
-        ).join('');
+        attachments.forEach((a, i) => {
+            items.push(
+                '<div class="attachment-item">' +
+                    '<div class="file-info">' +
+                        '<span class="file-name">' + escapeHtml(a.file.name) + '</span>' +
+                        '<span class="file-size">(' + formatFileSize(a.file.size) + ')</span>' +
+                    '</div>' +
+                    '<button type="button" class="remove-btn" onclick="removeAttachment(' + i + ')">&times;</button>' +
+                '</div>'
+            );
+        });
+
+        recordings.forEach((r, i) => {
+            const durLabel = r.duration_seconds ? ' &middot; ' + formatDuration(r.duration_seconds) : '';
+            items.push(
+                '<div class="attachment-item recording-item">' +
+                    '<div class="file-info">' +
+                        '<span class="file-name">' + escapeHtml(r.name) + '</span>' +
+                        '<span class="file-size">(' + formatFileSize(r.size_bytes) + durLabel + ')</span>' +
+                    '</div>' +
+                    '<button type="button" class="remove-btn" onclick="removeRecording(' + i + ')">&times;</button>' +
+                '</div>'
+            );
+        });
+
+        list.innerHTML = items.join('');
+    }
+
+    function formatDuration(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    function removeRecording(index) {
+        recordings.splice(index, 1);
+        renderAttachments();
     }
 
     function formatFileSize(bytes) {
@@ -360,6 +515,181 @@ require_once 'includes/auth.php';
             reader.readAsDataURL(file);
         });
     }
+
+    // -------------------- Screen recording --------------------
+
+    function toggleRecordPanel() {
+        const panel = document.getElementById('recordPanel');
+        panel.classList.toggle('hidden');
+    }
+
+    function pickRecorderMime() {
+        // Modern Chrome/Edge can produce MP4/H.264 directly via MediaRecorder.
+        // Firefox + older Chrome falls back to webm. The video element plays
+        // either, so the analyst's experience is identical regardless.
+        const candidates = [
+            'video/mp4; codecs=avc1.42E01E,mp4a.40.2',
+            'video/mp4; codecs=avc1',
+            'video/mp4',
+            'video/webm; codecs=vp9,opus',
+            'video/webm; codecs=vp9',
+            'video/webm; codecs=vp8,opus',
+            'video/webm'
+        ];
+        for (const mime of candidates) {
+            if (MediaRecorder.isTypeSupported(mime)) return mime;
+        }
+        return '';
+    }
+
+    async function startRecording() {
+        const errEl = document.getElementById('errorMsg');
+        errEl.style.display = 'none';
+
+        const wantMic = document.getElementById('recMicToggle').checked;
+
+        try {
+            // Always request video + system audio (the user's browser tab/window)
+            captureStream = await navigator.mediaDevices.getDisplayMedia({
+                video: { frameRate: 30 },
+                audio: true
+            });
+
+            // Mix in the mic track if requested. The browser shows a separate
+            // permission prompt for the mic — silently failing back to no-mic
+            // is friendlier than aborting the whole recording.
+            if (wantMic) {
+                try {
+                    const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    micStream.getAudioTracks().forEach(t => captureStream.addTrack(t));
+                } catch (micErr) {
+                    console.warn('Mic permission denied or unavailable:', micErr);
+                }
+            }
+
+            // If the user clicks the browser's "Stop sharing" bar instead of our Stop button
+            captureStream.getVideoTracks()[0].onended = () => {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    stopRecording();
+                }
+            };
+
+            const mime = pickRecorderMime();
+            recordedChunks = [];
+            recordedMime = mime || 'video/webm';
+            mediaRecorder = new MediaRecorder(captureStream, mime ? { mimeType: mime } : undefined);
+            mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
+            mediaRecorder.onstop = () => {
+                recordedDuration = Math.floor((Date.now() - recordStart) / 1000);
+                recordedBlob = new Blob(recordedChunks, { type: recordedMime });
+                captureStream.getTracks().forEach(t => t.stop());
+                captureStream = null;
+                clearInterval(recordTimer);
+                showPreview();
+            };
+
+            mediaRecorder.start(1000); // 1s timeslice
+            recordStart = Date.now();
+
+            document.getElementById('recStartBtn').style.display = 'none';
+            document.getElementById('recStopBtn').style.display = '';
+            document.getElementById('recMicToggle').disabled = true;
+            const status = document.getElementById('recStatus');
+            status.className = 'rec-status recording';
+            status.innerHTML = '<span class="pulse"></span> Recording 0:00';
+
+            recordTimer = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - recordStart) / 1000);
+                status.innerHTML = '<span class="pulse"></span> Recording ' + formatDuration(elapsed);
+                if (elapsed >= MAX_DURATION_SEC) stopRecording();
+            }, 500);
+        } catch (err) {
+            console.error(err);
+            if (err.name === 'NotAllowedError') {
+                document.getElementById('recStatus').textContent = 'Permission denied. Click Start to try again.';
+            } else {
+                document.getElementById('recStatus').textContent = 'Could not start recording (' + err.message + ')';
+            }
+        }
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+        }
+    }
+
+    function showPreview() {
+        const preview = document.getElementById('recPreview');
+        preview.src = URL.createObjectURL(recordedBlob);
+        preview.style.display = '';
+
+        document.getElementById('recStopBtn').style.display = 'none';
+        document.getElementById('recUseBtn').style.display = '';
+        document.getElementById('recDiscardBtn').style.display = '';
+        document.getElementById('recMicToggle').disabled = false;
+
+        const status = document.getElementById('recStatus');
+        status.className = 'rec-status';
+        status.innerHTML = 'Recorded ' + formatDuration(recordedDuration) + ' &mdash; preview below';
+    }
+
+    function discardRecording() {
+        recordedBlob = null;
+        recordedChunks = [];
+        const preview = document.getElementById('recPreview');
+        if (preview.src) URL.revokeObjectURL(preview.src);
+        preview.src = '';
+        preview.style.display = 'none';
+
+        document.getElementById('recStartBtn').style.display = '';
+        document.getElementById('recUseBtn').style.display = 'none';
+        document.getElementById('recDiscardBtn').style.display = 'none';
+        document.getElementById('recStatus').textContent = 'Ready — max 5 minutes';
+    }
+
+    async function useRecording() {
+        if (!recordedBlob) return;
+        const useBtn = document.getElementById('recUseBtn');
+        const discardBtn = document.getElementById('recDiscardBtn');
+        useBtn.disabled = true;
+        discardBtn.disabled = true;
+        useBtn.textContent = 'Uploading...';
+
+        try {
+            const ext = recordedMime.startsWith('video/mp4') ? 'mp4' : 'webm';
+            const now = new Date();
+            const stamp = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
+            const filename = 'screen-recording-' + stamp + '.' + ext;
+
+            const fd = new FormData();
+            fd.append('file', recordedBlob, filename);
+            fd.append('duration_seconds', String(recordedDuration));
+            fd.append('has_audio', document.getElementById('recMicToggle').checked ? '1' : '0');
+
+            const resp = await fetch('../api/self-service/upload_recording.php', { method: 'POST', body: fd });
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.error || 'Upload failed');
+
+            recordings.push({
+                recording_id: data.recording_id,
+                name: filename,
+                size_bytes: recordedBlob.size,
+                duration_seconds: recordedDuration
+            });
+            renderAttachments();
+            discardRecording();
+            document.getElementById('recordPanel').classList.add('hidden');
+        } catch (err) {
+            alert('Failed to upload recording: ' + err.message);
+        } finally {
+            useBtn.disabled = false;
+            discardBtn.disabled = false;
+            useBtn.textContent = 'Use this';
+        }
+    }
+
+    // -------------------- Mailbox loading --------------------
 
     async function loadMailboxes() {
         const select = document.getElementById('mailbox');
@@ -407,7 +737,8 @@ require_once 'includes/auth.php';
                     subject: document.getElementById('subject').value.trim(),
                     priority: document.getElementById('priority').value,
                     description: document.getElementById('description').value.trim(),
-                    attachments: attachmentData
+                    attachments: attachmentData,
+                    recording_ids: recordings.map(r => r.recording_id)
                 })
             });
             const data = await resp.json();

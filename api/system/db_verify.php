@@ -328,6 +328,20 @@ $schema = [
         'created_datetime'          => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
     ],
 
+    'ticket_recordings' => [
+        'id'                  => 'INT NOT NULL AUTO_INCREMENT',
+        'ticket_id'           => 'INT NULL',
+        'recorded_by_user_id' => 'INT NULL',
+        'filename'            => 'VARCHAR(255) NOT NULL',
+        'original_filename'   => 'VARCHAR(255) NULL',
+        'content_type'        => 'VARCHAR(100) NOT NULL',
+        'file_path'           => 'VARCHAR(500) NOT NULL',
+        'file_size'           => 'INT NOT NULL',
+        'duration_seconds'    => 'INT NULL',
+        'has_audio'           => 'TINYINT(1) NOT NULL DEFAULT 0',
+        'created_at'          => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
     'mailbox_email_whitelist' => [
         'id'                => 'INT NOT NULL AUTO_INCREMENT',
         'mailbox_id'        => 'INT NOT NULL',
@@ -2110,6 +2124,22 @@ try {
         }
         if (!$idxExists('sla_cron_runs', 'idx_sla_cron_ip_started')) {
             try { $conn->exec("ALTER TABLE sla_cron_runs ADD INDEX idx_sla_cron_ip_started (client_ip, started_at)"); } catch (Exception $e) {}
+        }
+    }
+
+    // ticket_recordings: ticket_id is nullable (pending uploads before ticket creation), CASCADE on ticket delete
+    if ($tableExists('ticket_recordings')) {
+        if (!$idxExists('ticket_recordings', 'ix_ticket_recordings_ticket_id')) {
+            try { $conn->exec("ALTER TABLE ticket_recordings ADD INDEX ix_ticket_recordings_ticket_id (ticket_id)"); } catch (Exception $e) {}
+        }
+        if (!$idxExists('ticket_recordings', 'ix_ticket_recordings_pending')) {
+            try { $conn->exec("ALTER TABLE ticket_recordings ADD INDEX ix_ticket_recordings_pending (ticket_id, created_at)"); } catch (Exception $e) {}
+        }
+        if ($tableExists('tickets') && !$fkExists('ticket_recordings', 'fk_ticket_recordings_ticket')) {
+            try { $conn->exec("ALTER TABLE ticket_recordings ADD CONSTRAINT fk_ticket_recordings_ticket FOREIGN KEY (ticket_id) REFERENCES tickets (id) ON DELETE CASCADE"); } catch (Exception $e) {}
+        }
+        if ($tableExists('users') && !$fkExists('ticket_recordings', 'fk_ticket_recordings_user')) {
+            try { $conn->exec("ALTER TABLE ticket_recordings ADD CONSTRAINT fk_ticket_recordings_user FOREIGN KEY (recorded_by_user_id) REFERENCES users (id) ON DELETE SET NULL"); } catch (Exception $e) {}
         }
     }
 

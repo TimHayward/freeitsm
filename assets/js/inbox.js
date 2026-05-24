@@ -64,6 +64,7 @@ let ticketStatuses = [];
 let ticketPriorities = [];   // loaded once at init from get_ticket_priorities.php
 let analysts = [];
 let currentEmail = null;
+let currentRecordings = [];
 let folderCounts = {};
 let currentFilter = { type: 'all' };
 let expandedFolders = {};
@@ -969,7 +970,7 @@ async function selectEmail(emailId) {
         const data = await response.json();
 
         if (data.success) {
-            displayEmail(data.email);
+            displayEmail(data.email, data.recordings || []);
         } else {
             readingPane.innerHTML = '<div class="reading-pane-empty">Error loading email</div>';
             syncPopoutToTicketState(false);
@@ -993,7 +994,7 @@ async function loadTicketById(ticketId) {
         if (data.success) {
             selectedEmailId = data.email.id;
             renderEmailList();
-            displayEmail(data.email);
+            displayEmail(data.email, data.recordings || []);
         } else {
             readingPane.innerHTML = '<div class="reading-pane-empty">Ticket not found</div>';
             syncPopoutToTicketState(false);
@@ -1006,8 +1007,9 @@ async function loadTicketById(ticketId) {
 }
 
 // Display email in reading pane
-function displayEmail(email) {
+function displayEmail(email, recordings) {
     currentEmail = email;
+    currentRecordings = recordings || [];
     const readingPane = document.getElementById('readingPane');
 
     // Build department dropdown
@@ -1174,6 +1176,7 @@ function displayEmail(email) {
             <span class="attachment-info-icon">📎</span>
             <span>${escapeHtml(t('tickets.actions.loading_attachments'))}</span>
         </div>
+        ${buildRecordingsStrip(currentRecordings)}
         <div class="action-toolbar">
             <button class="action-btn" onclick="openNoteModal()">
                 <span class="action-btn-icon">📝</span>
@@ -1225,6 +1228,41 @@ function displayEmail(email) {
 
     // A ticket is now displayed — apply popout class if the saved pref says so.
     syncPopoutToTicketState(true);
+}
+
+// Render the recordings strip that sits between the email header and the action
+// toolbar. Returns the empty string when the ticket has no recordings, so the
+// gap collapses cleanly. Stream URL is the same endpoint the self-service portal
+// uses — auth check inside accepts either a session analyst or the ticket owner.
+function buildRecordingsStrip(recordings) {
+    if (!recordings || !recordings.length) return '';
+    const cards = recordings.map(r => {
+        const url = `../api/self-service/get_recording.php?id=${r.id}`;
+        const sizeMb = (r.file_size / 1048576).toFixed(1);
+        const durLabel = r.duration_seconds ? formatRecordingDuration(r.duration_seconds) : '';
+        const audioLabel = r.has_audio ? ' &middot; with audio' : '';
+        return `
+            <div class="recording-card">
+                <video controls preload="metadata" src="${url}"></video>
+                <div class="recording-meta">
+                    ${escapeHtml(r.original_filename || 'recording')}
+                    &middot; ${sizeMb} MB
+                    ${durLabel ? '&middot; ' + durLabel : ''}
+                    ${audioLabel}
+                </div>
+            </div>`;
+    }).join('');
+    return `
+        <div class="recordings-strip">
+            <div class="recordings-strip-header">🎥 Screen recordings (${recordings.length})</div>
+            ${cards}
+        </div>`;
+}
+
+function formatRecordingDuration(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
 }
 
 // Load and display all correspondence for a ticket

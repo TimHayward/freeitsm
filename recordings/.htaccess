@@ -1,0 +1,11 @@
+# Block direct web access to uploaded screen recordings.
+# Recordings are served via api/self-service/get_recording.php (end users)
+# and api/tickets/get_recording.php (analysts) with proper auth checks.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order Deny,Allow
+    Deny from all
+</IfModule>
