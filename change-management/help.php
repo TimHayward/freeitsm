@@ -185,7 +185,7 @@ $path_prefix = '../';
                         <div class="cm-help-step-item">
                             <div class="cm-help-step-num">1</div>
                             <div>
-                                <strong>Click "+ New Change"</strong> in the sidebar to open the editor.
+                                <strong>Click "+ New change"</strong> in the sidebar to open the editor.
                             </div>
                         </div>
                         <div class="cm-help-step-item">

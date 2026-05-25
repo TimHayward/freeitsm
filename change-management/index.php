@@ -65,7 +65,7 @@ $path_prefix = '../';
                 </div>
             </div>
             <div class="sidebar-section">
-                <button class="btn btn-primary btn-full" onclick="openCreateChange()">+ New Change</button>
+                <button class="btn btn-primary btn-full" onclick="openCreateChange()">+ New change</button>
             </div>
         </div>
 
@@ -90,7 +90,7 @@ $path_prefix = '../';
             <!-- Change editor view -->
             <div id="changeEditorView" style="display: none;">
                 <div class="editor-header">
-                    <h2 id="editorTitle">New Change</h2>
+                    <h2 id="editorTitle">New change</h2>
                     <div class="editor-header-actions">
                         <button class="btn btn-secondary" onclick="cancelEdit()">Cancel</button>
                         <button class="btn btn-primary" onclick="saveChange()">Save</button>
@@ -413,6 +413,6 @@ $path_prefix = '../';
     <!-- html2pdf for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>window.API_BASE = '../api/change-management/';</script>
-    <script src="../assets/js/change-management.js"></script>
+    <script src="../assets/js/change-management.js?v=2"></script>
 </body>
 </html>

@@ -813,7 +813,7 @@ function clearSearch() {
 
 function openCreateChange() {
     document.getElementById('editChangeId').value = '';
-    document.getElementById('editorTitle').textContent = 'New Change';
+    document.getElementById('editorTitle').textContent = 'New change';
     document.getElementById('changeTitle').value = '';
     document.getElementById('changeType').value = 'Normal';
     document.getElementById('changeStatus').value = 'Draft';
@@ -866,7 +866,7 @@ function editCurrentChange() {
     const c = currentChange;
 
     document.getElementById('editChangeId').value = c.id;
-    document.getElementById('editorTitle').textContent = 'Edit Change - CHG-' + String(c.id).padStart(4, '0');
+    document.getElementById('editorTitle').textContent = 'Edit change - CHG-' + String(c.id).padStart(4, '0');
     document.getElementById('changeTitle').value = c.title || '';
     document.getElementById('changeType').value = c.change_type || 'Normal';
     document.getElementById('changeStatus').value = c.status || 'Draft';
