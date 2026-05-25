@@ -1,12 +1,17 @@
 <?php
 /**
  * Knowledge Base - Article Review Management
+ *
+ * Pretty URL: /knowledge/review/  (moved from /knowledge/review.php in #395).
+ * The page is a sibling to /knowledge/index.php — the "Edit" icon on each row
+ * deep-links back to ../?article=N&edit=1 so the main page opens that article
+ * straight in TinyMCE edit mode.
  */
 session_start();
-require_once '../config.php';
+require_once '../../config.php';
 
 $current_page = 'review';
-$path_prefix = '../';
+$path_prefix = '../../';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -14,18 +19,27 @@ $path_prefix = '../';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Service Desk - Knowledge review</title>
-    <link rel="stylesheet" href="../assets/css/inbox.css">
-    <link rel="stylesheet" href="../assets/css/knowledge.css">
+    <link rel="stylesheet" href="../../assets/css/inbox.css">
+    <link rel="stylesheet" href="../../assets/css/knowledge.css">
     <style>
+        /* Layout: the container takes the remaining viewport height and is
+           a flex column. Header / filter tabs / search bar are flex-shrink: 0
+           and stay pinned at the top; only the table content scrolls.
+           Matches the inner-scroll pattern used elsewhere in the app. */
         .review-container {
             padding: 16px 30px 24px;
+            height: calc(100vh - 48px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         .review-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            flex-shrink: 0;
         }
 
         .review-header h1 {
@@ -35,12 +49,26 @@ $path_prefix = '../';
             margin: 0;
         }
 
+        .review-search {
+            width: 320px;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .review-search:focus {
+            outline: none;
+            border-color: #8764b8;
+            box-shadow: 0 0 0 2px rgba(135, 100, 184, 0.1);
+        }
+
         .filter-tabs {
             display: flex;
             gap: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             border-bottom: 1px solid #e0e0e0;
             padding-bottom: 10px;
+            flex-shrink: 0;
         }
 
         .filter-tab {
@@ -87,13 +115,20 @@ $path_prefix = '../';
             color: #dc3545;
         }
 
+        /* Scrollable region for the table. The table's own sticky thead keeps
+           column headers visible while the body scrolls underneath. */
+        .review-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            min-height: 0;
+        }
+
         .review-table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .review-table th,
@@ -103,15 +138,19 @@ $path_prefix = '../';
             border-bottom: 1px solid #eee;
         }
 
-        .review-table th {
+        .review-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
             background: #f9f9f9;
             font-weight: 600;
             color: #666;
             font-size: 13px;
             text-transform: uppercase;
+            border-bottom: 2px solid #e0e0e0;
         }
 
-        .review-table tr:hover {
+        .review-table tr:hover td {
             background: #fafafa;
         }
 
@@ -155,11 +194,6 @@ $path_prefix = '../';
             background: #f0f0f0;
         }
 
-        .review-date.overdue .days-badge {
-            background: #dc3545;
-            color: white;
-        }
-
         .review-date.upcoming .days-badge {
             background: #fd7e14;
             color: white;
@@ -180,8 +214,7 @@ $path_prefix = '../';
         }
 
         /* Icon-only edit button — same shape as the action buttons in the
-           other settings pages. Square white box that picks up the module's
-           accent (purple) on hover. */
+           other settings pages. */
         .action-btn {
             display: inline-flex;
             align-items: center;
@@ -249,11 +282,12 @@ $path_prefix = '../';
     </style>
 </head>
 <body>
-    <?php include 'includes/header.php'; ?>
+    <?php include '../includes/header.php'; ?>
 
     <div class="review-container">
         <div class="review-header">
             <h1>Article review schedule</h1>
+            <input type="text" class="review-search" id="reviewSearch" placeholder="Search title or owner..." autocomplete="off">
         </div>
 
         <div class="filter-tabs">
@@ -271,17 +305,23 @@ $path_prefix = '../';
             </button>
         </div>
 
-        <div id="reviewContent">
+        <div id="reviewContent" class="review-content">
             <div class="loading"><div class="spinner"></div></div>
         </div>
     </div>
 
     <script>
-        const API_BASE = '../api/knowledge/';
+        const API_BASE = '../../api/knowledge/';
         let currentFilter = 'all';
+        let currentArticles = [];   // most-recent fetch result, used for client-side search filtering
+        let searchTerm = '';
 
         document.addEventListener('DOMContentLoaded', function() {
             loadReviewList();
+            document.getElementById('reviewSearch').addEventListener('input', function() {
+                searchTerm = this.value.trim().toLowerCase();
+                renderReviewTable(currentArticles);
+            });
         });
 
         async function loadReviewList() {
@@ -290,7 +330,8 @@ $path_prefix = '../';
                 const data = await response.json();
 
                 if (data.success) {
-                    renderReviewTable(data.articles);
+                    currentArticles = data.articles;
+                    renderReviewTable(currentArticles);
                     updateCounts(data.counts);
                 } else {
                     document.getElementById('reviewContent').innerHTML =
@@ -306,7 +347,19 @@ $path_prefix = '../';
         function renderReviewTable(articles) {
             const container = document.getElementById('reviewContent');
 
-            if (articles.length === 0) {
+            // Apply the search filter client-side on top of the server-side
+            // tab filter. Match against title + owner_name so typing an
+            // analyst's name narrows to "their" articles.
+            let filtered = articles;
+            if (searchTerm) {
+                filtered = articles.filter(a => {
+                    const title = (a.title || '').toLowerCase();
+                    const owner = (a.owner_name || '').toLowerCase();
+                    return title.indexOf(searchTerm) !== -1 || owner.indexOf(searchTerm) !== -1;
+                });
+            }
+
+            if (filtered.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -316,7 +369,7 @@ $path_prefix = '../';
                             <line x1="3" y1="10" x2="21" y2="10"></line>
                             <path d="M9 16l2 2 4-4"></path>
                         </svg>
-                        <p>No articles found for this filter</p>
+                        <p>${searchTerm ? 'No articles match "' + escapeHtml(searchTerm) + '"' : 'No articles found for this filter'}</p>
                     </div>
                 `;
                 return;
@@ -337,7 +390,7 @@ $path_prefix = '../';
                     <tbody>
             `;
 
-            articles.forEach(article => {
+            filtered.forEach(article => {
                 const reviewDateClass = article.is_overdue ? 'overdue' :
                     (article.days_until_review !== null && article.days_until_review <= 30) ? 'upcoming' : 'ok';
 
@@ -367,14 +420,14 @@ $path_prefix = '../';
                 html += `
                     <tr>
                         <td>
-                            <a href="./?article=${article.id}" class="article-title-link">${escapeHtml(article.title)}</a>
+                            <a href="../?article=${article.id}" class="article-title-link">${escapeHtml(article.title)}</a>
                         </td>
                         <td>${ownerHtml}</td>
                         <td>${reviewDateHtml}</td>
                         <td>${daysOverdueHtml}</td>
                         <td>${modifiedDate}</td>
                         <td>
-                            <a href="./?article=${article.id}&edit=1" class="action-btn" title="Edit">
+                            <a href="../?article=${article.id}&edit=1" class="action-btn" title="Edit">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>

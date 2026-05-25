@@ -303,7 +303,8 @@ sdtickets/
 │
 ├── knowledge/                        # Knowledge Base Module
 │   ├── index.php                     # Article list & editor
-│   ├── review.php                    # Article review workflow
+│   ├── review/                       # Article review workflow
+│   │   └── index.php
 │   ├── settings/                     # Email, AI, and embedding settings
 │   └── includes/
 │
