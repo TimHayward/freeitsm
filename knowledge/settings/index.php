@@ -224,6 +224,7 @@ $path_prefix = '../../';  // Two levels up from knowledge/settings/
             <button class="tab" data-tab="ai" onclick="switchTab('ai')">AI Assistant</button>
             <button class="tab" data-tab="embeddings" onclick="switchTab('embeddings')">Embeddings</button>
             <button class="tab" data-tab="recycle-bin" onclick="switchTab('recycle-bin')">Recycle Bin</button>
+            <button class="tab" data-tab="left-panel" onclick="switchTab('left-panel')">Left panel</button>
         </div>
 
         <!-- Email Tab -->
@@ -421,6 +422,35 @@ $path_prefix = '../../';  // Two levels up from knowledge/settings/
                 </div>
             </form>
         </div>
+
+        <!-- Left panel tab — per-analyst preference -->
+        <div class="tab-content" id="left-panel-tab">
+            <div class="section-header">
+                <h2>Left panel</h2>
+            </div>
+            <p style="color: #666; margin-bottom: 20px;">Choose how the search + tag-filter sidebar on the main Knowledge page behaves. Saved per analyst.</p>
+
+            <form id="leftPanelForm" autocomplete="off" onsubmit="event.preventDefault();">
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 500; color: #333;">Visibility</label>
+                    <label style="display: block; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 8px; cursor: pointer;">
+                        <input type="radio" name="kbSidebarMode" value="always" onchange="saveSidebarMode(this.value)">
+                        <strong>Always visible</strong>
+                        <span style="display: block; font-size: 12px; color: #777; margin-top: 4px; margin-left: 22px;">
+                            The sidebar stays pinned open at 280px. Good when you want search and tag filters one click away.
+                        </span>
+                    </label>
+                    <label style="display: block; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer;">
+                        <input type="radio" name="kbSidebarMode" value="hover" onchange="saveSidebarMode(this.value)">
+                        <strong>Show on hover</strong>
+                        <span style="display: block; font-size: 12px; color: #777; margin-top: 4px; margin-left: 22px;">
+                            Collapses to a thin 16px strip at the edge of the page; hovering over it slides the full sidebar back in. Frees space for reading articles.
+                        </span>
+                    </label>
+                </div>
+                <span class="save-message" id="leftPanelSaveMessage" style="display:none;">Saved!</span>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -433,6 +463,47 @@ $path_prefix = '../../';  // Two levels up from knowledge/settings/
             if (btn) btn.classList.add('active');
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.getElementById(tab + '-tab').classList.add('active');
+            // Lazy-load the Left panel preference the first time the tab opens.
+            if (tab === 'left-panel') loadSidebarMode();
+        }
+
+        // --- Left panel preference ------------------------------------
+        // Matches the process-mapper pattern from #324: 'always' vs 'hover',
+        // stored per-analyst via user_preferences. The main knowledge page
+        // (assets/js/knowledge.js) reads the same key on load and applies a
+        // .sidebar-hover class to the .knowledge-container.
+        const SIDEBAR_MODE_KEY = 'knowledge_sidebar_mode';
+        let sidebarModeLoaded = false;
+        async function loadSidebarMode() {
+            if (sidebarModeLoaded) return;
+            sidebarModeLoaded = true;
+            try {
+                const r = await fetch('../../api/system/get_user_preference.php?key=' + encodeURIComponent(SIDEBAR_MODE_KEY), { credentials: 'same-origin' });
+                const d = await r.json();
+                const mode = (d.success && (d.value === 'always' || d.value === 'hover')) ? d.value : 'always';
+                document.querySelectorAll('input[name="kbSidebarMode"]').forEach(i => { i.checked = (i.value === mode); });
+            } catch (e) {
+                const first = document.querySelector('input[name="kbSidebarMode"][value="always"]');
+                if (first) first.checked = true;
+            }
+        }
+
+        async function saveSidebarMode(value) {
+            if (value !== 'always' && value !== 'hover') return;
+            try {
+                const r = await fetch('../../api/system/set_user_preference.php', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: SIDEBAR_MODE_KEY, value: value })
+                });
+                const d = await r.json();
+                if (d.success) {
+                    const msg = document.getElementById('leftPanelSaveMessage');
+                    msg.style.display = 'inline';
+                    setTimeout(() => { msg.style.display = 'none'; }, 1500);
+                }
+            } catch (e) { /* no-op */ }
         }
 
         // Load settings on page load

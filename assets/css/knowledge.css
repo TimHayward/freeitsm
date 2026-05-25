@@ -6,6 +6,10 @@
     display: flex;
     height: calc(100vh - 48px);
     background: #f5f5f5;
+    /* position: relative is the anchor for .sidebar-hover .knowledge-sidebar's
+       absolute positioning — keep it here in both modes so the layout doesn't
+       reflow when the user toggles the preference. */
+    position: relative;
 }
 
 /* Sidebar */
@@ -16,6 +20,58 @@
     padding: 20px;
     overflow-y: auto;
 }
+
+/* Hover mode (Knowledge → Settings → Left panel). The sidebar collapses to a
+   thin 16px hot-zone on the left of the article list; hovering expands it to
+   its full width. Because the sidebar leaves the flex layout (position:
+   absolute), the main article list reflows to fill the freed space.
+   Pattern mirrors the Process Mapper module. */
+.knowledge-container.sidebar-hover .knowledge-sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 16px;
+    min-width: 16px;
+    z-index: 10;
+    overflow: hidden;
+    transition: width 0.18s ease;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.12);
+    padding: 0;
+}
+.knowledge-container.sidebar-hover .knowledge-sidebar:hover {
+    width: 280px;
+    padding: 20px;
+    overflow-y: auto;
+}
+/* Fade out the sidebar's children so their left edges don't peek through the
+   16px hot-zone — without this you can see fragments of the search box and
+   tag pills and it looks unfinished. On hover the children fade back in. */
+.knowledge-container.sidebar-hover .knowledge-sidebar > * {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease 0s;
+}
+.knowledge-container.sidebar-hover .knowledge-sidebar:hover > * {
+    opacity: 1;
+    pointer-events: auto;
+    transition-delay: 0.08s;
+}
+/* Subtle vertical strip on the collapsed sidebar so users know it's hoverable. */
+.knowledge-container.sidebar-hover .knowledge-sidebar::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 6px;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 36px;
+    border-radius: 2px;
+    background: #bbb;
+    transition: opacity 0.18s;
+    pointer-events: none;
+}
+.knowledge-container.sidebar-hover .knowledge-sidebar:hover::before { opacity: 0; }
 
 .sidebar-section {
     margin-bottom: 24px;

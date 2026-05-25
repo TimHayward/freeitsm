@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadAnalysts();
     initTinyMCE();
     initTagInput();
+    loadSidebarModePreference();
 
     // Auto-open AI chat if redirected from Settings/Review
     const urlParams = new URLSearchParams(window.location.search);
@@ -120,6 +121,28 @@ function initTagInput() {
 }
 
 // Load all tags
+// Per-analyst sidebar visibility preference — 'always' (default) keeps the
+// 280px sidebar pinned open; 'hover' collapses it to a thin 16px hot-zone
+// that expands when the cursor approaches. CSS does the actual sliding via
+// the .sidebar-hover class on .knowledge-container. Pattern mirrors the
+// Process Mapper module (#324). Set under Knowledge → Settings → Left panel.
+const KB_SIDEBAR_MODE_KEY = 'knowledge_sidebar_mode';
+async function loadSidebarModePreference() {
+    try {
+        const r = await fetch('../api/system/get_user_preference.php?key=' + encodeURIComponent(KB_SIDEBAR_MODE_KEY), { credentials: 'same-origin' });
+        const d = await r.json();
+        const mode = (d.success && d.value === 'hover') ? 'hover' : 'always';
+        applySidebarMode(mode);
+    } catch (e) {
+        applySidebarMode('always');
+    }
+}
+function applySidebarMode(mode) {
+    const container = document.querySelector('.knowledge-container');
+    if (!container) return;
+    container.classList.toggle('sidebar-hover', mode === 'hover');
+}
+
 async function loadTags() {
     try {
         const response = await fetch(API_BASE + 'knowledge_tags.php');
