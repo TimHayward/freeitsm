@@ -16,8 +16,11 @@ $path_prefix = '../../';
     <title>Service Desk - Servers</title>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
     <style>
+        /* Override .main-container's display: flex so .servers-content
+           behaves as a normal block (fills the full width) rather than a
+           flex item shrinking to its content. */
         .servers-container {
-            flex: 1;
+            display: block;
             overflow-y: auto;
             background-color: #f5f7fa;
         }
