@@ -4,6 +4,7 @@
  */
 session_start();
 require_once '../config.php';
+require_once '../includes/functions.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['analyst_id'])) {
