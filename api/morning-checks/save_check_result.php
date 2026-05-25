@@ -25,14 +25,6 @@ try {
         throw new Exception('Missing required fields: checkId and status');
     }
 
-    if (!in_array($status, ['Red', 'Amber', 'Green'])) {
-        throw new Exception('Invalid status. Must be Red, Amber, or Green');
-    }
-
-    if (($status === 'Red' || $status === 'Amber') && empty(trim($notes))) {
-        throw new Exception('Notes are required for Red or Amber status');
-    }
-
     // Validate date format
     $dateObj = DateTime::createFromFormat('Y-m-d', $checkDate);
     if (!$dateObj || $dateObj->format('Y-m-d') !== $checkDate) {
@@ -40,6 +32,23 @@ try {
     }
 
     $conn = connectToDatabase();
+
+    // Validate the status label against morningChecks_Statuses. Active
+    // labels are accepted; the RequiresNotes flag drives whether notes
+    // are mandatory. The previously-hardcoded "Red/Amber/Green only +
+    // Red/Amber require notes" rule moves to the database here.
+    $sStmt = $conn->prepare(
+        "SELECT Label, RequiresNotes FROM morningChecks_Statuses
+         WHERE Label = ? AND IsActive = 1 LIMIT 1"
+    );
+    $sStmt->execute([$status]);
+    $statusRow = $sStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$statusRow) {
+        throw new Exception('Invalid status: ' . $status);
+    }
+    if ((int)$statusRow['RequiresNotes'] === 1 && trim((string)$notes) === '') {
+        throw new Exception('Notes are required for ' . $statusRow['Label'] . ' status');
+    }
 
     // Check if result already exists for the selected date
     $sql = "SELECT ResultID FROM morningChecks_Results WHERE CheckID = ? AND CheckDate = ?";
