@@ -250,7 +250,7 @@ $path_prefix = '../';
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>window.API_BASE = '../api/knowledge/';</script>
     <script src="../assets/js/custom-alert.js?v=1"></script>
-    <script src="../assets/js/knowledge.js?v=5"></script>
+    <script src="../assets/js/knowledge.js?v=6"></script>
     <!-- Prism.js for code syntax highlighting when viewing articles -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-powershell.min.js"></script>
