@@ -240,6 +240,67 @@ $path_prefix = '../../';
             display: flex; justify-content: flex-end; gap: 8px;
         }
         .ai-modal-footer .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Proposal panel — shown after the AI streaming completes. Lists
+           the proposed fields with a colour-coded badge per row
+           (added / changed / unchanged / removed) so the user can see
+           exactly what's about to happen before clicking Apply. */
+        .ai-proposal {
+            margin-top: 14px;
+            padding: 14px;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #0c4a6e;
+        }
+        .ai-proposal .ai-prop-head {
+            font-size: 13px;
+            margin-bottom: 10px;
+            color: #0c4a6e;
+        }
+        .ai-proposal .ai-prop-list {
+            list-style: none;
+            margin: 0 0 12px 0;
+            padding: 0;
+            max-height: 220px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+        }
+        .ai-proposal .ai-prop-list li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 12.5px;
+            color: #1e293b;
+        }
+        .ai-proposal .ai-prop-list li:last-child { border-bottom: none; }
+        .ai-proposal .ai-prop-badge {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            flex-shrink: 0;
+            min-width: 70px;
+            text-align: center;
+        }
+        .ai-proposal .ai-prop-meta {
+            color: #64748b;
+            font-size: 11px;
+            margin-left: auto;
+        }
+        .ai-proposal .ai-prop-note {
+            font-size: 12px;
+            color: #475569;
+        }
     </style>
 </head>
 <body>
@@ -954,6 +1015,100 @@ $path_prefix = '../../';
             document.getElementById('aiTokensOut').textContent = '0';
             document.getElementById('aiCacheRead').textContent = '0';
             document.getElementById('aiFieldCount').textContent = '0';
+            // Hide the proposal panel + reset buttons to default state
+            const prop = document.getElementById('aiProposal');
+            if (prop) prop.style.display = 'none';
+            const applyBtn = document.getElementById('aiApplyBtn');
+            const genBtn   = document.getElementById('aiGenerateBtn');
+            if (applyBtn) applyBtn.style.display = 'none';
+            if (genBtn)   { genBtn.style.display = ''; genBtn.disabled = false; }
+            aiProposedForm = null;
+        }
+
+        // Holds the AI's most recent proposal so the Apply button can
+        // commit it without making another request. Cleared by
+        // resetAiProgress (on modal open/close) and after Apply.
+        let aiProposedForm = null;
+
+        // Render a summary of what the AI is proposing — title, field
+        // count, brief field-by-field diff against the current form so
+        // the user can see at-a-glance whether the change matches what
+        // they asked for. User must click Apply to commit.
+        function showAiProposal(proposedForm, editing, seconds) {
+            aiProposedForm = proposedForm;
+            const prop = document.getElementById('aiProposal');
+            const summary = document.getElementById('aiProposalSummary');
+            const fieldsCount = (proposedForm.fields || []).length;
+            const fw = fieldsCount === 1 ? 'field' : 'fields';
+
+            // Build a tiny diff view: list each proposed field with a
+            // colour-coded badge (added / changed / unchanged / removed
+            // compared to the current state).
+            const currentByLabel = new Map();
+            if (editing) {
+                fields.forEach(f => currentByLabel.set((f.label || '').trim().toLowerCase(), f));
+            }
+            const seen = new Set();
+            const rows = (proposedForm.fields || []).map(f => {
+                const labelKey = (f.label || '').trim().toLowerCase();
+                seen.add(labelKey);
+                const cur = currentByLabel.get(labelKey);
+                let badge, badgeBg;
+                if (!editing) { badge = 'new'; badgeBg = '#3b82f6'; }
+                else if (!cur) { badge = 'added'; badgeBg = '#16a34a'; }
+                else if (cur.field_type !== f.field_type || !!cur.is_required !== !!f.is_required) {
+                    badge = 'changed'; badgeBg = '#f59e0b';
+                } else {
+                    badge = 'unchanged'; badgeBg = '#94a3b8';
+                }
+                return `<li>
+                    <span class="ai-prop-badge" style="background:${badgeBg};">${badge}</span>
+                    <strong>${escHtml(f.label || 'Untitled field')}</strong>
+                    <span class="ai-prop-meta">${typeName(f.field_type)}${f.is_required ? ' · required' : ''}</span>
+                </li>`;
+            });
+            // Removed fields — present in the current form but not in
+            // the proposal.
+            if (editing) {
+                fields.forEach(f => {
+                    const labelKey = (f.label || '').trim().toLowerCase();
+                    if (!seen.has(labelKey)) {
+                        rows.push(`<li>
+                            <span class="ai-prop-badge" style="background:#dc2626;">removed</span>
+                            <strong>${escHtml(f.label || 'Untitled field')}</strong>
+                            <span class="ai-prop-meta">${typeName(f.field_type)}</span>
+                        </li>`);
+                    }
+                });
+            }
+
+            summary.innerHTML = `
+                <div class="ai-prop-head">
+                    AI proposed ${editing ? 'this change' : 'a new form'} in ${seconds}s &mdash;
+                    <strong>${escHtml(proposedForm.title || 'Untitled form')}</strong>
+                    (${fieldsCount} ${fw})
+                </div>
+                <ul class="ai-prop-list">${rows.join('')}</ul>
+                <div class="ai-prop-note">Click <strong>Apply</strong> to load this into the editor, or <strong>Cancel</strong> to keep your current form.</div>
+            `;
+            prop.style.display = 'block';
+            // Swap buttons: hide Generate, show Apply
+            document.getElementById('aiGenerateBtn').style.display = 'none';
+            const applyBtn = document.getElementById('aiApplyBtn');
+            applyBtn.style.display = '';
+            applyBtn.disabled = false;
+            applyBtn.focus();
+        }
+
+        // Commit the previously-proposed form. Only enabled after the
+        // AI's done event populates aiProposedForm via showAiProposal().
+        function applyProposedForm() {
+            if (!aiProposedForm) return;
+            applyGeneratedForm(aiProposedForm);
+            switchFormTab('preview');
+            closeAiModal();
+            showToast(isEditingExistingForm() ? 'Form updated' : 'Form built', false);
+            aiProposedForm = null;
         }
         async function runAiGeneration() {
             const description = document.getElementById('aiDescription').value.trim();
@@ -1036,14 +1191,14 @@ $path_prefix = '../../';
                             if (data.cache_read != null) document.getElementById('aiCacheRead').textContent  = String(data.cache_read);
                             break;
                         case 'done': {
-                            applyGeneratedForm(data.form);
+                            // Don't auto-apply — show a preview of what
+                            // changed and let the user click Apply. This
+                            // is the "nuked without warning" safety net
+                            // from #440: the user always sees the
+                            // proposed form before it lands in the
+                            // editor, and can Discard if it's wrong.
                             const seconds = data.duration_ms ? (data.duration_ms / 1000).toFixed(1) : '?';
-                            const fieldWord = data.form.fields.length === 1 ? 'field' : 'fields';
-                            showToast(editing
-                                ? `Form updated — ${data.form.fields.length} ${fieldWord} in ${seconds}s`
-                                : `Form built — ${data.form.fields.length} ${fieldWord} in ${seconds}s`, false);
-                            closeAiModal();
-                            switchFormTab('preview');
+                            showAiProposal(data.form, editing, seconds);
                             break;
                         }
                         case 'error':
@@ -1126,12 +1281,23 @@ $path_prefix = '../../';
                     </div>
                     <pre class="ai-stream" id="aiStream"></pre>
                 </div>
+
+                <!-- Proposal panel — populated by showAiProposal() once
+                     the AI's done event arrives. Nothing touches the
+                     editor until the user clicks Apply (#440). -->
+                <div class="ai-proposal" id="aiProposal" style="display:none;">
+                    <div id="aiProposalSummary"></div>
+                </div>
             </div>
             <div class="ai-modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeAiModal()">Cancel</button>
                 <button type="button" class="btn btn-ai-assist" id="aiGenerateBtn" onclick="runAiGeneration()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.9 5.8L20 10l-5.8 1.9L12 18l-1.9-5.8L4 10l6.1-2.2z"></path></svg>
                     Generate
+                </button>
+                <button type="button" class="btn btn-primary" id="aiApplyBtn" onclick="applyProposedForm()" style="display:none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Apply
                 </button>
             </div>
         </div>
