@@ -402,18 +402,11 @@ tr.status-red {
     }
 }
 
-.add-check-form, .checks-list {
-    background: white;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.add-check-form h2, .checks-list h2 {
-    font-size: 20px;
-    color: #2c3e50;
-    margin-bottom: 20px;
-}
+/* .add-check-form / .checks-list white-card styling removed — the
+   settings page now nests these inside the canonical .tab-content
+   which already provides the white-card surface. Leaving the styling
+   here was double-card-nesting. .add-check-form is unreferenced
+   anywhere in markup; .checks-list lives inside .tab-content. */
 
 .form-group {
     margin-bottom: 20px;
