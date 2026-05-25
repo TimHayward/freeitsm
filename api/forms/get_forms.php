@@ -16,6 +16,11 @@ if (!isset($_SESSION['analyst_id'])) {
 try {
     $conn = connectToDatabase();
 
+    // List view returns ONE row per form chain — the leaf (current
+    // editable version). Older snapshots in each chain are surfaced via
+    // the Versions dropdown inside the editor, not here. Filter is
+    // "no children" which works for both single-version forms (NULL
+    // parent_form_id, no children) and forks (parent set, no children).
     $sql = "SELECT f.id, f.title, f.description, f.is_active,
                    f.created_by,  ca.full_name AS created_by_name,
                    DATE_FORMAT(f.created_date,  '%Y-%m-%d %H:%i:%s') AS created_date,
@@ -27,6 +32,7 @@ try {
             FROM forms f
             LEFT JOIN analysts ca ON f.created_by  = ca.id
             LEFT JOIN analysts ma ON f.modified_by = ma.id
+            WHERE NOT EXISTS (SELECT 1 FROM forms ch WHERE ch.parent_form_id = f.id)
             ORDER BY f.modified_date DESC";
 
     $stmt = $conn->prepare($sql);
