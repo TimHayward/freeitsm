@@ -61,21 +61,24 @@ $path_prefix = '../';
            absolutely-positioned collapse chevron; min-height keeps the
            chevron visible when the chart is collapsed (the chart-
            container-inner is the only in-flow child, so without
-           min-height the footer would shrink to nothing). */
+           min-height the footer would shrink to nothing — bumped a
+           little to leave room for the chevron now that it sits near
+           the bottom edge). */
         .chart-footer {
             position: relative;
             flex-shrink: 0;
-            min-height: 30px;
+            min-height: 40px;
             border-top-color: #00acc1;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
         }
 
-        /* Collapse chevron — small floating button in the top-right of
-           the chart area. Stays visible when chart is collapsed (the
-           footer's min-height keeps it on screen). */
+        /* Collapse chevron — small floating button in the bottom-right
+           of the chart area, vertically aligned with the Chart.js
+           bottom-position legend. Footer's min-height keeps it visible
+           when chart is collapsed. */
         .chart-toggle-btn {
             position: absolute;
-            top: 6px;
+            bottom: 8px;
             right: 12px;
             z-index: 5;
             width: 26px;
