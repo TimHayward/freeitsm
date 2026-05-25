@@ -194,6 +194,8 @@ $path_prefix = '../../';
         .btn-primary:hover { background: #e65100; }
         .btn-secondary { background: #f0f0f0; color: #333; border: 1px solid #ddd; }
         .btn-secondary:hover { background: #e0e0e0; }
+        .btn-danger { background: #c62828; color: white; }
+        .btn-danger:hover { background: #a02020; }
 
         .form-group { margin-bottom: 16px; }
         .form-group label {
@@ -324,6 +326,27 @@ $path_prefix = '../../';
         </div>
     </div>
 
+    <!-- Reusable confirm modal. Populated by showConfirm(); click anywhere
+         on the dim backdrop to dismiss. -->
+    <div class="modal" id="confirmModal" onclick="if (event.target === this) closeConfirm();">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 id="confirmTitle">Confirm</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage" style="margin: 0; color: #555;"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeConfirm()">Cancel</button>
+                <button class="btn btn-danger" id="confirmOkBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification — styles come from inbox.css (.toast / .toast.show
+         / .toast.toast-error). showToast(message, isError) drives it. -->
+    <div class="toast" id="toast"></div>
+
     <script>
         const API_BASE = '../../api/calendar/';
         let categories = [];
@@ -335,6 +358,14 @@ $path_prefix = '../../';
 
         document.addEventListener('DOMContentLoaded', function() {
             loadCategories();
+            // Wire the reusable confirm modal's OK button. We don't put the
+            // callback in the button's onclick attribute because showConfirm
+            // sets a different callback per invocation.
+            document.getElementById('confirmOkBtn').addEventListener('click', () => {
+                const cb = pendingConfirmCallback;
+                closeConfirm();
+                if (cb) cb();
+            });
         });
 
         // Standard tab switcher (matches the pattern used in other modules'
@@ -347,6 +378,36 @@ $path_prefix = '../../';
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             const content = document.getElementById(tab + '-tab');
             if (content) content.classList.add('active');
+        }
+
+        // ===== Toast + confirm helpers =====
+        // Replaces native alert() / confirm() with the styled notification
+        // and modal patterns used across the rest of the app.
+
+        function showToast(message, isError) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast' + (isError ? ' toast-error' : '');
+            toast.classList.add('show');
+            clearTimeout(showToast._t);
+            showToast._t = setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        let pendingConfirmCallback = null;
+
+        function showConfirm(title, message, onConfirm, okLabel, okClass) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            const okBtn = document.getElementById('confirmOkBtn');
+            okBtn.textContent = okLabel || 'Delete';
+            okBtn.className = 'btn ' + (okClass || 'btn-danger');
+            pendingConfirmCallback = onConfirm;
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        function closeConfirm() {
+            document.getElementById('confirmModal').classList.remove('active');
+            pendingConfirmCallback = null;
         }
 
         async function loadCategories() {
@@ -440,7 +501,7 @@ $path_prefix = '../../';
             const isActive = document.getElementById('categoryActive').checked;
 
             if (!name) {
-                alert('Please enter a category name');
+                showToast('Please enter a category name', true);
                 return;
             }
 
@@ -463,18 +524,27 @@ $path_prefix = '../../';
                 if (data.success) {
                     closeCategoryModal();
                     loadCategories();
+                    showToast('Saved');
                 } else {
-                    alert('Error: ' + data.error);
+                    showToast(data.error || 'Failed to save', true);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error saving category');
+                showToast('Failed to save', true);
             }
         }
 
-        async function deleteCategory(id) {
-            if (!confirm('Are you sure you want to delete this category?')) return;
+        function deleteCategory(id) {
+            const cat = categories.find(c => c.id == id);
+            const name = cat ? cat.name : 'this category';
+            showConfirm(
+                'Delete category',
+                `Are you sure you want to delete "${name}"? This cannot be undone.`,
+                () => doDeleteCategory(id)
+            );
+        }
 
+        async function doDeleteCategory(id) {
             try {
                 const response = await fetch(API_BASE + 'delete_category.php', {
                     method: 'POST',
@@ -485,12 +555,13 @@ $path_prefix = '../../';
 
                 if (data.success) {
                     loadCategories();
+                    showToast('Deleted');
                 } else {
-                    alert('Error: ' + data.error);
+                    showToast(data.error || 'Failed to delete', true);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error deleting category');
+                showToast('Failed to delete', true);
             }
         }
 
