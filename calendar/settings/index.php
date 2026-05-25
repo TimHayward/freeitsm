@@ -33,32 +33,24 @@ $path_prefix = '../../';
             padding: 16px 30px 24px;
         }
 
-        .settings-section {
-            background: white;
-            border-radius: 8px;
-            padding: 24px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-            margin-bottom: 24px;
-        }
+        /* Orange theme override for the canonical .tab classes from
+           inbox.css (default blue accent). Only this page is using the
+           calendar's orange. */
+        .tab:hover { color: #ef6c00; }
+        .tab.active { color: #ef6c00; border-bottom-color: #ef6c00; }
 
         .section-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             margin-bottom: 16px;
             gap: 16px;
         }
 
         .section-header h2 {
-            margin: 0 0 6px;
+            margin: 0;
             font-size: 18px;
             color: #333;
-        }
-
-        .section-header p {
-            margin: 0;
-            color: #666;
-            font-size: 13px;
         }
 
         .add-btn {
@@ -266,14 +258,19 @@ $path_prefix = '../../';
     <?php include '../includes/header.php'; ?>
 
     <div class="container">
-        <div class="settings-section">
+        <!-- Tab bar. Just one tab today; structure matches the other
+             modules' settings pages so the page can grow without
+             restructuring (e.g. future Holidays / Working hours tabs). -->
+        <div class="tabs">
+            <button class="tab active" data-tab="categories" onclick="switchTab('categories')">Categories</button>
+        </div>
+
+        <div class="tab-content active" id="categories-tab">
             <div class="section-header">
-                <div>
-                    <h2>Event categories</h2>
-                    <p>Manage categories used to organise calendar events. Each category can have a custom colour for easy identification.</p>
-                </div>
+                <h2>Event categories</h2>
                 <button class="add-btn" onclick="openCategoryModal()">Add</button>
             </div>
+            <p style="color: #666; margin-bottom: 16px;">Manage categories used to organise calendar events. Each category can have a custom colour for easy identification.</p>
 
             <table class="lookup-table">
                 <thead>
@@ -339,6 +336,18 @@ $path_prefix = '../../';
         document.addEventListener('DOMContentLoaded', function() {
             loadCategories();
         });
+
+        // Standard tab switcher (matches the pattern used in other modules'
+        // settings pages). Only one tab exists today, but the JS is set up
+        // so adding more is just an HTML change.
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            const btn = document.querySelector('.tab[data-tab="' + tab + '"]');
+            if (btn) btn.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            const content = document.getElementById(tab + '-tab');
+            if (content) content.classList.add('active');
+        }
 
         async function loadCategories() {
             try {
