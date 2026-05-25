@@ -20,142 +20,124 @@ $path_prefix = '../../';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Calendar Settings</title>
+    <title>Service Desk - Calendar settings</title>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
     <style>
-        .settings-container {
+        /* Full-width settings page matching the canonical settings layout
+           (change-management/settings, tickets/settings). */
+        .container {
             height: calc(100vh - 48px);
             overflow-y: auto;
-            padding: 30px;
+            max-width: none;
+            margin: 0;
+            padding: 16px 30px 24px;
         }
 
         .settings-section {
             background: white;
             border-radius: 8px;
-            padding: 30px;
+            padding: 24px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-            margin-bottom: 30px;
+            margin-bottom: 24px;
         }
 
-        .settings-section h2 {
-            font-size: 20px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .settings-section p {
-            color: #666;
-            margin-bottom: 20px;
-        }
-
-        .category-list {
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-
-        .category-item {
+        .section-header {
             display: flex;
-            align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid #e0e0e0;
-            gap: 15px;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            gap: 16px;
         }
 
-        .category-item:last-child {
-            border-bottom: none;
-        }
-
-        .category-item:hover {
-            background: #f9f9f9;
-        }
-
-        .category-color {
-            width: 24px;
-            height: 24px;
-            border-radius: 4px;
-            flex-shrink: 0;
-        }
-
-        .category-info {
-            flex-grow: 1;
-        }
-
-        .category-name {
-            font-weight: 500;
+        .section-header h2 {
+            margin: 0 0 6px;
+            font-size: 18px;
             color: #333;
         }
 
-        .category-description {
+        .section-header p {
+            margin: 0;
+            color: #666;
             font-size: 13px;
-            color: #666;
-            margin-top: 2px;
         }
 
-        .category-status {
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 4px;
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-
-        .category-status.inactive {
-            background: #fafafa;
-            color: #999;
-        }
-
-        .category-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn {
-            padding: 8px 14px;
+        .add-btn {
+            background: #ef6c00;
+            color: white;
+            padding: 8px 16px;
+            border: none;
             border-radius: 4px;
             font-size: 13px;
             cursor: pointer;
-            border: none;
-            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .add-btn:hover { background: #e65100; }
+
+        /* Categories table */
+        .lookup-table { width: 100%; border-collapse: collapse; }
+        .lookup-table th,
+        .lookup-table td {
+            padding: 10px 8px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+        .lookup-table th {
+            font-weight: 600;
+            color: #666;
+            background: #fafafa;
+        }
+        /* Force the Actions column to size to its content (width: 1%) and
+           never wrap the icon buttons. Same trick the change-management
+           settings table uses. */
+        .lookup-table td:last-child,
+        .lookup-table th:last-child {
+            white-space: nowrap;
+            width: 1%;
         }
 
-        .btn-primary {
-            background: #ef6c00;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #e65100;
-        }
-
-        .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
+        .swatch {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border-radius: 3px;
+            vertical-align: middle;
             border: 1px solid #ddd;
+            margin-right: 6px;
         }
 
-        .btn-secondary:hover {
-            background: #e0e0e0;
+        .badge-active {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #fff3e0;
+            color: #ef6c00;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-inactive {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #fafafa;
+            color: #999;
+            font-size: 11px;
+            font-weight: 600;
         }
 
-        .btn-danger {
-            background: #dc3545;
-            color: white;
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            color: #666;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
         }
-
-        .btn-danger:hover {
-            background: #c82333;
-        }
-
-        .btn-sm {
-            padding: 6px 10px;
-            font-size: 12px;
-        }
-
-        .add-category-btn {
-            margin-bottom: 20px;
-        }
+        .action-btn:hover { color: #ef6c00; }
+        .action-btn.delete:hover { color: #c62828; }
 
         .empty-state {
             text-align: center;
@@ -176,10 +158,7 @@ $path_prefix = '../../';
             justify-content: center;
             z-index: 1000;
         }
-
-        .modal.active {
-            display: flex;
-        }
+        .modal.active { display: flex; }
 
         .modal-content {
             background: #fff;
@@ -201,9 +180,7 @@ $path_prefix = '../../';
             color: #333;
         }
 
-        .modal-body {
-            padding: 20px;
-        }
+        .modal-body { padding: 20px; }
 
         .modal-footer {
             padding: 15px 20px;
@@ -213,10 +190,20 @@ $path_prefix = '../../';
             gap: 10px;
         }
 
-        .form-group {
-            margin-bottom: 16px;
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
         }
+        .btn-primary { background: #ef6c00; color: white; }
+        .btn-primary:hover { background: #e65100; }
+        .btn-secondary { background: #f0f0f0; color: #333; border: 1px solid #ddd; }
+        .btn-secondary:hover { background: #e0e0e0; }
 
+        .form-group { margin-bottom: 16px; }
         .form-group label {
             display: block;
             font-weight: 500;
@@ -224,7 +211,6 @@ $path_prefix = '../../';
             color: #333;
             font-size: 13px;
         }
-
         .form-group input,
         .form-group textarea,
         .form-group select {
@@ -235,26 +221,12 @@ $path_prefix = '../../';
             font-size: 14px;
             box-sizing: border-box;
         }
-
         .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #ef6c00;
-        }
+        .form-group textarea:focus { outline: none; border-color: #ef6c00; }
+        .form-group textarea { resize: vertical; min-height: 80px; }
 
-        .form-group textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 16px;
-        }
-
-        .form-row .form-group {
-            flex: 1;
-        }
+        .form-row { display: flex; gap: 16px; }
+        .form-row .form-group { flex: 1; }
 
         .form-group input[type="color"] {
             width: 60px;
@@ -271,12 +243,7 @@ $path_prefix = '../../';
             color: #333;
             cursor: pointer;
         }
-
-        .form-checkbox input {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
+        .form-checkbox input { width: 18px; height: 18px; cursor: pointer; }
 
         .loading {
             display: flex;
@@ -284,7 +251,6 @@ $path_prefix = '../../';
             align-items: center;
             padding: 40px;
         }
-
         .spinner {
             width: 32px;
             height: 32px;
@@ -293,25 +259,35 @@ $path_prefix = '../../';
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <?php include '../includes/header.php'; ?>
 
-    <div class="settings-container">
+    <div class="container">
         <div class="settings-section">
-            <h2>Event Categories</h2>
-            <p>Manage categories used to organize calendar events. Each category can have a custom color for easy identification.</p>
-
-            <button class="btn btn-primary add-category-btn" onclick="openCategoryModal()">+ Add Category</button>
-
-            <div class="category-list" id="categoryList">
-                <div class="loading"><div class="spinner"></div></div>
+            <div class="section-header">
+                <div>
+                    <h2>Event categories</h2>
+                    <p>Manage categories used to organise calendar events. Each category can have a custom colour for easy identification.</p>
+                </div>
+                <button class="add-btn" onclick="openCategoryModal()">Add</button>
             </div>
+
+            <table class="lookup-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="categoryTableBody">
+                    <tr><td colspan="4"><div class="loading"><div class="spinner"></div></div></td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -319,17 +295,17 @@ $path_prefix = '../../';
     <div class="modal" id="categoryModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="categoryModalTitle">Add Category</h3>
+                <h3 id="categoryModalTitle">Add category</h3>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="categoryId" value="">
                 <div class="form-group">
                     <label for="categoryName">Name *</label>
-                    <input type="text" id="categoryName" placeholder="e.g., Certificate Expiry">
+                    <input type="text" id="categoryName" placeholder="e.g. Certificate expiry">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="categoryColor">Color</label>
+                        <label for="categoryColor">Colour</label>
                         <input type="color" id="categoryColor" value="#ef6c00">
                     </div>
                     <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 10px;">
@@ -355,6 +331,11 @@ $path_prefix = '../../';
         const API_BASE = '../../api/calendar/';
         let categories = [];
 
+        // SVG icons used in the action column. Centralised so future polish
+        // (size, stroke width) only touches one place.
+        const ICON_EDIT = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
+        const ICON_DELETE = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+
         document.addEventListener('DOMContentLoaded', function() {
             loadCategories();
         });
@@ -368,39 +349,41 @@ $path_prefix = '../../';
                     categories = data.categories;
                     renderCategories();
                 } else {
-                    document.getElementById('categoryList').innerHTML =
-                        '<div class="empty-state">Error loading categories</div>';
+                    document.getElementById('categoryTableBody').innerHTML =
+                        '<tr><td colspan="4"><div class="empty-state">Error loading categories</div></td></tr>';
                 }
             } catch (error) {
                 console.error('Error:', error);
-                document.getElementById('categoryList').innerHTML =
-                    '<div class="empty-state">Error loading categories</div>';
+                document.getElementById('categoryTableBody').innerHTML =
+                    '<tr><td colspan="4"><div class="empty-state">Error loading categories</div></td></tr>';
             }
         }
 
         function renderCategories() {
-            const container = document.getElementById('categoryList');
+            const tbody = document.getElementById('categoryTableBody');
 
             if (categories.length === 0) {
-                container.innerHTML = '<div class="empty-state">No categories found. Add one to get started.</div>';
+                tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">No categories yet. Click <strong>Add</strong> to create one.</div></td></tr>';
                 return;
             }
 
-            container.innerHTML = categories.map(cat => `
-                <div class="category-item">
-                    <div class="category-color" style="background-color: ${cat.color}"></div>
-                    <div class="category-info">
-                        <div class="category-name">${escapeHtml(cat.name)}</div>
-                        ${cat.description ? `<div class="category-description">${escapeHtml(cat.description)}</div>` : ''}
-                    </div>
-                    <span class="category-status ${cat.is_active ? '' : 'inactive'}">
-                        ${cat.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                    <div class="category-actions">
-                        <button class="btn btn-secondary btn-sm" onclick="editCategory(${cat.id})">Edit</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteCategory(${cat.id})">Delete</button>
-                    </div>
-                </div>
+            tbody.innerHTML = categories.map(cat => `
+                <tr>
+                    <td>
+                        <span class="swatch" style="background-color: ${cat.color}"></span>
+                        ${escapeHtml(cat.name)}
+                    </td>
+                    <td>${cat.description ? escapeHtml(cat.description) : '<span style="color:#999">&mdash;</span>'}</td>
+                    <td>
+                        <span class="${cat.is_active ? 'badge-active' : 'badge-inactive'}">
+                            ${cat.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="action-btn" onclick="editCategory(${cat.id})" title="Edit">${ICON_EDIT}</button>
+                        <button class="action-btn delete" onclick="deleteCategory(${cat.id})" title="Delete">${ICON_DELETE}</button>
+                    </td>
+                </tr>
             `).join('');
         }
 
@@ -418,7 +401,7 @@ $path_prefix = '../../';
             if (categoryId) {
                 const cat = categories.find(c => c.id == categoryId);
                 if (cat) {
-                    title.textContent = 'Edit Category';
+                    title.textContent = 'Edit category';
                     document.getElementById('categoryId').value = cat.id;
                     document.getElementById('categoryName').value = cat.name;
                     document.getElementById('categoryColor').value = cat.color;
@@ -426,7 +409,7 @@ $path_prefix = '../../';
                     document.getElementById('categoryActive').checked = cat.is_active;
                 }
             } else {
-                title.textContent = 'Add Category';
+                title.textContent = 'Add category';
             }
 
             modal.classList.add('active');
