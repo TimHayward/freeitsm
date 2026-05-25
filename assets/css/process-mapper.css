@@ -2,18 +2,8 @@
    Process Mapper Module Styles
    ============================================================= */
 
-/* --- Header nav --------------------------------------------- */
-/* Equal-width buttons centred between the waffle menu and the avatar,
-   matching the reporting-header pattern. */
-.process-mapper-header .header-nav {
-    flex: 1;
-    justify-content: center;
-    margin-left: 0;
-}
-.process-mapper-header .header-nav .nav-btn {
-    min-width: 140px;
-    justify-content: center;
-}
+/* Nav width/centring rules live in assets/css/inbox.css alongside the
+   other module-header overrides — keep this file focused on layout. */
 
 /* --- Layout ------------------------------------------------- */
 .pm-layout {

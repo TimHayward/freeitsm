@@ -10,13 +10,17 @@ body {
     background-color: #f5f7fa;
     color: #333;
     line-height: 1.6;
-    padding-bottom: 350px; /* Space for sticky footer */
+    height: 100vh;
+    overflow: hidden;
 }
 
 .container {
     max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
+    padding-bottom: 350px; /* Space for sticky footer */
+    height: calc(100vh - 48px);
+    overflow-y: auto;
 }
 
 /* Header */

@@ -95,14 +95,68 @@ body {
     justify-content: center;
 }
 
-/* Reporting nav: equal-width buttons, centred as a group between waffle and avatar */
-.reporting-header .header-nav {
+/* ---------------------------------------------------------------
+   Module nav: equal-width buttons, centred as a group between the
+   waffle/title and the avatar. The min-width is picked per-module
+   to comfortably fit that module's longest label without padding
+   short labels excessively.
+   --------------------------------------------------------------- */
+.assets-header .header-nav,
+.calendar-header .header-nav,
+.changes-header .header-nav,
+.cmdb-header .header-nav,
+.contracts-header .header-nav,
+.forms-header .header-nav,
+.knowledge-header .header-nav,
+.lms-header .header-nav,
+.morning-checks-header .header-nav,
+.network-mapper-header .header-nav,
+.process-mapper-header .header-nav,
+.reporting-header .header-nav,
+.service-status-header .header-nav,
+.software-header .header-nav,
+.system-header .header-nav,
+.tasks-header .header-nav,
+.tickets-header .header-nav,
+.watchtower-header .header-nav,
+.wiki-header .header-nav,
+.workflow-header .header-nav {
     flex: 1;
     justify-content: center;
     margin-left: 0;
 }
-.reporting-header .header-nav .nav-btn {
+
+/* Per-module min-widths (chosen to fit the longest label in each nav).
+   Modules with many buttons (tickets, system) use the lower end so the
+   nav doesn't overflow on standard laptop widths. */
+.assets-header .header-nav .nav-btn,
+.changes-header .header-nav .nav-btn,
+.knowledge-header .header-nav .nav-btn,
+.lms-header .header-nav .nav-btn,
+.morning-checks-header .header-nav .nav-btn,
+.process-mapper-header .header-nav .nav-btn,
+.software-header .header-nav .nav-btn,
+.watchtower-header .header-nav .nav-btn,
+.workflow-header .header-nav .nav-btn {
     min-width: 130px;
+    justify-content: center;
+}
+
+.calendar-header .header-nav .nav-btn,
+.cmdb-header .header-nav .nav-btn,
+.forms-header .header-nav .nav-btn,
+.network-mapper-header .header-nav .nav-btn,
+.service-status-header .header-nav .nav-btn,
+.system-header .header-nav .nav-btn,
+.tasks-header .header-nav .nav-btn,
+.tickets-header .header-nav .nav-btn {
+    min-width: 115px;
+    justify-content: center;
+}
+
+.reporting-header .header-nav .nav-btn,
+.wiki-header .header-nav .nav-btn {
+    min-width: 105px;
     justify-content: center;
 }
 

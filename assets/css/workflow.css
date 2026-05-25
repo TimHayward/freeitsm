@@ -5,17 +5,8 @@
    like Zapier / n8n / Make).
    ============================================================= */
 
-/* Header — equal-width centred nav buttons, same pattern as
-   reporting-header / process-mapper-header. */
-.workflow-header .header-nav {
-    flex: 1;
-    justify-content: center;
-    margin-left: 0;
-}
-.workflow-header .header-nav .nav-btn {
-    min-width: 140px;
-    justify-content: center;
-}
+/* Nav width/centring rules live in assets/css/inbox.css alongside the
+   other module-header overrides — keep this file focused on layout. */
 
 /* =============================================================
    Editor — toolbar + canvas + detail panel layout
