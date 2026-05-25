@@ -1,5 +1,6 @@
 /**
- * Calendar JavaScript
+ * Tickets Calendar JavaScript
+ * Month / Week / Day views, matching the standalone Calendar module's UX.
  */
 
 // API base path - can be overridden by page before loading this script
@@ -10,143 +11,151 @@ const API_BASE = window.API_BASE || 'api/';
 // hasn't run or the page didn't set <html lang>.
 const PAGE_LOCALE = (document.documentElement.lang || 'en-GB');
 
-// Translation lookup with a graceful fallback when the i18n.js bridge isn't loaded
-// (e.g. an older page including calendar.js without exporting window.translations).
+// Translation lookup with a graceful fallback when the i18n.js bridge isn't loaded.
 function tr(key, params) {
     return (typeof window.t === 'function') ? window.t(key, params) : key;
 }
 
+// State
+let currentView = 'month';
 let currentDate = new Date();
 let scheduledTickets = [];
+
+// Day order: Monday-first to match UK conventions and the legacy tickets
+// calendar behaviour. Index 0 = Monday, index 6 = Sunday.
+const WEEKDAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+const MONTH_KEYS = ['january', 'february', 'march', 'april', 'may', 'june',
+                    'july', 'august', 'september', 'october', 'november', 'december'];
+
+function shortWeekdayLabel(weekdayIndex) {
+    // Render short labels via Intl to respect locale; weekdayIndex is Monday=0..Sunday=6.
+    // Build a reference date for that weekday and format it short.
+    const refDayOfWeek = (weekdayIndex + 1) % 7; // Convert to Sun=0..Sat=6
+    const ref = new Date(2024, 0, 7 + refDayOfWeek); // 7 Jan 2024 = Sunday
+    return ref.toLocaleDateString(PAGE_LOCALE, { weekday: 'short' });
+}
+
+function monthLabel(monthIndex) {
+    return tr('common.calendar.months.' + MONTH_KEYS[monthIndex]);
+}
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     renderCalendar();
 });
 
-// Render the calendar for the current month
-async function renderCalendar() {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-
-    // Update title — month names resolve via the JS i18n bridge
-    const monthKeys = ['january', 'february', 'march', 'april', 'may', 'june',
-                       'july', 'august', 'september', 'october', 'november', 'december'];
-    const monthName = tr('common.calendar.months.' + monthKeys[month]);
-    document.getElementById('calendarTitle').textContent = `${monthName} ${year}`;
-
-    // Load scheduled tickets for this month
-    await loadScheduledTickets(year, month + 1);
-
-    // Get first day of month and total days
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const totalDays = lastDay.getDate();
-
-    // Get day of week for first day (0 = Sunday, adjust for Monday start)
-    let startDay = firstDay.getDay();
-    startDay = startDay === 0 ? 6 : startDay - 1; // Convert to Monday = 0
-
-    // Get today for highlighting
-    const today = new Date();
-    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
-
-    // Build calendar grid
-    const grid = document.getElementById('calendarGrid');
-    let html = '';
-
-    // Previous month days
-    const prevMonth = new Date(year, month, 0);
-    const prevMonthDays = prevMonth.getDate();
-    for (let i = startDay - 1; i >= 0; i--) {
-        const day = prevMonthDays - i;
-        const dateStr = formatDateStr(year, month, day);
-        html += renderDay(day, dateStr, true, false, false);
-    }
-
-    // Current month days
-    for (let day = 1; day <= totalDays; day++) {
-        const isToday = isCurrentMonth && day === today.getDate();
-        const dateStr = formatDateStr(year, month + 1, day);
-        const dayOfWeek = new Date(year, month, day).getDay();
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-        html += renderDay(day, dateStr, false, isToday, isWeekend);
-    }
-
-    // Next month days (fill remaining cells to complete the grid)
-    const totalCells = Math.ceil((startDay + totalDays) / 7) * 7;
-    const remainingCells = totalCells - (startDay + totalDays);
-    for (let day = 1; day <= remainingCells; day++) {
-        const dateStr = formatDateStr(year, month + 2, day);
-        html += renderDay(day, dateStr, true, false, false);
-    }
-
-    grid.innerHTML = html;
-}
-
-// Render a single day cell
-function renderDay(day, dateStr, isOtherMonth, isToday, isWeekend) {
-    let classes = 'calendar-day';
-    if (isOtherMonth) classes += ' other-month';
-    if (isToday) classes += ' today';
-    if (isWeekend) classes += ' weekend';
-
-    // Get tickets for this day
-    const dayTickets = scheduledTickets.filter(t => t.date === dateStr);
-
-    let ticketsHtml = '';
-    const maxDisplay = 3;
-    dayTickets.slice(0, maxDisplay).forEach(ticket => {
-        let priorityClass = '';
-        if (ticket.priority === 'High') priorityClass = ' priority-high';
-        else if (ticket.priority === 'Low') priorityClass = ' priority-low';
-
-        ticketsHtml += `
-            <div class="calendar-ticket${priorityClass}" onclick="showTicketDetail(${ticket.id})" title="${escapeHtml(ticket.subject)}">
-                <span class="ticket-time">${ticket.time}</span>
-                ${escapeHtml(ticket.ticket_number)}
-            </div>
-        `;
+// Switch view
+function setView(view) {
+    currentView = view;
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === view);
     });
+    renderCalendar();
+}
 
-    if (dayTickets.length > maxDisplay) {
-        const moreCount = dayTickets.length - maxDisplay;
-        ticketsHtml += `<div class="more-tickets" onclick="showDayTickets('${dateStr}')">${escapeHtml(tr('tickets.calendar.x_more', { count: moreCount }))}</div>`;
+// Navigate to today
+function goToToday() {
+    currentDate = new Date();
+    renderCalendar();
+}
+
+// Navigate to previous period (depends on current view)
+function navigatePrev() {
+    if (currentView === 'month') {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+    } else if (currentView === 'week') {
+        currentDate.setDate(currentDate.getDate() - 7);
+    } else {
+        currentDate.setDate(currentDate.getDate() - 1);
+    }
+    renderCalendar();
+}
+
+// Navigate to next period (depends on current view)
+function navigateNext() {
+    if (currentView === 'month') {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+    } else if (currentView === 'week') {
+        currentDate.setDate(currentDate.getDate() + 7);
+    } else {
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    renderCalendar();
+}
+
+// Legacy month nav (kept for backwards compatibility with anything still calling it)
+function changeMonth(delta) {
+    currentDate.setMonth(currentDate.getMonth() + delta);
+    renderCalendar();
+}
+
+// Render the calendar for the current view
+async function renderCalendar() {
+    updateTitle();
+    await loadScheduledTicketsForRange();
+
+    const grid = document.getElementById('calendarGrid');
+    if (currentView === 'month') {
+        renderMonthView(grid);
+    } else if (currentView === 'week') {
+        renderWeekView(grid);
+    } else {
+        renderDayView(grid);
+    }
+}
+
+// Update the calendar title
+function updateTitle() {
+    const titleEl = document.getElementById('calendarTitle');
+    if (currentView === 'month') {
+        titleEl.textContent = `${monthLabel(currentDate.getMonth())} ${currentDate.getFullYear()}`;
+    } else if (currentView === 'week') {
+        const weekStart = getWeekStart(currentDate);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        if (weekStart.getMonth() === weekEnd.getMonth()) {
+            titleEl.textContent = `${monthLabel(weekStart.getMonth())} ${weekStart.getDate()} – ${weekEnd.getDate()}, ${weekStart.getFullYear()}`;
+        } else {
+            titleEl.textContent = `${monthLabel(weekStart.getMonth())} ${weekStart.getDate()} – ${monthLabel(weekEnd.getMonth())} ${weekEnd.getDate()}, ${weekEnd.getFullYear()}`;
+        }
+    } else {
+        titleEl.textContent = `${monthLabel(currentDate.getMonth())} ${currentDate.getDate()}, ${currentDate.getFullYear()}`;
+    }
+}
+
+// Compute the date range needed for the current view and load tickets
+async function loadScheduledTicketsForRange() {
+    let start, end;
+
+    if (currentView === 'month') {
+        // Start from the Monday on or before the 1st, span 6 weeks
+        const first = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        start = getWeekStart(first);
+        end = new Date(start);
+        end.setDate(end.getDate() + 42);
+    } else if (currentView === 'week') {
+        start = getWeekStart(currentDate);
+        end = new Date(start);
+        end.setDate(end.getDate() + 7);
+    } else {
+        start = new Date(currentDate);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(start);
+        end.setDate(end.getDate() + 1);
     }
 
-    return `
-        <div class="${classes}">
-            <div class="day-number">${day}</div>
-            <div class="day-tickets">${ticketsHtml}</div>
-        </div>
-    `;
-}
+    const startStr = formatDateForCompare(start);
+    const endStr = formatDateForCompare(end);
 
-// Format date string for comparison
-function formatDateStr(year, month, day) {
-    // Handle month overflow
-    const date = new Date(year, month - 1, day);
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-}
-
-// Load scheduled tickets for a month
-async function loadScheduledTickets(year, month) {
     try {
-        const response = await fetch(`${API_BASE}get_scheduled_tickets.php?year=${year}&month=${month}`);
+        const response = await fetch(`${API_BASE}get_scheduled_tickets.php?start=${startStr}&end=${endStr}&_t=${Date.now()}`);
         const data = await response.json();
-
         if (data.success) {
-            scheduledTickets = data.tickets.map(t => {
-                const dt = new Date(t.work_start_datetime);
-                return {
-                    ...t,
-                    date: t.work_start_datetime.split('T')[0],
-                    time: dt.toLocaleTimeString(PAGE_LOCALE, { hour: '2-digit', minute: '2-digit' })
-                };
-            });
+            scheduledTickets = data.tickets.map(t => ({
+                ...t,
+                date: t.work_start_datetime.split('T')[0],
+                time: new Date(t.work_start_datetime).toLocaleTimeString(PAGE_LOCALE, { hour: '2-digit', minute: '2-digit' })
+            }));
         } else {
             console.error('Error loading tickets:', data.error);
             scheduledTickets = [];
@@ -157,16 +166,211 @@ async function loadScheduledTickets(year, month) {
     }
 }
 
-// Change month
-function changeMonth(delta) {
-    currentDate.setMonth(currentDate.getMonth() + delta);
-    renderCalendar();
+// Get start of week as Monday (Monday-first week)
+function getWeekStart(date) {
+    const d = new Date(date);
+    const dayOfWeek = d.getDay(); // 0 = Sunday, 1 = Monday, …, 6 = Saturday
+    const offsetToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    d.setDate(d.getDate() + offsetToMonday);
+    d.setHours(0, 0, 0, 0);
+    return d;
 }
 
-// Go to today
-function goToToday() {
-    currentDate = new Date();
-    renderCalendar();
+// Format date as YYYY-MM-DD using local time
+function formatDateForCompare(date) {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+// Render month view
+function renderMonthView(container) {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const firstDay = new Date(year, month, 1);
+    const startDate = getWeekStart(firstDay);
+
+    let html = '<div class="month-grid">';
+
+    // Header row
+    html += '<div class="month-header">';
+    for (let i = 0; i < 7; i++) {
+        const isWeekend = i >= 5;
+        html += `<div class="month-header-cell${isWeekend ? ' weekend' : ''}">${shortWeekdayLabel(i)}</div>`;
+    }
+    html += '</div>';
+
+    // Days
+    html += '<div class="month-body">';
+    const current = new Date(startDate);
+    for (let i = 0; i < 42; i++) {
+        const isOtherMonth = current.getMonth() !== month;
+        const isToday = current.getTime() === today.getTime();
+        const dayOfWeek = current.getDay();
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        const dateStr = formatDateForCompare(current);
+        const dayTickets = scheduledTickets.filter(t => t.date === dateStr);
+
+        let classes = 'month-day';
+        if (isOtherMonth) classes += ' other-month';
+        if (isToday) classes += ' today';
+        if (isWeekend) classes += ' weekend';
+
+        html += `<div class="${classes}">`;
+        html += `<div class="day-number">${current.getDate()}</div>`;
+        html += '<div class="day-tickets">';
+
+        const maxDisplay = 3;
+        dayTickets.slice(0, maxDisplay).forEach(ticket => {
+            let priorityClass = '';
+            if (ticket.priority === 'High') priorityClass = ' priority-high';
+            else if (ticket.priority === 'Low') priorityClass = ' priority-low';
+
+            html += `<div class="calendar-ticket${priorityClass}" onclick="showTicketDetail(${ticket.id})" title="${escapeHtml(ticket.subject)}">
+                        <span class="ticket-time">${ticket.time}</span>
+                        ${escapeHtml(ticket.ticket_number)}
+                     </div>`;
+        });
+
+        if (dayTickets.length > maxDisplay) {
+            const moreCount = dayTickets.length - maxDisplay;
+            html += `<div class="more-tickets" onclick="event.stopPropagation(); setView('day'); currentDate = new Date('${dateStr}T00:00:00'); renderCalendar();">${escapeHtml(tr('tickets.calendar.x_more', { count: moreCount }))}</div>`;
+        }
+
+        html += '</div></div>';
+        current.setDate(current.getDate() + 1);
+    }
+    html += '</div></div>';
+
+    container.innerHTML = html;
+}
+
+// Render week view (Mon–Sun across the top, 24-hour day on the side)
+function renderWeekView(container) {
+    const weekStart = getWeekStart(currentDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let html = '<div class="week-grid">';
+
+    // Header row (sticky)
+    html += '<div class="week-header"><div class="week-header-time"></div><div class="week-header-days">';
+    for (let i = 0; i < 7; i++) {
+        const day = new Date(weekStart);
+        day.setDate(day.getDate() + i);
+        const isToday = day.getTime() === today.getTime();
+        const isWeekend = i >= 5;
+        html += `<div class="week-header-day${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}">
+                    <div class="week-day-name">${shortWeekdayLabel(i)}</div>
+                    <div class="week-day-number">${day.getDate()}</div>
+                 </div>`;
+    }
+    html += '</div></div>';
+
+    // Body
+    html += '<div class="week-body"><div class="week-time-column">';
+    for (let hour = 0; hour < 24; hour++) {
+        html += `<div class="week-time-slot-label">${formatHourLabel(hour)}</div>`;
+    }
+    html += '</div><div class="week-days-container">';
+
+    for (let i = 0; i < 7; i++) {
+        const day = new Date(weekStart);
+        day.setDate(day.getDate() + i);
+        const isToday = day.getTime() === today.getTime();
+        const isWeekend = i >= 5;
+        const dateStr = formatDateForCompare(day);
+
+        html += `<div class="week-day-column${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}">`;
+        for (let hour = 0; hour < 24; hour++) {
+            html += `<div class="week-time-slot"></div>`;
+        }
+
+        // Tickets in this day as 1-hour blocks at their work_start_datetime
+        const dayTickets = scheduledTickets.filter(t => t.date === dateStr);
+        dayTickets.forEach(ticket => {
+            const dt = new Date(ticket.work_start_datetime);
+            const startHour = dt.getHours();
+            const startMinutes = dt.getMinutes();
+            const top = startHour * 60 + startMinutes;
+            const height = 60; // one hour default
+
+            let priorityClass = '';
+            if (ticket.priority === 'High') priorityClass = ' priority-high';
+            else if (ticket.priority === 'Low') priorityClass = ' priority-low';
+
+            html += `<div class="week-event${priorityClass}" style="top: ${top}px; height: ${height}px;"
+                          onclick="showTicketDetail(${ticket.id})" title="${escapeHtml(ticket.subject)}">
+                          <div class="week-event-title">${escapeHtml(ticket.ticket_number)}</div>
+                          <div class="week-event-time">${ticket.time}</div>
+                     </div>`;
+        });
+
+        html += '</div>';
+    }
+    html += '</div></div></div>';
+
+    container.innerHTML = html;
+}
+
+// Render day view (single column, 24-hour day)
+function renderDayView(container) {
+    const viewDate = new Date(currentDate);
+    viewDate.setHours(0, 0, 0, 0);
+    const dateStr = formatDateForCompare(viewDate);
+    const dayTickets = scheduledTickets.filter(t => t.date === dateStr);
+
+    let html = '<div class="day-grid">';
+
+    // Header
+    html += '<div class="day-header"><div class="day-header-info">';
+    html += `<div class="day-header-date">${currentDate.getDate()}</div>`;
+    html += `<div class="day-header-weekday">${currentDate.toLocaleDateString(PAGE_LOCALE, { weekday: 'long', month: 'long', year: 'numeric' })}</div>`;
+    html += '</div></div>';
+
+    // Body
+    html += '<div class="day-body"><div class="day-time-column">';
+    for (let hour = 0; hour < 24; hour++) {
+        html += `<div class="week-time-slot-label">${formatHourLabel(hour)}</div>`;
+    }
+    html += '</div><div class="day-events-column">';
+
+    for (let hour = 0; hour < 24; hour++) {
+        html += `<div class="day-time-slot"></div>`;
+    }
+
+    dayTickets.forEach(ticket => {
+        const dt = new Date(ticket.work_start_datetime);
+        const startHour = dt.getHours();
+        const startMinutes = dt.getMinutes();
+        const top = startHour * 60 + startMinutes;
+        const height = 60;
+
+        let priorityClass = '';
+        if (ticket.priority === 'High') priorityClass = ' priority-high';
+        else if (ticket.priority === 'Low') priorityClass = ' priority-low';
+
+        html += `<div class="day-event${priorityClass}" style="top: ${top}px; height: ${height}px;"
+                      onclick="showTicketDetail(${ticket.id})">
+                      <div class="day-event-title">${escapeHtml(ticket.ticket_number)} — ${escapeHtml(ticket.subject)}</div>
+                      <div class="day-event-time">${ticket.time}</div>
+                 </div>`;
+    });
+
+    html += '</div></div></div>';
+
+    container.innerHTML = html;
+}
+
+function formatHourLabel(hour) {
+    // Localised hour label — uses 12h or 24h per locale conventions.
+    const ref = new Date();
+    ref.setHours(hour, 0, 0, 0);
+    return ref.toLocaleTimeString(PAGE_LOCALE, { hour: 'numeric' });
 }
 
 // Show ticket detail modal
@@ -207,7 +411,6 @@ function showTicketDetail(ticketId) {
         </div>
     `;
 
-    // Set link to open in inbox - use INBOX_URL if set, otherwise default
     const inboxUrl = window.INBOX_URL || 'inbox.php';
     document.getElementById('ticketModalLink').href = `${inboxUrl}?ticket=${ticket.id}`;
 
@@ -219,23 +422,11 @@ function closeTicketModal() {
     document.getElementById('ticketModal').classList.remove('active');
 }
 
-// Show all tickets for a day (future enhancement)
-function showDayTickets(dateStr) {
-    const dayTickets = scheduledTickets.filter(t => t.date === dateStr);
-    if (dayTickets.length === 0) return;
-
-    // For now, just show the first unshown ticket
-    const ticket = dayTickets[3]; // 4th ticket (0-indexed)
-    if (ticket) {
-        showTicketDetail(ticket.id);
-    }
-}
-
 // Utility functions
 function escapeHtml(text) {
-    if (!text) return '';
+    if (text === null || text === undefined) return '';
     const div = document.createElement('div');
-    div.textContent = text;
+    div.textContent = String(text);
     return div.innerHTML;
 }
 

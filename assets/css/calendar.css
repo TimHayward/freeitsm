@@ -1,108 +1,192 @@
 /**
  * Tickets Calendar Styles
- * Used by tickets/calendar.php for viewing scheduled tickets
+ * Used by tickets/calendar.php for viewing scheduled tickets.
+ * Month / Week / Day views — structure mirrors itsm_calendar.css with the
+ * Tickets-module blue theme (#0078d4) instead of the Calendar-module orange.
  */
 
 /* Main container */
 .calendar-container {
-    padding: 20px 30px;
+    padding: 20px;
     height: calc(100vh - 48px);
     display: flex;
     flex-direction: column;
     background: #f5f5f5;
     overflow: hidden;
+    gap: 0;
 }
 
-/* Scrollable region: weekday header + day grid scroll together so the
-   top nav (prev/next/today) stays fixed — matches the calendar module. */
-.calendar-scroll {
-    flex-grow: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-}
-
-/* Calendar header with navigation */
+/* Calendar header with navigation (Today/Prev/Next/Title on left, view toggle on right) */
 .calendar-header {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    gap: 15px;
-    margin-bottom: 20px;
     padding: 15px 20px;
     background: #fff;
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 12px;
+    flex-shrink: 0;
 }
 
-.calendar-header h2 {
-    margin: 0;
-    font-size: 22px;
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.calendar-title {
+    font-size: 20px;
     font-weight: 600;
     color: #333;
-    min-width: 200px;
-    text-align: center;
+    margin: 0 0 0 10px;
 }
 
-/* Weekday headers */
-.calendar-weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    background: #0078d4;
-    border-radius: 8px 8px 0 0;
+/* Icon button (prev/next chevrons) */
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    font-size: 22px;
+    line-height: 1;
+    color: #555;
 }
 
-.calendar-weekdays .weekday {
-    padding: 12px 10px;
-    text-align: center;
-    font-weight: 600;
+.btn-icon:hover {
+    background: #e0e0e0;
+}
+
+/* View toggle (Month / Week / Day) */
+.view-toggle {
+    display: flex;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.view-btn {
+    padding: 8px 16px;
+    border: none;
+    background: #fff;
     font-size: 13px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.view-btn:not(:last-child) {
+    border-right: 1px solid #ddd;
+}
+
+.view-btn:hover {
+    background: #f5f5f5;
+}
+
+.view-btn.active {
+    background: #0078d4;
     color: #fff;
 }
 
-.calendar-weekdays .weekday.weekend {
-    background: rgba(0, 0, 0, 0.1);
+/* Main grid container — holds whichever view is currently active.
+   overflow:auto so the month view can scroll when 6 rows don't fit;
+   the week/day views fill 100% and handle scrolling in their inner body. */
+.calendar-grid {
+    flex-grow: 1;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: auto;
+    min-height: 0;
 }
 
-/* Calendar grid */
-.calendar-grid {
+/* ============================================================
+   Month view
+   ============================================================ */
+.month-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    background: #fff;
-    border-left: 1px solid #e0e0e0;
-    border-radius: 0 0 8px 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    height: 100%;
+    grid-auto-rows: minmax(0, 1fr);
 }
 
-/* Individual day cells */
-.calendar-day {
-    min-height: 120px;
+.month-header {
+    display: contents;
+}
+
+.month-header-cell {
+    padding: 10px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    background: #0078d4;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.month-header-cell:first-child {
+    border-top-left-radius: 8px;
+}
+
+.month-header-cell:last-child {
+    border-top-right-radius: 8px;
+}
+
+.month-header-cell.weekend {
+    background: rgba(0, 0, 0, 0.08);
+    /* Slight darkening of the blue band to mark weekend columns */
+    background-color: #006bbd;
+}
+
+.month-body {
+    display: contents;
+}
+
+.month-day {
     border-right: 1px solid #e0e0e0;
     border-bottom: 1px solid #e0e0e0;
-    padding: 8px;
+    padding: 6px;
+    min-height: 100px;
     display: flex;
     flex-direction: column;
     background: #fff;
+    overflow: hidden;
 }
 
-.calendar-day:nth-child(7n) {
+.month-day:nth-child(7n) {
     border-right: none;
 }
 
-.calendar-day.other-month {
+.month-day.other-month {
     background: #fafafa;
 }
 
-.calendar-day.other-month .day-number {
+.month-day.other-month .day-number {
     color: #bbb;
 }
 
-.calendar-day.today {
+.month-day.weekend {
+    background: #f9f9f9;
+}
+
+.month-day.today {
     background: #e3f2fd;
 }
 
-.calendar-day.today .day-number {
+.month-day.weekend.today {
+    background: #e3f2fd;
+}
+
+.month-day.today .day-number {
     background: #0078d4;
     color: #fff;
     border-radius: 50%;
@@ -113,72 +197,53 @@
     justify-content: center;
 }
 
-.calendar-day.weekend {
-    background: #f9f9f9;
-}
-
-.calendar-day.weekend.today {
-    background: #e3f2fd;
-}
-
-/* Day number */
 .day-number {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: #333;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
-/* Tickets container within a day */
 .day-tickets {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     overflow: hidden;
+    min-height: 0;
 }
 
-/* Individual ticket in calendar */
+/* Ticket pill (month view) */
 .calendar-ticket {
-    padding: 4px 8px;
+    padding: 3px 6px;
     background: #0078d4;
     color: #fff;
-    border-radius: 4px;
+    border-radius: 3px;
     font-size: 11px;
     cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    transition: background-color 0.15s;
+    transition: opacity 0.15s;
 }
 
 .calendar-ticket:hover {
-    background: #106ebe;
+    opacity: 0.85;
 }
 
 .calendar-ticket.priority-high {
     background: #d32f2f;
 }
 
-.calendar-ticket.priority-high:hover {
-    background: #b71c1c;
-}
-
 .calendar-ticket.priority-low {
     background: #43a047;
 }
 
-.calendar-ticket.priority-low:hover {
-    background: #2e7d32;
-}
-
-/* Time display in ticket */
 .ticket-time {
     font-weight: 600;
     margin-right: 6px;
 }
 
-/* More tickets link */
 .more-tickets {
     font-size: 11px;
     color: #0078d4;
@@ -190,7 +255,307 @@
     text-decoration: underline;
 }
 
-/* Modal styling */
+/* ============================================================
+   Week view
+   ============================================================ */
+.week-grid {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.week-header {
+    display: flex;
+    border-bottom: 1px solid #e0e0e0;
+    flex-shrink: 0;
+    /* Reserve space for the scrollbar so the header columns align with
+       the scrolling body columns underneath. */
+    overflow-y: scroll;
+    scrollbar-color: transparent transparent;
+}
+
+.week-header::-webkit-scrollbar {
+    width: 17px;
+    background: transparent;
+}
+
+.week-header::-webkit-scrollbar-thumb,
+.week-header::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.week-header-time {
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.week-header-days {
+    display: flex;
+    flex-grow: 1;
+}
+
+.week-header-day {
+    flex: 1;
+    text-align: center;
+    padding: 10px 5px;
+    border-left: 1px solid #e0e0e0;
+    background: #0078d4;
+    color: #fff;
+}
+
+.week-header-day.weekend {
+    background: #006bbd;
+}
+
+.week-header-day.today {
+    background: #005aa0;
+}
+
+.week-day-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    text-transform: uppercase;
+}
+
+.week-day-number {
+    font-size: 20px;
+    font-weight: 600;
+    color: #fff;
+    margin-top: 4px;
+}
+
+.week-header-day.today .week-day-number {
+    background: #fff;
+    color: #0078d4;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.week-body {
+    display: flex;
+    flex-grow: 1;
+    overflow-y: scroll;
+    min-height: 0;
+}
+
+.week-body::-webkit-scrollbar {
+    width: 17px;
+}
+
+.week-body::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+
+.week-body::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 8px;
+    border: 4px solid #f5f5f5;
+}
+
+.week-body::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
+}
+
+.week-time-column {
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.week-time-slot-label {
+    height: 60px;
+    font-size: 11px;
+    color: #666;
+    text-align: right;
+    padding-right: 8px;
+    position: relative;
+    top: -8px;
+}
+
+.week-days-container {
+    display: flex;
+    flex-grow: 1;
+    position: relative;
+}
+
+.week-day-column {
+    flex: 1;
+    border-left: 1px solid #e0e0e0;
+    position: relative;
+}
+
+.week-day-column.weekend {
+    background: #fafafa;
+}
+
+.week-day-column.today {
+    background: #f5fafd;
+}
+
+.week-time-slot {
+    height: 60px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.week-event {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #fff;
+    overflow: hidden;
+    cursor: pointer;
+    z-index: 1;
+    background: #0078d4;
+}
+
+.week-event:hover {
+    opacity: 0.9;
+}
+
+.week-event.priority-high {
+    background: #d32f2f;
+}
+
+.week-event.priority-low {
+    background: #43a047;
+}
+
+.week-event-title {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.week-event-time {
+    font-size: 10px;
+    opacity: 0.9;
+}
+
+/* ============================================================
+   Day view
+   ============================================================ */
+.day-grid {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.day-header {
+    display: flex;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 15px 20px;
+    flex-shrink: 0;
+    background: #0078d4;
+    color: #fff;
+}
+
+.day-header-info {
+    text-align: center;
+    flex-grow: 1;
+}
+
+.day-header-date {
+    font-size: 28px;
+    font-weight: 600;
+}
+
+.day-header-weekday {
+    font-size: 14px;
+    opacity: 0.85;
+    margin-top: 4px;
+}
+
+.day-body {
+    display: flex;
+    flex-grow: 1;
+    overflow-y: scroll;
+    min-height: 0;
+}
+
+.day-body::-webkit-scrollbar {
+    width: 17px;
+}
+
+.day-body::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+
+.day-body::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 8px;
+    border: 4px solid #f5f5f5;
+}
+
+.day-body::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
+}
+
+.day-time-column {
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.day-events-column {
+    flex-grow: 1;
+    border-left: 1px solid #e0e0e0;
+    position: relative;
+}
+
+.day-time-slot {
+    height: 60px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.day-event {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #fff;
+    overflow: hidden;
+    cursor: pointer;
+    z-index: 1;
+    background: #0078d4;
+}
+
+.day-event:hover {
+    opacity: 0.9;
+}
+
+.day-event.priority-high {
+    background: #d32f2f;
+}
+
+.day-event.priority-low {
+    background: #43a047;
+}
+
+.day-event-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.day-event-time {
+    font-size: 11px;
+    opacity: 0.9;
+}
+
+/* ============================================================
+   Modal (unchanged from original)
+   ============================================================ */
 .modal {
     position: fixed;
     top: 0;
@@ -236,7 +601,6 @@
     gap: 10px;
 }
 
-/* Ticket detail in modal */
 .ticket-detail-subject {
     font-size: 16px;
     font-weight: 600;
@@ -269,7 +633,6 @@
     color: #333;
 }
 
-/* Buttons */
 .btn {
     padding: 10px 16px;
     border: none;
@@ -309,13 +672,12 @@
         padding: 10px;
     }
 
-    .calendar-header h2 {
-        font-size: 18px;
-        min-width: 150px;
+    .calendar-title {
+        font-size: 16px;
     }
 
-    .calendar-day {
-        min-height: 80px;
+    .month-day {
+        min-height: 70px;
         padding: 4px;
     }
 

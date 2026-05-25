@@ -115,9 +115,12 @@ return [
     // Calendar primitives — months, weekdays, navigation. Shared across any module
     // that renders a calendar (tickets/calendar.php today; top-level calendar/ next).
     'calendar' => [
-        'previous' => 'Previous',
-        'next'     => 'Next',
-        'today'    => 'Today',
+        'previous'   => 'Previous',
+        'next'       => 'Next',
+        'today'      => 'Today',
+        'view_month' => 'Month',
+        'view_week'  => 'Week',
+        'view_day'   => 'Day',
 
         'months' => [
             'january'   => 'January',

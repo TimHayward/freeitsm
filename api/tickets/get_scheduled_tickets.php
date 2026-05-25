@@ -13,12 +13,20 @@ if (!isset($_SESSION['analyst_id'])) {
     exit;
 }
 
-$year = (int)($_GET['year'] ?? date('Y'));
-$month = (int)($_GET['month'] ?? date('n'));
+// New: support explicit start/end (YYYY-MM-DD) for week/day views.
+// Fallback: legacy year/month query for backwards compatibility.
+$start = $_GET['start'] ?? null;
+$end = $_GET['end'] ?? null;
 
-// Calculate date range for the month (include some days before/after for calendar view)
-$startDate = date('Y-m-d', strtotime("$year-$month-01 -7 days"));
-$endDate = date('Y-m-d', strtotime("$year-$month-01 +40 days"));
+if ($start && $end && preg_match('/^\d{4}-\d{2}-\d{2}$/', $start) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $end)) {
+    $startDate = $start;
+    $endDate = $end;
+} else {
+    $year = (int)($_GET['year'] ?? date('Y'));
+    $month = (int)($_GET['month'] ?? date('n'));
+    $startDate = date('Y-m-d', strtotime("$year-$month-01 -7 days"));
+    $endDate = date('Y-m-d', strtotime("$year-$month-01 +40 days"));
+}
 
 try {
     $conn = connectToDatabase();

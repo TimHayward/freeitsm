@@ -29,26 +29,21 @@ $translationNamespaces = ['common', 'tickets'];
 
     <div class="calendar-container">
         <div class="calendar-header">
-            <button class="btn btn-secondary" onclick="changeMonth(-1)">&lt; <?php echo htmlspecialchars(t('common.calendar.previous')); ?></button>
-            <h2 id="calendarTitle"></h2>
-            <button class="btn btn-secondary" onclick="changeMonth(1)"><?php echo htmlspecialchars(t('common.calendar.next')); ?> &gt;</button>
-            <button class="btn btn-primary" onclick="goToToday()" style="margin-left: 20px;"><?php echo htmlspecialchars(t('common.calendar.today')); ?></button>
+            <div class="calendar-nav">
+                <button class="btn btn-secondary" onclick="goToToday()"><?php echo htmlspecialchars(t('common.calendar.today')); ?></button>
+                <button class="btn btn-icon" onclick="navigatePrev()" title="<?php echo htmlspecialchars(t('common.calendar.previous')); ?>">&lsaquo;</button>
+                <button class="btn btn-icon" onclick="navigateNext()" title="<?php echo htmlspecialchars(t('common.calendar.next')); ?>">&rsaquo;</button>
+                <h2 class="calendar-title" id="calendarTitle"></h2>
+            </div>
+            <div class="view-toggle">
+                <button class="view-btn active" data-view="month" onclick="setView('month')"><?php echo htmlspecialchars(t('common.calendar.view_month')); ?></button>
+                <button class="view-btn" data-view="week" onclick="setView('week')"><?php echo htmlspecialchars(t('common.calendar.view_week')); ?></button>
+                <button class="view-btn" data-view="day" onclick="setView('day')"><?php echo htmlspecialchars(t('common.calendar.view_day')); ?></button>
+            </div>
         </div>
 
-        <div class="calendar-scroll">
-            <div class="calendar-weekdays">
-                <div class="weekday"><?php echo htmlspecialchars(t('common.calendar.weekdays.monday')); ?></div>
-                <div class="weekday"><?php echo htmlspecialchars(t('common.calendar.weekdays.tuesday')); ?></div>
-                <div class="weekday"><?php echo htmlspecialchars(t('common.calendar.weekdays.wednesday')); ?></div>
-                <div class="weekday"><?php echo htmlspecialchars(t('common.calendar.weekdays.thursday')); ?></div>
-                <div class="weekday"><?php echo htmlspecialchars(t('common.calendar.weekdays.friday')); ?></div>
-                <div class="weekday weekend"><?php echo htmlspecialchars(t('common.calendar.weekdays.saturday')); ?></div>
-                <div class="weekday weekend"><?php echo htmlspecialchars(t('common.calendar.weekdays.sunday')); ?></div>
-            </div>
-
-            <div class="calendar-grid" id="calendarGrid">
-                <!-- Calendar days will be rendered here -->
-            </div>
+        <div class="calendar-grid" id="calendarGrid">
+            <!-- View content (month / week / day) rendered here -->
         </div>
     </div>
 
