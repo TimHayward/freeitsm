@@ -43,7 +43,9 @@ $path_prefix = '../../';  // Two levels up from knowledge/settings/
             color: #333;
         }
 
-        .form-group input,
+        /* Text-style inputs only — scoping by :not(...) so radios / checkboxes
+           on this page (e.g. the Left panel tab) aren't stretched to 100%. */
+        .form-group input:not([type="radio"]):not([type="checkbox"]),
         .form-group select {
             width: 100%;
             padding: 10px 12px;
@@ -52,7 +54,7 @@ $path_prefix = '../../';  // Two levels up from knowledge/settings/
             font-size: 14px;
         }
 
-        .form-group input:focus,
+        .form-group input:not([type="radio"]):not([type="checkbox"]):focus,
         .form-group select:focus {
             outline: none;
             border-color: #8764b8;
@@ -225,7 +227,7 @@ $path_prefix = '../../';  // Two levels up from knowledge/settings/
             <button class="tab" data-tab="ai" onclick="switchTab('ai')">AI</button>
             <button class="tab" data-tab="embeddings" onclick="switchTab('embeddings')">Embeddings</button>
             <button class="tab" data-tab="recycle-bin" onclick="switchTab('recycle-bin')">Recycle bin</button>
-            <button class="tab" data-tab="left-panel" onclick="switchTab('left-panel')">Sidebar</button>
+            <button class="tab" data-tab="left-panel" onclick="switchTab('left-panel')">Left panel</button>
         </div>
 
         <!-- Email Tab -->
