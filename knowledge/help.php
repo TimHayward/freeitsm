@@ -71,14 +71,13 @@ $path_prefix = '../';
             font-weight: 600;
         }
 
-        .kb-help-nav-link.highlight {
-            color: #6b4fa2;
-        }
-
-        .kb-help-nav-link.highlight.active {
-            background: #6b4fa2;
-            color: white;
-        }
+        /* .kb-help-nav-link.highlight and .kb-help-nav-num.highlight previously
+           coloured a couple of "important" links purple to draw attention, but
+           it left the sidebar with a mix of grey + purple text and looked
+           inconsistent. All links now share the default colour; only the
+           currently-active section stands out. The .highlight class is kept
+           on the markup in case we ever want to re-introduce differentiation
+           via something subtler. */
 
         .kb-help-nav-num {
             display: flex;
@@ -96,16 +95,6 @@ $path_prefix = '../';
 
         .kb-help-nav-link.active .kb-help-nav-num {
             background: #6b4fa2;
-            color: white;
-        }
-
-        .kb-help-nav-num.highlight {
-            background: #f3e5f5;
-            color: #6b4fa2;
-        }
-
-        .kb-help-nav-link.highlight.active .kb-help-nav-num {
-            background: rgba(255,255,255,0.25);
             color: white;
         }
 
