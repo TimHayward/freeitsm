@@ -89,6 +89,7 @@ return [
     // Account / user menu in the shared header
     'account' => [
         'mail_check'      => 'Check for new emails',
+        'preferences'     => 'Preferences',
         'change_password' => 'Change Password',
         'mfa'             => 'Multi-Factor Auth',
         'trusted_device'  => 'Trusted Device',
