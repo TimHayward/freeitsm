@@ -71,15 +71,6 @@ $path_prefix = '../';
             font-weight: 600;
         }
 
-        .rp-help-nav-link.highlight {
-            color: #a5410a;
-        }
-
-        .rp-help-nav-link.highlight.active {
-            background: #a5410a;
-            color: white;
-        }
-
         .rp-help-nav-num {
             display: flex;
             align-items: center;
@@ -96,16 +87,6 @@ $path_prefix = '../';
 
         .rp-help-nav-link.active .rp-help-nav-num {
             background: #a5410a;
-            color: white;
-        }
-
-        .rp-help-nav-num.highlight {
-            background: #fbe9e7;
-            color: #a5410a;
-        }
-
-        .rp-help-nav-link.highlight.active .rp-help-nav-num {
-            background: rgba(255,255,255,0.25);
             color: white;
         }
 
@@ -485,8 +466,8 @@ $path_prefix = '../';
                 <span class="rp-help-nav-num">3</span>
                 System logs
             </a>
-            <a href="#understanding-data" class="rp-help-nav-link highlight" data-section="understanding-data">
-                <span class="rp-help-nav-num highlight">4</span>
+            <a href="#understanding-data" class="rp-help-nav-link" data-section="understanding-data">
+                <span class="rp-help-nav-num">4</span>
                 Understanding the data
             </a>
             <a href="#settings-filters" class="rp-help-nav-link" data-section="settings-filters">
