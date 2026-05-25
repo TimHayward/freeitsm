@@ -16,6 +16,32 @@ $analyst_email = $_SESSION['analyst_email'] ?? '';
 $analyst_id = $_SESSION['analyst_id'] ?? 0;
 $current_page = 'dashboard';
 $path_prefix = '../';
+
+// Pre-fetch the analyst's preferred chart height so the first paint is
+// already at the right size — otherwise the page would render at the
+// CSS default (280px) and snap to the saved percentage once the JS
+// fetch completed, causing a visible flicker.
+$chart_height_pct = 35.0;  // matches DEFAULT_CHART_PCT in the page-script
+try {
+    $conn = connectToDatabase();
+    $stmt = $conn->prepare(
+        "SELECT preference_value FROM user_preferences
+         WHERE analyst_id = ? AND preference_key = 'mc_chart_height_pct' LIMIT 1"
+    );
+    $stmt->execute([(int)$analyst_id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($row && is_numeric($row['preference_value'])) {
+        $v = (float)$row['preference_value'];
+        if ($v >= 12 && $v <= 80) $chart_height_pct = $v;
+    }
+} catch (Exception $e) {
+    // Stick with the default
+}
+// CSS calc() needs the percentage as a fraction (0-1). The 60px is a
+// reasonable approximation of the global header height — JS will
+// reconcile to the exact pixel value once the DOM is ready, so any
+// sub-pixel mismatch here is invisible.
+$chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100) . ')';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -183,10 +209,14 @@ $path_prefix = '../';
              overlaid in the chart's top-right corner so the entire
              chart-footer height goes to the canvas. Chart-footer keeps a
              small min-height so the chevron stays visible when the
-             chart-container is collapsed. -->
+             chart-container is collapsed.
+             The chart-container's inline height is set server-side from
+             the analyst's saved preference so the first paint matches
+             their chosen split (no snap from the CSS default of 280px
+             to the saved value once JS finished its preference fetch). -->
         <div class="chart-footer">
             <button id="chartToggle" class="chart-toggle-btn" onclick="toggleChart()" aria-label="Collapse chart">▼</button>
-            <div id="chartContainer" class="chart-container-inner">
+            <div id="chartContainer" class="chart-container-inner" style="height: <?php echo $chart_initial_height_calc; ?>;">
                 <canvas id="statusChart"></canvas>
             </div>
         </div>
@@ -275,6 +305,10 @@ $path_prefix = '../';
             name: <?php echo json_encode($analyst_name); ?>,
             email: <?php echo json_encode($analyst_email); ?>
         };
+        // Chart height preference pre-fetched server-side so we don't
+        // need a separate AJAX round-trip (and so the page paints at
+        // the right size from the start).
+        const INITIAL_CHART_PCT = <?php echo json_encode($chart_height_pct); ?>;
         let rtAnalystOptions = [];
         let rtDepartmentOptions = [];
         let rtTicketTypeOptions = [];
@@ -711,7 +745,11 @@ $path_prefix = '../';
         const DEFAULT_CHART_PCT = 35;   // chart takes ~a third of the available vertical space by default
         const MIN_CHART_PCT = 12;
         const MAX_CHART_PCT = 80;
-        let currentChartPct = DEFAULT_CHART_PCT;
+        // Seed from the server-fetched value so the initial JS-applied
+        // height matches what the page was painted with — no flicker.
+        let currentChartPct = (typeof INITIAL_CHART_PCT === 'number' && !isNaN(INITIAL_CHART_PCT))
+            ? INITIAL_CHART_PCT
+            : DEFAULT_CHART_PCT;
 
         function applyChartHeightFromPct(pct, resizeChart) {
             // resizeChart defaults to true. Pass false when the chart is
@@ -732,15 +770,11 @@ $path_prefix = '../';
             }
         }
 
-        async function loadChartHeightPref() {
-            try {
-                const res = await fetch('../api/system/get_user_preference.php?key=' + CHART_PCT_PREF);
-                const data = await res.json();
-                const v = data && data.success ? parseFloat(data.value) : NaN;
-                currentChartPct = (!isNaN(v) && v >= MIN_CHART_PCT && v <= MAX_CHART_PCT) ? v : DEFAULT_CHART_PCT;
-            } catch (e) {
-                currentChartPct = DEFAULT_CHART_PCT;
-            }
+        // Pin the chart-container-inner height to the exact pixel value
+        // for the current container size. The server-side calc() got us
+        // very close; this just locks in the precise number so any later
+        // adjustment (drag, window resize) starts from a clean base.
+        function lockChartHeightFromInitial() {
             applyChartHeightFromPct(currentChartPct);
         }
 
@@ -872,7 +906,9 @@ $path_prefix = '../';
         document.addEventListener('DOMContentLoaded', function() {
             loadChecks();
             loadChart();
-            loadChartHeightPref();
+            // Pin the calc()-based initial height to an exact pixel
+            // value (so drag math and window-resize handling work).
+            lockChartHeightFromInitial();
 
             // Wire up the resize divider and keep the chosen proportion
             // consistent across window-resizes.
