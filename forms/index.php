@@ -126,7 +126,11 @@ $path_prefix = '../';
                 </div>
             </div>
             <div class="sidebar-section">
-                <button class="btn btn-primary btn-full" onclick="openNewForm()">+ New Form</button>
+                <!-- + New Form now navigates to the dedicated edit page
+                     (#437). The inline editor's openNewForm() is still
+                     in the JS below as a fallback, just no longer the
+                     primary entry point. -->
+                <a href="<?php echo BASE_URL; ?>forms/edit/" class="btn btn-primary btn-full" style="text-decoration:none; text-align:center;">+ New Form</a>
             </div>
             <div class="sidebar-section" style="flex: 1; overflow-y: auto;">
                 <h3>Forms</h3>
@@ -342,8 +346,12 @@ $path_prefix = '../';
                 return;
             }
 
+            // Clicking a row now navigates to the dedicated /forms/edit/
+            // page (#437). The inline editor's openEditForm() is still
+            // defined below as a fallback — accessible via direct URL
+            // (e.g. /forms/?id=42) until we fully cut the inline editor.
             list.innerHTML = forms.map(f => `
-                <div class="form-list-item ${currentFormId == f.id ? 'active' : ''}" onclick="openEditForm(${f.id})">
+                <div class="form-list-item ${currentFormId == f.id ? 'active' : ''}" onclick="window.location.href='edit/?id=${f.id}'">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div class="form-list-item-title">${esc(f.title)}</div>
                         <span class="form-list-item-status ${f.is_active == 1 ? 'active' : 'inactive'}">${f.is_active == 1 ? 'Active' : 'Inactive'}</span>
