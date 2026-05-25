@@ -137,42 +137,44 @@ $sidebarHoverClass = $sidebarMode === 'hover' ? ' sidebar-hover' : '';
 
             <!-- Article editor view -->
             <div class="article-editor-view" id="articleEditorView" style="display: none;">
-                <div class="editor-header">
-                    <h2 id="editorTitle">New article</h2>
-                </div>
-                <div class="editor-form">
-                    <input type="hidden" id="editArticleId" value="">
-                    <div class="form-row" style="display: flex; gap: 20px;">
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">Title *</label>
-                            <input type="text" class="form-input" id="articleTitle" placeholder="Enter article title...">
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <div class="tag-label-row">
-                                <label class="form-label">Tags <small style="display: inline; margin-top: 0; font-weight: normal; color: #888;">— press Enter or comma to add</small></label>
-                                <div class="selected-tags" id="selectedTags"></div>
-                            </div>
-                            <div class="tag-input-container">
-                                <input type="text" class="tag-input" id="tagInput" placeholder="Type to add tags...">
-                                <div class="tag-suggestions" id="tagSuggestions"></div>
-                            </div>
-                        </div>
+                <div class="editor-scroll">
+                    <div class="editor-header">
+                        <h2 id="editorTitle">New article</h2>
                     </div>
-                    <div class="form-row" style="display: flex; gap: 20px;">
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">Owner</label>
-                            <select class="form-input" id="articleOwner">
-                                <option value="">-- No owner assigned --</option>
-                            </select>
+                    <div class="editor-form">
+                        <input type="hidden" id="editArticleId" value="">
+                        <div class="form-row" style="display: flex; gap: 20px;">
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Title *</label>
+                                <input type="text" class="form-input" id="articleTitle" placeholder="Enter article title...">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <div class="tag-label-row">
+                                    <label class="form-label">Tags <small style="display: inline; margin-top: 0; font-weight: normal; color: #888;">— press Enter or comma to add</small></label>
+                                    <div class="selected-tags" id="selectedTags"></div>
+                                </div>
+                                <div class="tag-input-container">
+                                    <input type="text" class="tag-input" id="tagInput" placeholder="Type to add tags...">
+                                    <div class="tag-suggestions" id="tagSuggestions"></div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label class="form-label">Next review date</label>
-                            <input type="date" class="form-input" id="articleReviewDate">
+                        <div class="form-row" style="display: flex; gap: 20px;">
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Owner</label>
+                                <select class="form-input" id="articleOwner">
+                                    <option value="">-- No owner assigned --</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Next review date</label>
+                                <input type="date" class="form-input" id="articleReviewDate">
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Content</label>
-                        <textarea id="articleBody"></textarea>
+                        <div class="form-group">
+                            <label class="form-label">Content</label>
+                            <textarea id="articleBody"></textarea>
+                        </div>
                     </div>
                 </div>
                 <div class="editor-actions">
