@@ -318,11 +318,73 @@
 /* Editor view */
 .editor-header {
     margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 }
 
 .editor-header h2 {
     font-size: 24px;
     color: #333;
+    margin: 0;
+}
+
+/* Popout toggle: same expand/contract icon-swap pattern as the tickets
+   subject-row .ticket-popout-toggle. */
+.editor-popout-toggle {
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 4px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    cursor: pointer;
+    color: #666;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+.editor-popout-toggle:hover {
+    border-color: #8764b8;
+    color: #8764b8;
+}
+.editor-popout-toggle .popout-icon-contract { display: none; }
+.knowledge-container.editor-popout .editor-popout-toggle .popout-icon-expand   { display: none; }
+.knowledge-container.editor-popout .editor-popout-toggle .popout-icon-contract { display: inline-block; }
+
+/* Pop-out editor: hide the search/tags sidebar so the editor fills the
+   panel, and reflow the editor form into [content | 340px property panel]
+   columns. Same CSS-only DOM-unchanged approach as the tickets popout. */
+.knowledge-container.editor-popout .knowledge-sidebar { display: none; }
+
+.knowledge-container.editor-popout .editor-form {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+    gap: 24px;
+}
+.knowledge-container.editor-popout .editor-properties {
+    flex-shrink: 0;
+    width: 340px;
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 16px;
+}
+/* Inside the property panel, stack the two-column rows vertically so
+   each field gets the full panel width. */
+.knowledge-container.editor-popout .editor-properties .form-row {
+    flex-direction: column !important;
+    gap: 16px !important;
+}
+.knowledge-container.editor-popout .editor-properties .form-row + .form-row {
+    margin-top: 16px;
+}
+.knowledge-container.editor-popout .editor-content {
+    flex: 1;
+    min-width: 0;
 }
 
 .editor-form {

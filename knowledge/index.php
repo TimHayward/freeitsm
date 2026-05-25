@@ -140,40 +140,50 @@ $sidebarHoverClass = $sidebarMode === 'hover' ? ' sidebar-hover' : '';
                 <div class="editor-scroll">
                     <div class="editor-header">
                         <h2 id="editorTitle">New article</h2>
+                        <button class="icon-btn editor-popout-toggle" onclick="toggleEditorPopout()" title="Toggle full-screen view" aria-label="Toggle full-screen view">
+                            <svg class="popout-icon-expand" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                            <svg class="popout-icon-contract" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                        </button>
                     </div>
                     <div class="editor-form">
                         <input type="hidden" id="editArticleId" value="">
-                        <div class="form-row" style="display: flex; gap: 20px;">
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">Title *</label>
-                                <input type="text" class="form-input" id="articleTitle" placeholder="Enter article title...">
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <div class="tag-label-row">
-                                    <label class="form-label">Tags <small style="display: inline; margin-top: 0; font-weight: normal; color: #888;">— press Enter or comma to add</small></label>
-                                    <div class="selected-tags" id="selectedTags"></div>
+                        <!-- Property fields. Wrapped so popout mode can reflow
+                             them into a right-hand panel via CSS only. -->
+                        <div class="editor-properties">
+                            <div class="form-row" style="display: flex; gap: 20px;">
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">Title *</label>
+                                    <input type="text" class="form-input" id="articleTitle" placeholder="Enter article title...">
                                 </div>
-                                <div class="tag-input-container">
-                                    <input type="text" class="tag-input" id="tagInput" placeholder="Type to add tags...">
-                                    <div class="tag-suggestions" id="tagSuggestions"></div>
+                                <div class="form-group" style="flex: 1;">
+                                    <div class="tag-label-row">
+                                        <label class="form-label">Tags <small style="display: inline; margin-top: 0; font-weight: normal; color: #888;">— press Enter or comma to add</small></label>
+                                        <div class="selected-tags" id="selectedTags"></div>
+                                    </div>
+                                    <div class="tag-input-container">
+                                        <input type="text" class="tag-input" id="tagInput" placeholder="Type to add tags...">
+                                        <div class="tag-suggestions" id="tagSuggestions"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row" style="display: flex; gap: 20px;">
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">Owner</label>
+                                    <select class="form-input" id="articleOwner">
+                                        <option value="">-- No owner assigned --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">Next review date</label>
+                                    <input type="date" class="form-input" id="articleReviewDate">
                                 </div>
                             </div>
                         </div>
-                        <div class="form-row" style="display: flex; gap: 20px;">
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">Owner</label>
-                                <select class="form-input" id="articleOwner">
-                                    <option value="">-- No owner assigned --</option>
-                                </select>
+                        <div class="editor-content">
+                            <div class="form-group">
+                                <label class="form-label">Content</label>
+                                <textarea id="articleBody"></textarea>
                             </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">Next review date</label>
-                                <input type="date" class="form-input" id="articleReviewDate">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Content</label>
-                            <textarea id="articleBody"></textarea>
                         </div>
                     </div>
                 </div>
@@ -277,7 +287,7 @@ $sidebarHoverClass = $sidebarMode === 'hover' ? ' sidebar-hover' : '';
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>window.API_BASE = '../api/knowledge/';</script>
     <script src="../assets/js/custom-alert.js?v=1"></script>
-    <script src="../assets/js/knowledge.js?v=10"></script>
+    <script src="../assets/js/knowledge.js?v=11"></script>
     <!-- Prism.js for code syntax highlighting when viewing articles -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-powershell.min.js"></script>

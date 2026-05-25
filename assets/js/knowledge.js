@@ -324,6 +324,7 @@ function openCreateArticle() {
 
     document.getElementById('btnSaveAsVersion').style.display = 'none';
     showView('editor');
+    applyEditorPopoutFromPref();
 }
 
 // Edit current article
@@ -357,6 +358,26 @@ function editCurrentArticle() {
 
     document.getElementById('btnSaveAsVersion').style.display = '';
     showView('editor');
+    // Restore the user's last popout preference on every entry to the editor.
+    applyEditorPopoutFromPref();
+}
+
+// Per-analyst editor popout state — same localStorage pattern the tickets
+// inbox uses for its full-screen toggle. The CSS does all the layout; this
+// just flips a class on .knowledge-container.
+function toggleEditorPopout() {
+    const container = document.querySelector('.knowledge-container');
+    if (!container) return;
+    const on = container.classList.toggle('editor-popout');
+    try { localStorage.setItem('knowledge_editor_popout', on ? '1' : '0'); } catch (e) {}
+}
+
+function applyEditorPopoutFromPref() {
+    const container = document.querySelector('.knowledge-container');
+    if (!container) return;
+    let prefersPopout = false;
+    try { prefersPopout = localStorage.getItem('knowledge_editor_popout') === '1'; } catch (e) {}
+    container.classList.toggle('editor-popout', prefersPopout);
 }
 
 // Save as new version
@@ -686,6 +707,14 @@ function showView(view) {
     // 'flex' (not 'block') so the column layout that holds the sticky-footer
     // action row activates — overrides the inline display: none from PHP.
     document.getElementById('articleEditorView').style.display = view === 'editor' ? 'flex' : 'none';
+
+    // Editor popout is only meaningful for the editor view. Strip the class
+    // when navigating elsewhere so the sidebar reappears on the list/detail
+    // pages. The localStorage pref is preserved — next edit restores it.
+    if (view !== 'editor') {
+        const container = document.querySelector('.knowledge-container');
+        if (container) container.classList.remove('editor-popout');
+    }
 
     // Reset recycle bin state when navigating away from list
     if (view !== 'list' && isRecycleBinView) {
