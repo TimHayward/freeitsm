@@ -40,7 +40,7 @@ $path_prefix = '../';
                 </div>
             </div>
             <div class="sidebar-section">
-                <button class="btn btn-primary btn-full" onclick="openCreateChange()">+ New change</button>
+                <a class="btn btn-primary btn-full" href="new/">+ New change</a>
             </div>
         </div>
 
@@ -381,6 +381,6 @@ $path_prefix = '../';
     <!-- html2pdf for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>window.API_BASE = '../api/change-management/';</script>
-    <script src="../assets/js/change-management.js?v=3"></script>
+    <script src="../assets/js/change-management.js?v=4"></script>
 </body>
 </html>

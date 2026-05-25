@@ -24,15 +24,29 @@ let editorsReady = false;
 document.addEventListener('DOMContentLoaded', function() {
     loadFieldVisibility();
     loadAnalysts();
-    loadStatuses();
+    const statusesReady = loadStatuses();
     loadChanges();
     setupFileUpload();
 
-    // Handle ?open=ID from calendar or direct link
+    // Handle deep links:
+    //   ?open=ID  — calendar / shared link to view an existing change
+    //   ?new=1    — pretty-URL bounce from /change-management/new/ that
+    //               opens the editor in create mode straight away
     const urlParams = new URLSearchParams(window.location.search);
     const openId = urlParams.get('open');
     if (openId) {
         viewChange(parseInt(openId, 10));
+    } else if (urlParams.get('new') === '1') {
+        // openCreateChange() needs the Status dropdown populated by
+        // loadStatuses() before it can set the default value, so wait
+        // for that fetch to land before opening the editor.
+        statusesReady.then(() => openCreateChange());
+        // Swap the URL back to the pretty path so the address bar reads
+        // /change-management/new/ (not /change-management/?new=1).
+        // replaceState (not pushState) — keeps the history entry, just
+        // renames it, so the browser Back button still goes to the
+        // page the user came from.
+        try { history.replaceState(null, '', 'new/'); } catch (e) {}
     }
 
     // Enter key triggers search in search modal
@@ -1001,6 +1015,19 @@ function cancelEdit() {
     } else {
         showView('list');
     }
+    // If we came in via /change-management/new/, swap the URL back to the
+    // canonical landing path so it no longer points at the create route
+    // after the user has left the editor.
+    restoreUrlFromNewRoute();
+}
+
+// URL-tidying helper for the /change-management/new/ pretty-URL route.
+// Called from cancelEdit() and from the save flow once the editor closes.
+function restoreUrlFromNewRoute() {
+    const p = window.location.pathname;
+    if (p.endsWith('/new/') || p.endsWith('/new/index.php')) {
+        try { history.replaceState(null, '', '../'); } catch (e) {}
+    }
 }
 
 // ============ Save ============
@@ -1072,6 +1099,10 @@ async function saveChange() {
 
             showToast('Change saved successfully');
             destroyEditors();
+            // If we came in via /change-management/new/, drop the create-route
+            // path now the change is saved — viewChange() will show the detail
+            // of the just-saved change at the canonical /change-management/ path.
+            restoreUrlFromNewRoute();
             // Reload and view the saved change
             await loadChanges();
             await viewChange(data.change_id);
