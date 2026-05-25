@@ -29,28 +29,31 @@ $path_prefix = '../../';
             padding: 25px;
         }
 
-        /* Summary Cards */
+        /* Summary Cards — sized so all 8 fit on one row at standard
+           laptop widths (1366px+). Slightly tighter padding / icon / gap
+           than before; the visible content (large number + small label)
+           hasn't changed. */
         .summary-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+            gap: 12px;
             margin-bottom: 25px;
         }
 
         .summary-card {
             background: #fff;
             border-radius: 8px;
-            padding: 18px 20px;
+            padding: 14px 16px;
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
         }
 
         .summary-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
