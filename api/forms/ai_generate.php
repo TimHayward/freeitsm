@@ -11,15 +11,19 @@
  *   done  { form: { title, description, fields: [...] }, duration_ms, tokens_in, tokens_out }
  *   error { message: "..." }
  *
- * Reuses the rfp_ai.php Anthropic streaming helper. The provider/model/key
- * comes from the same system_settings entries the RFP Builder uses
- * (Contracts → Settings → RFP AI).
+ * Per-module billing (#436): config now resolves from `forms_ai_*`
+ * system_settings entries via loadFormsAiConfig() so admins can use a
+ * different API key for the Forms AI than for the RFP Builder, and
+ * the spend shows up against the Forms feature in their provider
+ * console. The streaming helper from rfp_ai.php is still reused but
+ * with a settingsOverride so it picks up the forms-specific config.
  */
 
 session_start(['read_and_close' => true]);
 require_once '../../config.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/rfp_ai.php';
+require_once __DIR__ . '/_ai_helpers.php';
 
 // Disable output buffering at every level so SSE events flush immediately.
 @ini_set('zlib.output_compression', '0');
@@ -114,6 +118,17 @@ PROMPT;
 try {
     $conn = connectToDatabase();
 
+    // Resolve the forms-specific AI config — provider, model, api_key,
+    // verify_ssl — and pass it as a settingsOverride so the streaming
+    // helper bills against the forms_ai_* key rather than rfp_ai_*.
+    $formsCfg = loadFormsAiConfig($conn);
+    $settingsOverride = [
+        'provider'   => $formsCfg['provider'],
+        'model'      => $formsCfg['model'],
+        'api_key'    => $formsCfg['api_key'],
+        'verify_ssl' => $formsCfg['verify_ssl'] ? '1' : '0',
+    ];
+
     $accumulated = '';
     $finalUsage  = ['tokens_in' => null, 'tokens_out' => null, 'cache_read' => null, 'cache_write' => null];
 
@@ -130,7 +145,7 @@ try {
             $finalUsage = array_merge($finalUsage, $data);
             sse_send('usage', $data);
         }
-    });
+    }, $settingsOverride);
 
     // Strip any stray fences (the prompt forbids them but be tolerant).
     $content = $resp['content'];
