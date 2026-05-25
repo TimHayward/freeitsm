@@ -25,8 +25,11 @@ if ($key === '' || strlen($key) > 100) {
 }
 if ($value !== null) {
     $value = (string)$value;
-    if (strlen($value) > 500) {
-        echo json_encode(['success' => false, 'error' => 'Value too long (max 500 chars)']);
+    // Column is TEXT (~65 KB). Cap at 60 KB to leave UTF-8 overhead room
+    // and reject anything obviously oversized (a real preference will be a
+    // few hundred chars; anything larger likely indicates a bug or abuse).
+    if (strlen($value) > 60000) {
+        echo json_encode(['success' => false, 'error' => 'Value too long']);
         exit;
     }
 }

@@ -556,6 +556,7 @@ The primary module. Three-panel Outlook-style interface.
 IT asset management with vCenter integration.
 
 - **Assets tab**: Searchable asset list with user assignments (many-to-many)
+- **Table view** (`table.php`): Full-screen spreadsheet-style alternative to the split-pane Assets tab. Excel-style per-column tickbox filters (drop down from any header, shows the distinct values in the current view and counts), click-to-sort on every column, global search across visible columns, and a Columns drawer to show/hide and drag-reorder. Layout (visible columns, column order, sort) persists per analyst via `user_preferences`. Exports the current view to CSV and to landscape A4 PDF (selectable text, via jsPDF + autotable — same approach as the morning-checks export). Click any row to jump to that asset's detail in the split-pane view
 - **Servers tab** (`servers/`): Virtual machine inventory synced from VMware vCenter REST API
   - Displays VM name, OS, IP, host, cluster, CPU, memory, disk
   - Clickable rows show full detail modal with raw JSON from vCenter

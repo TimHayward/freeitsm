@@ -83,7 +83,7 @@ $schema = [
         'id'                => 'INT NOT NULL AUTO_INCREMENT',
         'analyst_id'        => 'INT NOT NULL',
         'preference_key'    => 'VARCHAR(100) NOT NULL',
-        'preference_value'  => 'VARCHAR(500) NULL',
+        'preference_value'  => 'TEXT NULL',
         'updated_datetime'  => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
     ],
 
@@ -2938,6 +2938,29 @@ try {
         } catch (Exception $e) {
             // Index may already exist under a different name — ignore
         }
+    }
+
+    // One-off: bump user_preferences.preference_value from VARCHAR(500) to TEXT.
+    // Larger config blobs (e.g. the asset-management table view's column /
+    // sort prefs in #383) can otherwise overflow the original 500-char cap.
+    // Idempotent — only fires if the column is still varchar.
+    try {
+        $col = $conn->prepare(
+            "SELECT DATA_TYPE FROM information_schema.columns
+             WHERE table_schema = ? AND table_name = 'user_preferences' AND column_name = 'preference_value'"
+        );
+        $col->execute([DB_NAME]);
+        $row = $col->fetch(PDO::FETCH_ASSOC);
+        if ($row && strtolower($row['DATA_TYPE']) === 'varchar') {
+            $conn->exec("ALTER TABLE `user_preferences` MODIFY `preference_value` TEXT NULL");
+            $results[] = [
+                'table' => 'user_preferences',
+                'status' => 'updated',
+                'details' => ['preference_value: VARCHAR(500) → TEXT (allow larger config blobs)']
+            ];
+        }
+    } catch (Exception $e) {
+        // Non-fatal — fall through with verification result
     }
 
     echo json_encode([

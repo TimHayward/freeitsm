@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS `user_preferences` (
     `id`                INT NOT NULL AUTO_INCREMENT,
     `analyst_id`        INT NOT NULL,
     `preference_key`    VARCHAR(100) NOT NULL,
-    `preference_value`  VARCHAR(500) NULL,
+    `preference_value`  TEXT NULL,
     `updated_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_user_pref` (`analyst_id`, `preference_key`),
