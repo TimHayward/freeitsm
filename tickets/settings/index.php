@@ -816,14 +816,14 @@ $translationNamespaces = ['common', 'tickets'];
             <div class="section-header">
                 <h2><?php echo htmlspecialchars(t('tickets.settings.headings.reply_cleanup_ai')); ?></h2>
             </div>
-            <p style="max-width: 700px; color: #555;">
+            <p style="color: #555;">
                 When an analyst types a rough reply in the ticket compose modal, the
                 <strong>✨ Cleanup</strong> button will rewrite it as a properly formatted
                 email — adding a "Dear [name]," greeting, fixing grammar, applying the
                 tone you choose below, and signing off with "Kind regards,". It will
                 <strong>not</strong> invent technical details or pad the content.
             </p>
-            <p style="max-width: 700px; color: #555;">
+            <p style="color: #555;">
                 This feature uses its own Anthropic API key (separate from RFP AI and
                 Knowledge AI) so its usage shows up as a discrete line on the
                 Anthropic billing dashboard.
@@ -897,12 +897,12 @@ $translationNamespaces = ['common', 'tickets'];
             <div class="section-header">
                 <h2><?php echo htmlspecialchars(t('tickets.settings.headings.csat')); ?></h2>
             </div>
-            <p style="max-width: 700px; color: #555;">
+            <p style="color: #555;">
                 When a ticket is closed, send the requester a short survey email asking them to rate the
                 experience 1&ndash;5. Responses are recorded against the analyst who closed the ticket so
                 you can pull per-analyst CSAT trends, and live as a widget on the dashboard.
             </p>
-            <p style="max-width: 700px; color: #555;">
+            <p style="color: #555;">
                 The survey email is configured under <a href="#" onclick="event.preventDefault();switchTab('email-templates');">Email templates</a>
                 &mdash; create a template with event <strong>CSAT survey</strong> and embed
                 <code>[csat_link]</code> in the body to insert the one-shot rating URL.
