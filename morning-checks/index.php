@@ -31,8 +31,13 @@ $path_prefix = '../';
         body {
             padding-top: 0;
         }
+        /* Full-width dashboard. inbox.css's .container defaults to max-width
+           1200px centered with 30px top margin; we override to fill the
+           viewport the same way every other module's main view does. */
         .container {
-            padding-top: 20px;
+            max-width: none;
+            margin: 0;
+            padding: 16px 30px 24px;
         }
         /* Update chart border color to match theme */
         .chart-footer {

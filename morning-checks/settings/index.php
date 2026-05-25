@@ -25,7 +25,15 @@ $path_prefix = '../../';
     <link rel="stylesheet" href="../style.css">
     <style>
         body { padding-top: 0; }
-        .settings-container { height: calc(100vh - 48px); overflow-y: auto; padding: 30px; }
+        /* Full-width settings page, matching the canonical padding used by
+           the other modules' settings pages. */
+        .settings-container {
+            height: calc(100vh - 48px);
+            overflow-y: auto;
+            max-width: none;
+            margin: 0;
+            padding: 16px 30px 24px;
+        }
 
         /* Blue theme for Morning Checks tabs */
         .tab:hover { color: #007bff; }
