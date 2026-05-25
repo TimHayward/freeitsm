@@ -296,16 +296,20 @@ $path_prefix = '../../';
             <div class="modal-header">
                 <h3 id="categoryModalTitle">Add category</h3>
             </div>
-            <div class="modal-body">
+            <!-- autocomplete="off" on the form + each input so the browser
+                 doesn't suggest previously-entered category names from
+                 unrelated forms. Modern browsers can ignore form-level
+                 autocomplete=off so we belt-and-brace with field-level too. -->
+            <form class="modal-body" autocomplete="off" onsubmit="event.preventDefault(); saveCategory();">
                 <input type="hidden" id="categoryId" value="">
                 <div class="form-group">
                     <label for="categoryName">Name *</label>
-                    <input type="text" id="categoryName" placeholder="e.g. Certificate expiry">
+                    <input type="text" id="categoryName" placeholder="e.g. Certificate expiry" autocomplete="off">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="categoryColor">Colour</label>
-                        <input type="color" id="categoryColor" value="#ef6c00">
+                        <input type="color" id="categoryColor" value="#ef6c00" autocomplete="off">
                     </div>
                     <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 10px;">
                         <label class="form-checkbox">
@@ -316,9 +320,9 @@ $path_prefix = '../../';
                 </div>
                 <div class="form-group">
                     <label for="categoryDescription">Description</label>
-                    <textarea id="categoryDescription" placeholder="Optional description..."></textarea>
+                    <textarea id="categoryDescription" placeholder="Optional description..." autocomplete="off"></textarea>
                 </div>
-            </div>
+            </form>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeCategoryModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="saveCategory()">Save</button>
