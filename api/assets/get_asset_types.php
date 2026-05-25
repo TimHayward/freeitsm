@@ -2,7 +2,10 @@
 /**
  * API Endpoint: Get asset types
  */
-session_start();
+// read_and_close releases the session lock immediately so multiple
+// AJAX calls from the same page can run in parallel rather than queueing
+// behind PHP's default exclusive session lock (see #388).
+session_start(['read_and_close' => true]);
 require_once '../../config.php';
 require_once '../../includes/functions.php';
 

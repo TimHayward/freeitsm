@@ -9,7 +9,7 @@
  * Returns counts in 9 buckets: <1d, 1d, 2d, 3d, 4d, 5d, 6d, 7+d, never —
  * based on the most recent source='intune' last_seen for each asset.
  */
-session_start();
+session_start(['read_and_close' => true]);
 require_once '../../config.php';
 require_once '../../includes/functions.php';
 
