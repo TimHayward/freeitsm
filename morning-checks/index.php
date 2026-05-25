@@ -46,7 +46,7 @@ $path_prefix = '../';
         }
         .date-display {
             flex-shrink: 0;
-            padding: 16px 30px 0;
+            padding: 16px 30px 5px;
         }
         .checks-section {
             flex: 1;
