@@ -1,7 +1,7 @@
 <?php
 /**
- * Forms — dedicated edit page (replacement for the inline editor in
- * forms/index.php and the orphaned forms/builder.php). Pretty URL:
+ * Forms — dedicated edit page (replaces the old inline editor in
+ * forms/index.php and the now-deleted forms/builder.php). Pretty URL:
  *
  *   /forms/edit/         → create a new form
  *   /forms/edit/?id=42   → edit form #42

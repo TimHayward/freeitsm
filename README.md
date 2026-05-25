@@ -354,8 +354,9 @@ sdtickets/
 │   └── includes/
 │
 ├── forms/                            # Forms Module
-│   ├── index.php                     # Unified form list + builder (sidebar + editor layout)
-│   ├── builder.php                   # Legacy form designer (deprecated, use index.php)
+│   ├── index.php                     # Forms dashboard (full-width sortable table)
+│   ├── edit/                         # Form editor — title, fields, AI Assist, versioning
+│   ├── settings/                     # Layout + AI provider/model/key settings
 │   ├── fill.php                      # Form filler (A4-style with company logo)
 │   ├── submissions.php               # Submission table, detail modal, CSV export
 │   ├── create_tables.sql             # Database schema
@@ -687,11 +688,13 @@ System administration and configuration.
   - **D001 — Demo Core Data Import**: 9-section report covering environment (PHP, OS, extensions, limits), config files (`config.php`, `db_config.php`, DB constants), required files, `core.json` parse + record counts, DB connection (server version, charset), per-table schema sanity (expected vs actual columns, row counts, redacted sample row), transactional write probe (sentinel insert per table inside a rolled-back transaction), and a live import attempt that captures the real response + any PHP warnings + post-import row counts. Adding more diagnostics is just `Dnnn_short_name.php` + a registry entry on the landing page.
 
 ### Forms (`forms/`)
-Dynamic form builder and submission system with a unified sidebar + editor layout.
+Dynamic form builder and submission system with a full-width dashboard + dedicated edit page.
 
-- **Form List & Builder** (`index.php`): Sidebar shows searchable list of all forms with quick actions (Fill In, Submissions, Delete). Main area has full-width title/description inputs with tabbed Fields and Preview panels. Click a form in the sidebar to edit it inline. Unsaved changes indicator with browser leave warning. Toast notifications on save/delete.
-- **AI Assist** (`builder.php`): Toolbar button opens a modal where the analyst describes the form in plain English. A streaming Claude call (claude.ai-style live token output) generates a complete form definition — title, description, field types, labels, required flags and dropdown options — and applies it to the builder. Reuses the Anthropic API key configured for the RFP Builder under Contracts → Settings → RFP AI. Three example prompts on the modal for quick starts.
-- **Filler** (`fill.php`): A4-style form rendering with company logo (alignment configurable). Required field validation.
+- **Forms dashboard** (`index.php`): Full-width sortable table of all forms (one row per form chain, showing the current version). Columns: Title, Version pill, Status, Fields count, Submissions count, Last modified (relative time), Modified by, Actions. Search filter, click any row to edit, per-row icons for Fill / Submissions / Delete.
+- **Form editor** (`edit/index.php`): Pretty URL `/forms/edit/?id=X` (or `/forms/edit/` for new). Title + description, drag-drop field list, live preview, sticky-footer Save / Cancel, top-toolbar Properties drawer + Versions dropdown + Save as new version. Field types: text, textarea, email (validated), number (numeric-only), single checkbox (yes/no), multi-checkbox group, radio group, dropdown.
+- **AI Assist** (in `edit/index.php`): Top-toolbar button opens a modal where the analyst describes the form (or, when editing an existing form, the change they want) in plain English. A streaming Claude call generates a proposal which is shown for review with a per-field diff before the analyst clicks Apply — nothing touches the editor without consent. Per-module billing: configurable provider/model/key under Forms → Settings → AI.
+- **Versioning** (`edit/index.php`): Save updates the current version in place; *Save as new version* clones the form forward into a new chain entry. Versions dropdown lists every snapshot; older versions are read-only.
+- **Filler** (`fill.php`): A4-style form rendering with company logo (alignment configurable). Per-type validation (email format, numeric only, required-empty for multi-select, etc.).
 - **Submissions** (`submissions.php`): Table view of all submissions. Click rows for detail modal. Date range filtering. CSV export with UTF-8 BOM for Excel compatibility.
 - **Settings**: Gear icon in sidebar opens settings modal. Configurable logo alignment (left, centre, right) applied to both preview and fill-in views.
 - **Field types**: `text`, `textarea`, `checkbox`, `dropdown`
