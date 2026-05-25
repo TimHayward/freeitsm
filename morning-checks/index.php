@@ -57,12 +57,44 @@ $path_prefix = '../';
         }
         /* Chart sits in flow at the bottom of the flex column (was
            position: fixed). flex-shrink: 0 pins it; the checks-section
-           above scrolls underneath. */
+           above scrolls underneath. position: relative anchors the
+           absolutely-positioned collapse chevron; min-height keeps the
+           chevron visible when the chart is collapsed (the chart-
+           container-inner is the only in-flow child, so without
+           min-height the footer would shrink to nothing). */
         .chart-footer {
-            position: static;
+            position: relative;
             flex-shrink: 0;
+            min-height: 30px;
             border-top-color: #00acc1;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+        }
+
+        /* Collapse chevron — small floating button in the top-right of
+           the chart area. Stays visible when chart is collapsed (the
+           footer's min-height keeps it on screen). */
+        .chart-toggle-btn {
+            position: absolute;
+            top: 6px;
+            right: 12px;
+            z-index: 5;
+            width: 26px;
+            height: 22px;
+            padding: 0;
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            color: #007bff;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .chart-toggle-btn:hover {
+            background: white;
+            border-color: #007bff;
         }
 
         /* Drag handle between the checks list and the chart. Hover /
@@ -80,13 +112,6 @@ $path_prefix = '../';
         .mc-divider:hover { background: rgba(0, 123, 255, 0.18); }
         .mc-divider.dragging { background: rgba(0, 123, 255, 0.35); }
 
-        /* Slimmed chart header (just the collapse chevron now). The
-           "Last 30 days overview" heading moved into the chart's x-axis
-           title to free up vertical real estate. */
-        .chart-footer-header {
-            padding: 4px 12px;
-            justify-content: flex-end;
-        }
     </style>
 </head>
 <body>
@@ -126,16 +151,14 @@ $path_prefix = '../';
              split each user prefers persists across reloads. -->
         <div class="mc-divider" id="mcDivider" title="Drag to resize chart"></div>
 
-        <!-- Chart now lives inside .container so it participates in the
-             flex column layout — sits at the bottom and shrinks /
-             expands as toggled, with the checks-section above adjusting.
-             The "Last 30 days overview" heading lives in the chart's
-             x-axis title (see displayChart) so the header only holds the
-             collapse chevron and stays thin. -->
+        <!-- Chart sits in the flex column at the bottom of .container.
+             No grey header bar anymore — the collapse chevron is
+             overlaid in the chart's top-right corner so the entire
+             chart-footer height goes to the canvas. Chart-footer keeps a
+             small min-height so the chevron stays visible when the
+             chart-container is collapsed. -->
         <div class="chart-footer">
-            <div class="chart-footer-header" onclick="toggleChart()">
-                <span id="chartToggle" class="toggle-icon">▼</span>
-            </div>
+            <button id="chartToggle" class="chart-toggle-btn" onclick="toggleChart()" aria-label="Collapse chart">▼</button>
             <div id="chartContainer" class="chart-container-inner">
                 <canvas id="statusChart"></canvas>
             </div>
@@ -583,7 +606,11 @@ $path_prefix = '../';
                         y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } }
                     },
                     plugins: {
-                        legend: { position: 'top' },
+                        // Legend at the bottom — the top-right of the
+                        // chart area now hosts the floating collapse
+                        // chevron, so leaving the legend on top would
+                        // mean the two overlap each other.
+                        legend: { position: 'bottom' },
                         tooltip: {
                             callbacks: {
                                 title: (context) => context[0].label,
@@ -648,15 +675,13 @@ $path_prefix = '../';
 
         function applyChartHeightFromPct(pct) {
             const container = document.querySelector('.container');
-            const header = document.querySelector('.chart-footer-header');
             const inner = document.getElementById('chartContainer');
-            if (!container || !header || !inner) return;
+            if (!container || !inner) return;
             const containerH = container.clientHeight;
-            const headerH = header.offsetHeight;
-            const targetFooterH = containerH * (pct / 100);
-            // chart-footer height = header height + inner height, so we
-            // back-compute the inner (canvas) area from the target.
-            const innerH = Math.max(60, targetFooterH - headerH);
+            // No header bar any more — chart-footer height IS the inner
+            // (canvas) height. The collapse chevron is absolutely
+            // positioned so it doesn't take in-flow space.
+            const innerH = Math.max(60, containerH * (pct / 100));
             inner.style.height = innerH + 'px';
             if (typeof chartInstance !== 'undefined' && chartInstance) {
                 chartInstance.resize();
