@@ -88,7 +88,7 @@ $sidebarHoverClass = $sidebarMode === 'hover' ? ' sidebar-hover' : '';
             <!-- Article detail view -->
             <div class="article-detail-view" id="articleDetailView" style="display: none;">
                 <div class="article-detail-header">
-                    <button class="btn btn-secondary" onclick="backToList()">Back to List</button>
+                    <a class="btn btn-secondary" href="./">Back to list</a>
                     <div class="article-actions" id="articleActions">
                         <div class="share-dropdown">
                             <button class="btn btn-share" onclick="toggleShareDropdown()">
@@ -277,7 +277,7 @@ $sidebarHoverClass = $sidebarMode === 'hover' ? ' sidebar-hover' : '';
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>window.API_BASE = '../api/knowledge/';</script>
     <script src="../assets/js/custom-alert.js?v=1"></script>
-    <script src="../assets/js/knowledge.js?v=9"></script>
+    <script src="../assets/js/knowledge.js?v=10"></script>
     <!-- Prism.js for code syntax highlighting when viewing articles -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-powershell.min.js"></script>

@@ -674,10 +674,10 @@ function cancelEdit() {
 }
 
 // Back to list
-function backToList() {
-    currentArticle = null;
-    showView('list');
-}
+// (backToList removed — the "Back to list" button now navigates to ./
+// directly so the URL reflects the list page and the article state is
+// fully reset by the page reload. Other call sites still use
+// showView('list') after save / archive flows.)
 
 // Show/hide views
 function showView(view) {
