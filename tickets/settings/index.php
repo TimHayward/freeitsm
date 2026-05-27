@@ -1427,48 +1427,55 @@ $translationNamespaces = ['common', 'tickets'];
     <div class="modal" id="slaCalendarModal">
         <div class="modal-content" style="max-width:680px;">
             <div class="modal-header" id="slaCalendarModalTitle">Add business calendar</div>
-            <form id="slaCalendarForm" style="padding:20px 24px;overflow-y:auto;flex:1;">
-                <input type="hidden" id="slaCalendarId">
+            <div class="modal-body">
+                <form id="slaCalendarForm">
+                    <input type="hidden" id="slaCalendarId">
 
-                <div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:15px;">
-                    <div class="form-group">
-                        <label for="slaCalendarName">Name *</label>
-                        <input type="text" id="slaCalendarName" required placeholder="e.g., London Business Hours">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="slaCalendarName">Name *</label>
+                            <input type="text" id="slaCalendarName" required placeholder="e.g. London business hours">
+                        </div>
+                        <div class="form-group">
+                            <label for="slaCalendarTimezone">Timezone *</label>
+                            <select id="slaCalendarTimezone" required></select>
+                            <small>IANA zone (e.g. Europe/London, America/New_York)</small>
+                        </div>
                     </div>
+
                     <div class="form-group">
-                        <label for="slaCalendarTimezone">Timezone *</label>
-                        <select id="slaCalendarTimezone" required></select>
-                        <small style="color:#666;">IANA zone (e.g. Europe/London, America/New_York)</small>
-                    </div>
-                    <div class="form-group" style="display:flex;align-items:end;">
-                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                            <input type="checkbox" id="slaCalendarIsDefault"> Default
+                        <label class="toggle-label">
+                            <span class="toggle-switch">
+                                <input type="checkbox" id="slaCalendarIsDefault">
+                                <span class="toggle-slider"></span>
+                            </span>
+                            Default calendar
                         </label>
+                        <small>Used for priorities that don't have a calendar of their own.</small>
                     </div>
-                </div>
 
-                <h4 style="margin:18px 0 8px;">Weekly working hours</h4>
-                <p style="color:#666;font-size:13px;margin:0 0 10px;">Uncheck a day to mark it as closed. Most desks use Mon-Fri 09:00-17:00.</p>
-                <div id="slaCalendarHoursGrid" style="display:grid;grid-template-columns:90px 80px 1fr 1fr;gap:8px 12px;align-items:center;">
-                    <!-- rows injected by JS: 7 weekdays -->
-                </div>
+                    <h4 style="margin:24px 0 8px;">Weekly working hours</h4>
+                    <p style="color:#666;font-size:13px;margin:0 0 10px;">Uncheck a day to mark it as closed. Most desks use Mon-Fri 09:00-17:00.</p>
+                    <div id="slaCalendarHoursGrid" style="display:grid;grid-template-columns:90px 80px 1fr 1fr;gap:8px 12px;align-items:center;">
+                        <!-- rows injected by JS: 7 weekdays -->
+                    </div>
 
-                <h4 style="margin:24px 0 8px;">Holidays</h4>
-                <p style="color:#666;font-size:13px;margin:0 0 10px;">Dates that override the weekly pattern (the clock won't tick on these days).</p>
-                <div id="slaCalendarHolidaysList" style="margin-bottom:10px;"></div>
-                <div style="display:flex;gap:8px;">
-                    <input type="date" id="slaCalendarHolidayDate" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;">
-                    <input type="text" id="slaCalendarHolidayName" placeholder="Name (optional, e.g. Christmas Day)" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:4px;">
-                    <button type="button" class="btn btn-secondary" onclick="addSlaHoliday()">Add holiday</button>
-                </div>
-                <small style="color:#666;display:block;margin-top:4px;">Note: holidays are saved with the rest of the calendar — they only persist when you hit Save.</small>
-
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-danger" id="slaCalendarDeleteBtn" onclick="deleteSlaCalendar()" style="display:none;margin-right:auto;"><?php echo htmlspecialchars(t('common.delete')); ?></button>
-                    <button type="button" class="btn btn-secondary" onclick="closeSlaCalendarModal()"><?php echo htmlspecialchars(t('common.cancel')); ?></button>
-                    <button type="submit" class="btn btn-primary"><?php echo htmlspecialchars(t('common.save')); ?></button>
-                </div>
-            </form>
+                    <h4 style="margin:24px 0 8px;">Holidays</h4>
+                    <p style="color:#666;font-size:13px;margin:0 0 10px;">Dates that override the weekly pattern (the clock won't tick on these days).</p>
+                    <div id="slaCalendarHolidaysList" style="margin-bottom:10px;"></div>
+                    <div style="display:flex;gap:8px;">
+                        <input type="date" id="slaCalendarHolidayDate" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;">
+                        <input type="text" id="slaCalendarHolidayName" placeholder="Name (optional, e.g. Christmas Day)" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:4px;">
+                        <button type="button" class="btn btn-secondary" onclick="addSlaHoliday()">Add holiday</button>
+                    </div>
+                    <small style="color:#666;display:block;margin-top:4px;">Note: holidays are saved with the rest of the calendar — they only persist when you hit Save.</small>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="slaCalendarDeleteBtn" onclick="deleteSlaCalendar()" style="display:none;margin-right:auto;"><?php echo htmlspecialchars(t('common.delete')); ?></button>
+                <button type="button" class="btn btn-secondary" onclick="closeSlaCalendarModal()"><?php echo htmlspecialchars(t('common.cancel')); ?></button>
+                <button type="submit" form="slaCalendarForm" class="btn btn-primary"><?php echo htmlspecialchars(t('common.save')); ?></button>
+            </div>
         </div>
     </div>
 

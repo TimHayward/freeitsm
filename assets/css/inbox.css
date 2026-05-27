@@ -1343,6 +1343,13 @@ body.ticket-popout .ticket-toolbar {
 .modal-body {
     padding: 24px;
     overflow-y: auto;
+    /* As a flex child of .modal-content (display: flex column, max-height
+       90vh) the body fills the remaining height between header and footer
+       and handles scroll. min-height:0 is needed so a flex item with
+       overflow can actually shrink below its content size in older
+       browsers / awkward content (#456). */
+    flex: 1;
+    min-height: 0;
 }
 
 .modal-footer {
