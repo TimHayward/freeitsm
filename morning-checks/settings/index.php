@@ -228,7 +228,7 @@ $path_prefix = '../../';
                     <tbody id="orphanTableBody"></tbody>
                 </table>
                 <div style="margin-top: 14px; display: flex; justify-content: flex-end; gap: 10px;">
-                    <button type="button" class="btn-primary" id="mapAllBtn" onclick="normaliseAllOrphans()">Map all</button>
+                    <button type="button" class="btn btn-primary" id="mapAllBtn" onclick="normaliseAllOrphans()">Map all</button>
                 </div>
             </div>
         </div>
@@ -273,8 +273,8 @@ $path_prefix = '../../';
                     <textarea id="addCheckDescription" rows="3"></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn-secondary" onclick="closeAddModal()">Cancel</button>
-                    <button type="submit" class="btn-primary">Add</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add</button>
                 </div>
             </form>
         </div>
@@ -304,8 +304,8 @@ $path_prefix = '../../';
                     </label>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn-secondary" onclick="closeEditModal()">Cancel</button>
-                    <button type="submit" class="btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
                 </div>
             </form>
         </div>
@@ -344,8 +344,8 @@ $path_prefix = '../../';
                     </label>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn-secondary" onclick="closeStatusModal()">Cancel</button>
-                    <button type="submit" class="btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeStatusModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
                 </div>
             </form>
         </div>
@@ -715,7 +715,7 @@ $path_prefix = '../../';
                             </select>
                         </td>
                         <td>
-                            <button type="button" class="btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="normaliseOneOrphan(${idx})">Map</button>
+                            <button type="button" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="normaliseOneOrphan(${idx})">Map</button>
                         </td>
                     </tr>
                 `;
