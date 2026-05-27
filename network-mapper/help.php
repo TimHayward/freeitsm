@@ -53,7 +53,6 @@ $path_prefix = '../';
         }
         .nh-nav-link:hover { background: #f5f5f5; color: #333; }
         .nh-nav-link.active { background: #ecfeff; color: #0e7490; font-weight: 600; }
-        .nh-nav-link.highlight { color: #0e7490; }
         .nh-nav-num {
             display: flex; align-items: center; justify-content: center;
             min-width: 22px; height: 22px;
@@ -62,8 +61,6 @@ $path_prefix = '../';
             font-size: 11px; font-weight: 700;
         }
         .nh-nav-link.active .nh-nav-num { background: #06b6d4; color: white; }
-        .nh-nav-num.highlight { background: #ecfeff; color: #0e7490; }
-        .nh-nav-link.highlight.active .nh-nav-num { background: rgba(255,255,255,0.25); color: white; }
 
         /* ---- Main content ---- */
         .nh-main { flex: 1; overflow-y: auto; }
@@ -257,8 +254,8 @@ $path_prefix = '../';
             <a href="#overview" class="nh-nav-link active" data-section="overview">
                 <span class="nh-nav-num">1</span> Overview
             </a>
-            <a href="#creating" class="nh-nav-link highlight" data-section="creating">
-                <span class="nh-nav-num highlight">2</span> Creating a diagram
+            <a href="#creating" class="nh-nav-link" data-section="creating">
+                <span class="nh-nav-num">2</span> Creating a diagram
             </a>
             <a href="#placing" class="nh-nav-link" data-section="placing">
                 <span class="nh-nav-num">3</span> Placing nodes
@@ -266,8 +263,8 @@ $path_prefix = '../';
             <a href="#connectors" class="nh-nav-link" data-section="connectors">
                 <span class="nh-nav-num">4</span> Drawing connectors
             </a>
-            <a href="#related" class="nh-nav-link highlight" data-section="related">
-                <span class="nh-nav-num highlight">5</span> Adding related objects
+            <a href="#related" class="nh-nav-link" data-section="related">
+                <span class="nh-nav-num">5</span> Adding related objects
             </a>
             <a href="#planned" class="nh-nav-link" data-section="planned">
                 <span class="nh-nav-num">6</span> Planned objects
