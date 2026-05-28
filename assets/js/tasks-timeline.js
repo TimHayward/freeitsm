@@ -431,6 +431,11 @@ async function onDragUp(e) {
     } else if (ds.mode === 'resize-r') {
         newEnd = addDayStr(ds.origEnd, dayDelta);
         if (newEnd < ds.origStart) newEnd = ds.origStart;
+        // Also pin start_date: for a deadline-only task this turns the old
+        // due_date into the start_date so the bar spans the new range,
+        // instead of jumping to a single-day position at the new end.
+        // For tasks that already have a start_date this is a no-op.
+        payload.start_date = ds.origStart;
         payload.due_date = newEnd;
     }
 

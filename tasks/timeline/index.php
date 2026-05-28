@@ -105,6 +105,6 @@ $translationNamespaces = ['common', 'tasks'];
     </div>
 
     <script>window.API_BASE = '../../api/tasks/';</script>
-    <script src="../../assets/js/tasks-timeline.js?v=7"></script>
+    <script src="../../assets/js/tasks-timeline.js?v=8"></script>
 </body>
 </html>
