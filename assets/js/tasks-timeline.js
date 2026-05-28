@@ -11,8 +11,7 @@ const LABEL_W = 220;
 const ROW_H = 36;
 const GROUP_H = 30;
 const HEADER_H = 48;
-const MIN_DAY_W = 8;       // below this, days overflow and the timeline scrolls horizontally
-const SHOW_NUM_W = 12;     // day-number text becomes illegible below this
+const COMFORT_DAY_W = 28;  // never squish narrower than this — scrolls horizontally instead
 const SCROLLBAR_PAD = 14;  // reserve space so a vertical scrollbar doesn't trigger horizontal overflow
 const STATUS_ORDER = ['To Do', 'In Progress', 'Blocked', 'Done', 'Cancelled'];
 
@@ -149,12 +148,11 @@ function render() {
     const rangeStartStr = ymd(rangeStart);
     const rangeDays = dayDiff(rangeStartStr, ymd(rangeEnd)) + 1;
 
-    // Fit the day grid to whatever width is left after the row labels and a
-    // scrollbar reservation. Floor for tidy integer cells; clamp to MIN_DAY_W
-    // so very long ranges still render readably (scrolls horizontally then).
+    // Stretch the day grid to fill the available width when the range is
+    // short; once each day would shrink below COMFORT_DAY_W we hold the
+    // floor and let the timeline scroll horizontally instead.
     const available = host.clientWidth - LABEL_W - SCROLLBAR_PAD;
-    const dayW = Math.max(MIN_DAY_W, Math.floor(available / rangeDays));
-    const showDayNum = dayW >= SHOW_NUM_W;
+    const dayW = Math.max(COMFORT_DAY_W, Math.floor(available / rangeDays));
     const trackW = rangeDays * dayW;
     const innerW = LABEL_W + trackW;
 
@@ -185,7 +183,7 @@ function render() {
             (d.getDay() === 0 || d.getDay() === 6) ? 'tl-weekend' : '',
             ds === todayStr ? 'tl-day-today' : ''
         ].filter(Boolean).join(' ');
-        dayCells += `<div class="${cls}" style="width:${dayW}px">${showDayNum ? d.getDate() : ''}</div>`;
+        dayCells += `<div class="${cls}" style="width:${dayW}px">${d.getDate()}</div>`;
     }
 
     // ── Body: grouped rows ──

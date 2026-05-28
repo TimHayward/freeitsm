@@ -80,6 +80,6 @@ $translationNamespaces = ['common', 'tasks'];
         </div>
     </div>
     <script>window.API_BASE = '../../api/tasks/';</script>
-    <script src="../../assets/js/tasks-timeline.js?v=5"></script>
+    <script src="../../assets/js/tasks-timeline.js?v=6"></script>
 </body>
 </html>
