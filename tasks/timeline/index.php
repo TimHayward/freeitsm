@@ -80,31 +80,32 @@ $translationNamespaces = ['common', 'tasks'];
         </div>
     </div>
 
-    <!-- Bar right-click context menu -->
-    <div class="ctx-menu" id="tlCtxMenu">
+    <!-- Bar right-click context menu (shared with tasks/index.php — see assets/js/tasks-ctx-menu.js) -->
+    <div class="ctx-menu" id="ctxMenu">
         <div class="ctx-item ctx-has-sub">
             <span class="ctx-item-label"><?php echo htmlspecialchars(t('tasks.context.assign_analyst')); ?></span>
             <span class="ctx-arrow">&rsaquo;</span>
-            <div class="ctx-submenu" id="tlCtxAnalyst"></div>
+            <div class="ctx-submenu" id="ctxAnalyst"></div>
         </div>
         <div class="ctx-item ctx-has-sub">
             <span class="ctx-item-label"><?php echo htmlspecialchars(t('tasks.context.assign_team')); ?></span>
             <span class="ctx-arrow">&rsaquo;</span>
-            <div class="ctx-submenu" id="tlCtxTeam"></div>
+            <div class="ctx-submenu" id="ctxTeam"></div>
         </div>
         <div class="ctx-item ctx-has-sub">
             <span class="ctx-item-label"><?php echo htmlspecialchars(t('tasks.context.change_status')); ?></span>
             <span class="ctx-arrow">&rsaquo;</span>
-            <div class="ctx-submenu" id="tlCtxStatus"></div>
+            <div class="ctx-submenu" id="ctxStatus"></div>
         </div>
         <div class="ctx-item ctx-has-sub">
             <span class="ctx-item-label"><?php echo htmlspecialchars(t('tasks.context.change_priority')); ?></span>
             <span class="ctx-arrow">&rsaquo;</span>
-            <div class="ctx-submenu" id="tlCtxPriority"></div>
+            <div class="ctx-submenu" id="ctxPriority"></div>
         </div>
     </div>
 
     <script>window.API_BASE = '../../api/tasks/';</script>
-    <script src="../../assets/js/tasks-timeline.js?v=8"></script>
+    <script src="../../assets/js/tasks-ctx-menu.js?v=1"></script>
+    <script src="../../assets/js/tasks-timeline.js?v=9"></script>
 </body>
 </html>
