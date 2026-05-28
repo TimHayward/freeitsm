@@ -19,7 +19,7 @@ $path_prefix = '../../';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FreeITSM - CMDB Settings</title>
+    <title>FreeITSM - CMDB settings</title>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
     <style>
         body { background: #f5f5f5; --accent: #be185d; }
@@ -109,17 +109,17 @@ $path_prefix = '../../';
         .badge.clickable:hover { background: #fce7f3; color: #be185d; }
         .badge.type { background: #ede9fe; color: #6d28d9; font-family: 'Consolas', monospace; }
 
-        /* Modal sizing — base modal / form CSS lives in inbox.css. */
+        /* Modal sizing — base modal / form / .btn / .btn-secondary CSS lives in
+           inbox.css (#453, #454). Only the module accent colour is overridden
+           here so primary buttons read as CMDB-magenta; .btn-test is a
+           tertiary action used for the Test connection button. */
         .modal-content { width: 600px; max-width: 95vw; }
         .modal-content.wide { width: 900px; }
         .form-check { display: flex; align-items: center; gap: 8px; font-size: 14px; }
         .form-check input[type="checkbox"] { width: auto; }
 
-        .btn { padding: 9px 18px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; border: 1px solid transparent; }
         .btn-primary { background: #be185d; color: white; }
         .btn-primary:hover { background: #9d174d; }
-        .btn-secondary { background: white; color: #374151; border-color: #d1d5db; }
-        .btn-secondary:hover { background: #f9fafb; }
         .btn-test { background: #6b7280; color: white; }
         .btn-test:hover { background: #4b5563; }
 
@@ -195,8 +195,8 @@ $path_prefix = '../../';
     <div class="container">
         <div class="tabs">
             <button class="tab active" data-tab="classes" onclick="switchTab('classes')">Classes</button>
-            <button class="tab" data-tab="relationship-types" onclick="switchTab('relationship-types')">Relationship Types</button>
-            <button class="tab" data-tab="ai" onclick="switchTab('ai')">AI Integration</button>
+            <button class="tab" data-tab="relationship-types" onclick="switchTab('relationship-types')">Relationship types</button>
+            <button class="tab" data-tab="ai" onclick="switchTab('ai')">AI integration</button>
         </div>
 
         <!-- Classes Tab -->
@@ -229,7 +229,7 @@ $path_prefix = '../../';
         <!-- Relationship Types Tab -->
         <div class="tab-content" id="relationship-types-tab">
             <div class="section-header">
-                <h2>Relationship Types</h2>
+                <h2>Relationship types</h2>
                 <button class="add-btn" onclick="openRelTypeModal()">Add</button>
             </div>
             <p style="color: #6b7280; font-size: 13px; margin-bottom: 16px; max-width: 720px;">
@@ -239,7 +239,7 @@ $path_prefix = '../../';
                 <thead>
                     <tr>
                         <th>Verb</th>
-                        <th>Inverse Verb</th>
+                        <th>Inverse verb</th>
                         <th>Description</th>
                         <th>Order</th>
                         <th>Active</th>
@@ -255,7 +255,7 @@ $path_prefix = '../../';
         <!-- AI Integration Tab -->
         <div class="tab-content" id="ai-tab">
             <div class="section-header">
-                <h2>AI Integration</h2>
+                <h2>AI integration</h2>
             </div>
             <p style="max-width: 700px; color: #555; font-size: 14px;">
                 Powers the v1 CMDB AI features: <strong>object summaries</strong> at the top of every detail page, <strong>property suggestions</strong> when creating a new class, and <strong>relationship suggestions</strong> on the object detail view.
@@ -266,7 +266,7 @@ $path_prefix = '../../';
 
             <form id="aiForm" style="max-width: 600px; margin-top: 24px;" onsubmit="saveAiSettings(event)">
                 <div class="form-group">
-                    <label for="aiApiKey">Anthropic API Key</label>
+                    <label for="aiApiKey">Anthropic API key</label>
                     <input type="password" id="aiApiKey" autocomplete="off" placeholder="sk-ant-...">
                     <small>Encrypted at rest. Leave the masked value untouched to keep the existing key.</small>
                 </div>
@@ -282,7 +282,7 @@ $path_prefix = '../../';
                 </div>
 
                 <div class="form-group">
-                    <label for="aiCustomInstructions">Custom Instructions <span style="color: #999; font-weight: normal;">(optional)</span></label>
+                    <label for="aiCustomInstructions">Custom instructions <span style="color: #999; font-weight: normal;">(optional)</span></label>
                     <textarea id="aiCustomInstructions" rows="5" maxlength="4000"
                               placeholder="e.g. Use British English spellings.&#10;Refer to the company as 'BillCorp'.&#10;When suggesting properties, prefer ITIL terminology."></textarea>
                     <small>Appended to every CMDB AI prompt. Use plain English — labels and verbs in the CMDB are sent to the model verbatim.</small>
@@ -301,7 +301,7 @@ $path_prefix = '../../';
     <!-- Class Add/Edit Modal -->
     <div class="modal" id="classModal">
         <div class="modal-content">
-            <div class="modal-header" id="classModalTitle">Add Class</div>
+            <div class="modal-header" id="classModalTitle">Add class</div>
             <div class="modal-body">
                 <form id="classForm" onsubmit="saveClass(event)">
                     <input type="hidden" id="classId">
@@ -321,7 +321,7 @@ $path_prefix = '../../';
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="classDisplayOrder">Display Order</label>
+                            <label for="classDisplayOrder">Display order</label>
                             <input type="number" id="classDisplayOrder" value="0">
                         </div>
                         <div class="form-group">
@@ -358,7 +358,7 @@ $path_prefix = '../../';
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><path d="M12 3l1.9 5.8L20 10l-5 4.5L16.5 21 12 17.8 7.5 21 9 14.5 4 10l6.1-1.2z"/></svg>
                             Suggest with AI
                         </button>
-                        <button class="add-btn" onclick="openPropertyModal()">Add Property</button>
+                        <button class="add-btn" onclick="openPropertyModal()">Add</button>
                     </div>
                 </div>
                 <table>
@@ -367,7 +367,7 @@ $path_prefix = '../../';
                             <th>Label</th>
                             <th>Key</th>
                             <th>Type</th>
-                            <th>Target Class</th>
+                            <th>Target class</th>
                             <th>Required</th>
                             <th>Order</th>
                             <th style="width: 130px;">Actions</th>
@@ -387,7 +387,7 @@ $path_prefix = '../../';
     <!-- Property Add/Edit Modal -->
     <div class="modal" id="propertyModal">
         <div class="modal-content">
-            <div class="modal-header" id="propertyModalTitle">Add Property</div>
+            <div class="modal-header" id="propertyModalTitle">Add property</div>
             <div class="modal-body">
                 <form id="propertyForm" onsubmit="saveProperty(event)">
                     <input type="hidden" id="propertyId">
@@ -414,19 +414,19 @@ $path_prefix = '../../';
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="propertyDisplayOrder">Display Order</label>
+                            <label for="propertyDisplayOrder">Display order</label>
                             <input type="number" id="propertyDisplayOrder" value="0">
                         </div>
                     </div>
                     <div class="form-group" id="targetClassGroup" style="display: none;">
-                        <label for="propertyTargetClass">Target Class *</label>
+                        <label for="propertyTargetClass">Target class *</label>
                         <select id="propertyTargetClass">
                             <option value="">— Select —</option>
                         </select>
                         <small>The class of objects this property can point at.</small>
                     </div>
                     <div class="form-group" id="dropdownOptionsGroup" style="display: none;">
-                        <label>Dropdown Options</label>
+                        <label>Dropdown options</label>
                         <div id="propertyOptionsContainer"></div>
                         <small>One row per allowed value. The optional colour swatch drives a coloured pill on the object detail page; leave it grey for plain text.</small>
                     </div>
@@ -447,7 +447,7 @@ $path_prefix = '../../';
     <!-- Relationship Type Add/Edit Modal -->
     <div class="modal" id="relTypeModal">
         <div class="modal-content">
-            <div class="modal-header" id="relTypeModalTitle">Add Relationship Type</div>
+            <div class="modal-header" id="relTypeModalTitle">Add relationship type</div>
             <div class="modal-body">
                 <form id="relTypeForm" onsubmit="saveRelType(event)">
                     <input type="hidden" id="relTypeId">
@@ -457,7 +457,7 @@ $path_prefix = '../../';
                         <small>How A relates to B. Use plain English (read by AI features).</small>
                     </div>
                     <div class="form-group">
-                        <label for="relTypeInverseVerb">Inverse Verb *</label>
+                        <label for="relTypeInverseVerb">Inverse verb *</label>
                         <input type="text" id="relTypeInverseVerb" required maxlength="100" placeholder="e.g. is depended on by">
                         <small>The reciprocal — what B sees when looking back at A.</small>
                     </div>
@@ -467,7 +467,7 @@ $path_prefix = '../../';
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="relTypeDisplayOrder">Display Order</label>
+                            <label for="relTypeDisplayOrder">Display order</label>
                             <input type="number" id="relTypeDisplayOrder" value="0">
                         </div>
                         <div class="form-group">
@@ -496,7 +496,7 @@ $path_prefix = '../../';
             <div class="modal-header">
                 <span style="display: inline-flex; align-items: center; gap: 6px;">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#be185d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 10l-5 4.5L16.5 21 12 17.8 7.5 21 9 14.5 4 10l6.1-1.2z"/></svg>
-                    AI Suggest Properties — <span id="aiSuggestClassName"></span>
+                    AI suggest properties — <span id="aiSuggestClassName"></span>
                 </span>
             </div>
             <div class="modal-body">
@@ -531,7 +531,7 @@ $path_prefix = '../../';
                 <!-- Stage 3: suggestions list -->
                 <div class="ai-stage" id="aiStageSuggestions">
                     <p style="color: #4b5563; font-size: 13px; margin-bottom: 16px;">
-                        Untick anything you don't want. Selected properties will be added to <strong id="aiSClassName"></strong> when you click <strong>Add Selected</strong>.
+                        Untick anything you don't want. Selected properties will be added to <strong id="aiSClassName"></strong> when you click <strong>Add</strong>.
                     </p>
                     <div id="aiSuggestionsList"></div>
                 </div>
@@ -558,6 +558,6 @@ $path_prefix = '../../';
     </div>
 
     <script src="../options-editor.js?v=1"></script>
-    <script src="settings.js?v=5"></script>
+    <script src="settings.js?v=6"></script>
 </body>
 </html>

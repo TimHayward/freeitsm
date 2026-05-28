@@ -97,7 +97,7 @@ function renderClasses() {
 
 function openClassModal(id = null) {
     const cls = id ? classes.find(c => c.id === id) : null;
-    document.getElementById('classModalTitle').textContent = cls ? 'Edit Class' : 'Add Class';
+    document.getElementById('classModalTitle').textContent = cls ? 'Edit class' : 'Add class';
     document.getElementById('classId').value = cls ? cls.id : '';
     document.getElementById('className').value = cls ? cls.name : '';
     document.getElementById('classKey').value = cls ? cls.class_key : '';
@@ -194,7 +194,7 @@ async function loadPropsForClass() {
 function renderProps() {
     const tbody = document.getElementById('propsTableBody');
     if (!propsForClass.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty-row">No properties yet — click <strong>Add Property</strong>.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-row">No properties yet — click <strong>Add</strong>.</td></tr>';
         return;
     }
     tbody.innerHTML = propsForClass.map(p => `
@@ -219,7 +219,7 @@ function renderProps() {
 
 function openPropertyModal(id = null) {
     const prop = id ? propsForClass.find(p => p.id === id) : null;
-    document.getElementById('propertyModalTitle').textContent = prop ? 'Edit Property' : 'Add Property';
+    document.getElementById('propertyModalTitle').textContent = prop ? 'Edit property' : 'Add property';
     document.getElementById('propertyId').value = prop ? prop.id : '';
     document.getElementById('propertyLabel').value = prop ? prop.label : '';
     document.getElementById('propertyKey').value = prop ? prop.property_key : '';
@@ -364,7 +364,7 @@ function renderRelTypes() {
 
 function openRelTypeModal(id = null) {
     const r = id ? relTypes.find(x => x.id === id) : null;
-    document.getElementById('relTypeModalTitle').textContent = r ? 'Edit Relationship Type' : 'Add Relationship Type';
+    document.getElementById('relTypeModalTitle').textContent = r ? 'Edit relationship type' : 'Add relationship type';
     document.getElementById('relTypeId').value = r ? r.id : '';
     document.getElementById('relTypeVerb').value = r ? r.verb : '';
     document.getElementById('relTypeInverseVerb').value = r ? r.inverse_verb : '';
@@ -499,7 +499,7 @@ function setAiStage(stage) {
         cancelBtn.style.display = '';
         actions.style.display = '';
     } else if (stage === 'suggestions') {
-        btn.textContent = 'Add Selected';
+        btn.textContent = 'Add';
         btn.disabled = false;
         cancelBtn.textContent = 'Cancel';
         cancelBtn.style.display = '';
