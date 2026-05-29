@@ -6,6 +6,7 @@
 session_start(['read_and_close' => true]);
 require_once '../../config.php';
 require_once '../../includes/functions.php';
+require_once dirname(dirname(__DIR__)) . '/workflow/includes/engine.php';
 
 header('Content-Type: application/json');
 
@@ -303,6 +304,31 @@ try {
         'change_id' => $changeId,
         'message' => 'Change saved successfully'
     ]);
+
+    // Workflow engine: change.approved. Fires when a manual status edit moved
+    // the change into Approved (the CAB-vote path fires its own dispatch in
+    // submit_cab_vote.php). Only on a genuine transition, so re-saving an
+    // already-approved change doesn't re-fire. Engine swallows its own errors;
+    // outer try/catch is belt+braces.
+    if (isset($oldRecord) && $oldRecord) {
+        $oldStatusName = $resolveLookupName('change_statuses', $oldRecord['status_id'] ?? null);
+        if ($status === 'Approved' && $oldStatusName !== 'Approved') {
+            try {
+                WorkflowEngine::dispatch('change.approved', [
+                    'change' => [
+                        'id'    => (int)$changeId,
+                        'title' => $title,
+                        'risk'  => $riskLevel,
+                    ],
+                    'approver' => [
+                        'id' => $approverId,
+                    ],
+                ]);
+            } catch (Exception $wfEx) {
+                error_log('Workflow dispatch error in change save: ' . $wfEx->getMessage());
+            }
+        }
+    }
 
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);

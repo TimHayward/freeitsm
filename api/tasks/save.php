@@ -6,6 +6,7 @@
 session_start(['read_and_close' => true]);
 require_once '../../config.php';
 require_once '../../includes/functions.php';
+require_once dirname(dirname(__DIR__)) . '/workflow/includes/engine.php';
 
 header('Content-Type: application/json');
 
@@ -78,6 +79,20 @@ try {
             }
         }
 
+        // Capture whether the task was already in a closed status *before* the
+        // update, so we can fire task.completed only on the transition INTO a
+        // closed status (not on every save of an already-complete task).
+        $wasClosed = false;
+        if (array_key_exists('status', $input)) {
+            $oldStmt = $conn->prepare(
+                "SELECT ts.is_closed FROM tasks t
+                 LEFT JOIN task_statuses ts ON ts.id = t.status_id
+                 WHERE t.id = ?"
+            );
+            $oldStmt->execute([$id]);
+            $wasClosed = (bool)$oldStmt->fetchColumn();
+        }
+
         if (array_key_exists('status', $input)) {
             $sets[] = "status_id = ?";
             $params[] = $resolveLookup('task_statuses', $input['status']);
@@ -104,6 +119,28 @@ try {
         if (array_key_exists('tags', $input)) $syncTags($id, $input['tags']);
 
         echo json_encode(['success' => true, 'message' => 'Task updated', 'id' => $id]);
+
+        // Workflow engine: task.completed. Fires only when the status moved from
+        // an open status into a closed one. Read the canonical fields back from
+        // the row (a kanban drag may only send `status`, not title/priority).
+        // Engine swallows its own errors; outer try/catch is belt+braces.
+        if (array_key_exists('status', $input) && !$wasClosed && $statusIsClosed($input['status'])) {
+            try {
+                $rb = $conn->prepare("SELECT title, priority_id, assigned_analyst_id FROM tasks WHERE id = ?");
+                $rb->execute([$id]);
+                $taskRow = $rb->fetch(PDO::FETCH_ASSOC) ?: [];
+                WorkflowEngine::dispatch('task.completed', [
+                    'task' => [
+                        'id'          => $id,
+                        'title'       => $taskRow['title'] ?? null,
+                        'priority_id' => isset($taskRow['priority_id']) ? (int)$taskRow['priority_id'] : null,
+                        'assignee_id' => isset($taskRow['assigned_analyst_id']) ? (int)$taskRow['assigned_analyst_id'] : null,
+                    ],
+                ]);
+            } catch (Exception $wfEx) {
+                error_log('Workflow dispatch error in tasks/save: ' . $wfEx->getMessage());
+            }
+        }
     } else {
         // Create new task
         $title = trim($input['title'] ?? '');

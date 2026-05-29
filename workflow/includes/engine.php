@@ -45,9 +45,12 @@ class WorkflowEngine
      * shows them as-is. Adding a trigger = one entry here + a single
      * dispatch() call from the corresponding module's save flow.
      *
-     * NOTE: trigger wiring from host modules is being added in subsequent
-     * commits — the catalogue is here so the editor UI is complete, but
-     * not every entry is firing yet.
+     * All seven events are now wired from their host modules:
+     *   ticket.*          — api/tickets/create_ticket.php + assign_ticket.php
+     *   form.submitted    — api/forms/submit_form.php (after commit)
+     *   task.completed    — api/tasks/save.php (on transition into a closed status)
+     *   change.approved   — api/change-management/submit_cab_vote.php (CAB threshold)
+     *                       + save.php (manual status edit to Approved)
      */
     public static function availableTriggers(): array
     {

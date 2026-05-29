@@ -6,6 +6,7 @@
 session_start(['read_and_close' => true]);
 require_once '../../config.php';
 require_once '../../includes/functions.php';
+require_once dirname(dirname(__DIR__)) . '/workflow/includes/engine.php';
 
 header('Content-Type: application/json');
 
@@ -31,10 +32,12 @@ if ($formId <= 0) {
 try {
     $conn = connectToDatabase();
 
-    // Validate form exists and is active
-    $stmt = $conn->prepare("SELECT id FROM forms WHERE id = ? AND is_active = 1");
+    // Validate form exists and is active (grab the name too — the workflow
+    // payload carries it so conditions / templates can read form.name).
+    $stmt = $conn->prepare("SELECT id, name FROM forms WHERE id = ? AND is_active = 1");
     $stmt->execute([$formId]);
-    if (!$stmt->fetch()) {
+    $formRow = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$formRow) {
         echo json_encode(['success' => false, 'error' => 'Form not found or inactive']);
         exit;
     }
@@ -116,6 +119,44 @@ try {
     $conn->commit();
 
     echo json_encode(['success' => true, 'submission_id' => $submissionId, 'message' => 'Form submitted']);
+
+    // Workflow engine: form.submitted. Build a label-keyed map of the answers
+    // (so templates can reference {{submission.fields.Email}} etc. — the marquee
+    // "new starter form -> tickets in IT/HR/Facilities" use case) and surface the
+    // first email-type answer as submission.email. Engine swallows its own errors;
+    // outer try/catch is belt+braces so a workflow can't break the submission.
+    try {
+        $fieldsById = [];
+        foreach ($fields as $f) {
+            $fieldsById[(int)$f['id']] = $f;
+        }
+        $submissionFields = [];
+        $submissionEmail  = '';
+        foreach ($data as $fieldId => $value) {
+            $fieldId = (int)$fieldId;
+            if (!isset($fieldsById[$fieldId])) continue;
+            $label = $fieldsById[$fieldId]['label'];
+            $flat  = is_array($value) ? implode(', ', $value) : (string)$value;
+            $submissionFields[$label] = $flat;
+            if ($submissionEmail === '' && $fieldsById[$fieldId]['field_type'] === 'email' && $flat !== '') {
+                $submissionEmail = $flat;
+            }
+        }
+
+        WorkflowEngine::dispatch('form.submitted', [
+            'form' => [
+                'id'   => $formId,
+                'name' => $formRow['name'],
+            ],
+            'submission' => [
+                'id'     => $submissionId,
+                'email'  => $submissionEmail,
+                'fields' => $submissionFields,
+            ],
+        ]);
+    } catch (Exception $wfEx) {
+        error_log('Workflow dispatch error in submit_form: ' . $wfEx->getMessage());
+    }
 
 } catch (Exception $e) {
     if ($conn->inTransaction()) {

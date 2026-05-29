@@ -6,6 +6,7 @@
 session_start(['read_and_close' => true]);
 require_once '../../config.php';
 require_once '../../includes/functions.php';
+require_once dirname(dirname(__DIR__)) . '/workflow/includes/engine.php';
 
 header('Content-Type: application/json');
 
@@ -71,7 +72,7 @@ try {
     $newStatus = null;
 
     $changeStmt = $conn->prepare(
-        "SELECT c.cab_approval_type, cs.name AS status
+        "SELECT c.cab_approval_type, c.title, c.risk_level, c.approver_id, cs.name AS status
          FROM changes c
          LEFT JOIN change_statuses cs ON cs.id = c.status_id
          WHERE c.id = ?"
@@ -142,6 +143,26 @@ try {
         'status_changed' => $statusChanged,
         'new_status' => $newStatus
     ]);
+
+    // Workflow engine: change.approved. Fires when this vote tipped the change
+    // into the Approved status. Engine swallows its own errors; outer try/catch
+    // is belt+braces so a workflow can't break the vote response.
+    if ($statusChanged && $newStatus === 'Approved') {
+        try {
+            WorkflowEngine::dispatch('change.approved', [
+                'change' => [
+                    'id'    => $changeId,
+                    'title' => $changeRow['title'] ?? null,
+                    'risk'  => $changeRow['risk_level'] ?? null,
+                ],
+                'approver' => [
+                    'id' => isset($changeRow['approver_id']) ? (int)$changeRow['approver_id'] : null,
+                ],
+            ]);
+        } catch (Exception $wfEx) {
+            error_log('Workflow dispatch error in submit_cab_vote: ' . $wfEx->getMessage());
+        }
+    }
 
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
