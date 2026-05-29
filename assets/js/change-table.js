@@ -2,14 +2,24 @@
  * FreeITSM Change Management — table view config
  *
  * Supplies the change-specific pieces to the shared data-table engine
- * (assets/js/data-table.js): the COLUMNS catalogue and change loading. The table
- * is read-only — clicking a row deep-links to that change record. Inline editing
- * is intentionally omitted: change save.php rewrites the whole record (and would
- * null out longtext fields the list endpoint doesn't return), so edits belong in
- * the full change form, not in cells.
+ * (assets/js/data-table.js): the COLUMNS catalogue, change loading, and inline
+ * editing for the low-risk list-level fields (priority, impact, type, assignee).
+ *
+ * Why only those fields edit inline: the full change save (save.php) rewrites
+ * the whole record, and the list endpoint only returns a summary — so a generic
+ * cell-save would blank out the longtext fields it doesn't carry. Instead, each
+ * edit posts ONE field to a dedicated update_field.php that touches one column
+ * and writes one audit row. Status is intentionally NOT editable here so a cell
+ * can't bypass CAB voting / the approval workflow; the description, test/rollback
+ * plans and risk scoring stay in the full form too. Click any row to open it.
  */
 (function () {
     'use strict';
+
+    const API_BASE = '../api/change-management/';
+
+    let priorities = [], impacts = [], types = [], analysts = [];
+    let lookupsLoaded = false;
 
     function fmt(raw) { return raw ? String(raw).replace('T', ' ').slice(0, 16) : ''; }
 
@@ -19,17 +29,23 @@
         { key: 'title', label: 'Title', type: 'string', defaultVisible: true, defaultOrder: 1,
           display: c => c.title || '' },
         { key: 'change_type', label: 'Type', type: 'string', defaultVisible: true, defaultOrder: 2,
-          display: c => c.change_type || '' },
+          display: c => c.change_type || '',
+          editable: { kind: 'lookup', listKey: 'types', valueKey: 'name', labelKey: 'name', colourKey: 'colour' } },
         { key: 'status', label: 'Status', type: 'string', defaultVisible: true, defaultOrder: 3,
-          display: c => c.status || '' },
+          display: c => c.status || '',
+          // Read-only on purpose — open the change to move status (CAB / workflow).
+          cellTitle: () => 'Open the change to change status (CAB / approval workflow)' },
         { key: 'priority', label: 'Priority', type: 'string', defaultVisible: true, defaultOrder: 4,
-          display: c => c.priority || '' },
+          display: c => c.priority || '',
+          editable: { kind: 'lookup', listKey: 'priorities', valueKey: 'name', labelKey: 'name', colourKey: 'colour' } },
         { key: 'impact', label: 'Impact', type: 'string', defaultVisible: false, defaultOrder: 5,
-          display: c => c.impact || '' },
+          display: c => c.impact || '',
+          editable: { kind: 'lookup', listKey: 'impacts', valueKey: 'name', labelKey: 'name', colourKey: 'colour' } },
         { key: 'risk_level', label: 'Risk', type: 'string', defaultVisible: true, defaultOrder: 6,
           display: c => c.risk_level || '' },
-        { key: 'assigned_to_name', label: 'Assigned to', type: 'string', defaultVisible: true, defaultOrder: 7,
-          display: c => c.assigned_to_name || '' },
+        { key: 'assigned_to_id', label: 'Assigned to', type: 'string', defaultVisible: true, defaultOrder: 7,
+          display: c => c.assigned_to_name || '',
+          editable: { kind: 'lookup', listKey: 'analysts', valueKey: 'id', labelKey: 'name', allowNull: true, nullLabel: '—' } },
         { key: 'requester_name', label: 'Requester', type: 'string', defaultVisible: false, defaultOrder: 8,
           display: c => c.requester_name || '' },
         { key: 'category', label: 'Category', type: 'string', defaultVisible: false, defaultOrder: 9,
@@ -44,6 +60,21 @@
           value: c => c.modified_datetime || '', display: c => fmt(c.modified_datetime) },
     ];
 
+    async function loadLookups() {
+        try {
+            const [pRes, iRes, tRes, aRes] = await Promise.all([
+                fetch(API_BASE + 'get_change_priorities.php').then(r => r.json()),
+                fetch(API_BASE + 'get_change_impacts.php').then(r => r.json()),
+                fetch(API_BASE + 'get_change_types.php').then(r => r.json()),
+                fetch(API_BASE + 'list.php?analysts=1').then(r => r.json()),
+            ]);
+            if (pRes.success) priorities = (pRes.priorities || []).filter(p => p.is_active);
+            if (iRes.success) impacts = (iRes.impacts || []).filter(i => i.is_active);
+            if (tRes.success) types = (tRes.types || []).filter(t => t.is_active);
+            if (aRes.success) analysts = aRes.analysts || [];
+        } catch (e) { console.error('Failed to load change lookups:', e); }
+    }
+
     createDataTable({
         accent: '#00897b',
         prefApi: '../api/system/',
@@ -52,36 +83,31 @@
         exportName: 'changes',
         defaultSort: { key: 'modified_datetime', dir: 'desc' },
         columns: COLUMNS,
-        hideCount: true,   // the toolbar's right slot holds the read-only note instead
+        getLookups: () => ({ priorities, impacts, types, analysts }),
+        // Click a row (outside an edit control) to open the full change record.
         onRowClick: row => { window.location.href = `index.php?change=${row.id}`; },
 
         load: async () => {
-            const d = await fetch('../api/change-management/list.php').then(r => r.json());
+            // Lookups must be ready before first render so the inline selects
+            // (type / priority / impact / assignee) can build their options.
+            if (!lookupsLoaded) { await loadLookups(); lookupsLoaded = true; }
+            const d = await fetch(API_BASE + 'list.php').then(r => r.json());
             if (!d.success) { console.error('change list:', d.error); return []; }
             return d.changes || [];
         },
-    });
 
-    // Read-only note in place of the row count → opens the plain-English explainer.
-    document.addEventListener('DOMContentLoaded', () => {
-        const slot = document.getElementById('dtCount');
-        if (slot) {
-            slot.innerHTML =
-                '<button type="button" class="dt-readonly-note" id="readonlyNote">' +
-                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-                '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>' +
-                '</svg>Read only — click to learn more</button>';
-        }
-
-        const modal = document.getElementById('readonlyModal');
-        const open = () => modal && modal.classList.add('active');
-        const close = () => modal && modal.classList.remove('active');
-
-        const note = document.getElementById('readonlyNote');
-        if (note) note.addEventListener('click', open);
-        const closeBtn = document.getElementById('readonlyModalClose');
-        if (closeBtn) closeBtn.addEventListener('click', close);
-        if (modal) modal.addEventListener('click', e => { if (e.target === modal) close(); });
-        document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+        onSaveCell: async (row, col, value) => {
+            row[col.key] = value;
+            if (col.key === 'assigned_to_id') {
+                const a = analysts.find(x => x.id == value);
+                row.assigned_to_name = a ? a.name : null;
+            }
+            const d = await fetch(API_BASE + 'update_field.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: row.id, field: col.key, value }),
+            }).then(r => r.json());
+            if (!d.success) throw new Error(d.error || 'Save failed');
+        },
     });
 })();

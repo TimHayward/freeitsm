@@ -34,7 +34,7 @@ $path_prefix = '../../';
         <?php include '../../includes/data-table-skeleton.php'; ?>
     </div>
 
-    <script src="../../assets/js/data-table.js?v=1"></script>
+    <script src="../../assets/js/data-table.js?v=2"></script>
     <script src="../../assets/js/calendar-table.js?v=2"></script>
 </body>
 </html>

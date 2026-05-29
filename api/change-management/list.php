@@ -44,6 +44,7 @@ try {
                 c.risk_level,
                 c.created_datetime,
                 c.modified_datetime,
+                c.assigned_to_id,
                 assigned.full_name as assigned_to_name,
                 requester.full_name as requester_name
             FROM changes c

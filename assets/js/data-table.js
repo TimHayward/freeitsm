@@ -277,7 +277,8 @@
         function renderCell(row, col) {
             const display = colDisplay(col, row);
             if (!editable || !col.editable) {
-                return `<td title="${esc(display)}">${esc(display)}</td>`;
+                const title = (typeof col.cellTitle === 'function') ? col.cellTitle(row) : display;
+                return `<td title="${esc(title)}">${esc(display)}</td>`;
             }
             const id = esc(rowId(row));
             const kind = col.editable.kind;
