@@ -484,6 +484,20 @@ $schema = [
         'assigned_datetime'         => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
         'assigned_by_analyst_id'    => 'INT NULL',
         'notes'                     => 'VARCHAR(500) NULL',
+        'expected_return_date'      => 'DATE NULL',
+    ],
+
+    // Check-in / check-out custody trail. FK + index in post-schema section.
+    'asset_checkout_log' => [
+        'id'                    => 'INT NOT NULL AUTO_INCREMENT',
+        'asset_id'              => 'INT NOT NULL',
+        'user_id'               => 'INT NULL',
+        'user_name'             => 'VARCHAR(150) NULL',
+        'action'                => 'VARCHAR(10) NOT NULL',
+        'expected_return_date'  => 'DATE NULL',
+        'analyst_id'            => 'INT NULL',
+        'notes'                 => 'VARCHAR(500) NULL',
+        'action_datetime'       => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
     ],
 
     'asset_history' => [
@@ -2873,6 +2887,7 @@ try {
     foreach ([
         ['asset_locations', 'fk_asset_locations_parent', "ALTER TABLE asset_locations ADD CONSTRAINT fk_asset_locations_parent FOREIGN KEY (parent_id) REFERENCES asset_locations (id)"],
         ['assets', 'fk_assets_location', "ALTER TABLE assets ADD CONSTRAINT fk_assets_location FOREIGN KEY (location_id) REFERENCES asset_locations (id) ON DELETE SET NULL"],
+        ['asset_checkout_log', 'fk_acl_asset', "ALTER TABLE asset_checkout_log ADD CONSTRAINT fk_acl_asset FOREIGN KEY (asset_id) REFERENCES assets (id) ON DELETE CASCADE"],
     ] as [$tbl, $name, $sql]) {
         if ($tableExists($tbl) && !$fkExists($tbl, $name)) {
             try { $conn->exec($sql); } catch (Exception $e) {}
@@ -2881,6 +2896,7 @@ try {
     foreach ([
         ['asset_locations', 'idx_asset_locations_parent', 'parent_id'],
         ['assets', 'idx_assets_location', 'location_id'],
+        ['asset_checkout_log', 'idx_acl_asset', 'asset_id'],
     ] as [$tbl, $name, $col]) {
         if ($tableExists($tbl) && !$idxExists($tbl, $name)) {
             try { $conn->exec("ALTER TABLE `$tbl` ADD KEY `$name` (`$col`)"); } catch (Exception $e) {}

@@ -932,6 +932,10 @@ $path_prefix = '../';
                 <div class="user-search-results" id="userSearchResults">
                     <div class="empty-state" style="padding: 20px;">Type to search for users</div>
                 </div>
+                <div class="form-group" style="margin-top: 14px;">
+                    <label class="form-label">Expected return date (optional)</label>
+                    <input type="date" class="search-box" id="assignExpectedReturn">
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeAssignModal()">Cancel</button>
@@ -951,6 +955,21 @@ $path_prefix = '../';
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeHistoryModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custody (check-in / check-out) Modal -->
+    <div class="modal" id="checkoutLogModal">
+        <div class="modal-content modal-wide">
+            <div class="modal-header">
+                <span>Custody history</span>
+            </div>
+            <div class="modal-body" id="checkoutLogBody">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCheckoutLog()">Close</button>
             </div>
         </div>
     </div>
@@ -1114,6 +1133,7 @@ $path_prefix = '../';
                         <div class="asset-detail-subtitle">Service Tag: ${escapeHtml(selectedAsset.service_tag) || '-'}</div>
                         <div style="margin-top: 10px;">
                             <button class="btn btn-outline btn-sm" onclick="openHistoryModal(${selectedAsset.id})">View History</button>
+                            <button class="btn btn-outline btn-sm" onclick="openCheckoutLog(${selectedAsset.id})">Custody</button>
                         </div>
                         <div class="asset-assigned-bar" id="assignedBar">
                             <div class="asset-assigned-info" id="assignedInfo">
@@ -1261,6 +1281,7 @@ $path_prefix = '../';
                             <span class="user-name">${escapeHtml(user.display_name || 'Unknown')}</span>
                             <span class="user-email">${escapeHtml(user.email || '')}</span>
                             <span class="user-assigned-date">Assigned: ${formatDate(user.assigned_datetime)}</span>
+                            ${user.expected_return_date ? `<span class="user-assigned-date">Due back: ${escapeHtml(user.expected_return_date)}</span>` : ''}
                         `;
                         buttonsSpan.innerHTML = `
                             <button class="btn btn-primary btn-sm" onclick="reassignUser()">Re-assign</button>
@@ -1570,6 +1591,7 @@ $path_prefix = '../';
             selectedUserForAssign = null;
             document.getElementById('userSearchInput').value = '';
             document.getElementById('userSearchResults').innerHTML = '<div class="empty-state" style="padding: 20px;">Type to search for users</div>';
+            document.getElementById('assignExpectedReturn').value = '';
             document.getElementById('assignBtn').disabled = true;
             document.getElementById('assignUserModal').classList.add('active');
             document.getElementById('userSearchInput').focus();
@@ -1650,7 +1672,8 @@ $path_prefix = '../';
 
                 const assignBody = {
                     asset_id: selectedAssetId,
-                    user_id: selectedUserForAssign
+                    user_id: selectedUserForAssign,
+                    expected_return_date: document.getElementById('assignExpectedReturn').value || null
                 };
                 if (previousUserId) {
                     assignBody.previous_user_id = previousUserId;
@@ -1810,6 +1833,63 @@ $path_prefix = '../';
         document.getElementById('assetHistoryModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeHistoryModal();
+            }
+        });
+
+        // ─── Custody (check-in / check-out) trail ───────────────────────────
+        async function openCheckoutLog(assetId) {
+            document.getElementById('checkoutLogModal').classList.add('active');
+            document.getElementById('checkoutLogBody').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            try {
+                const response = await fetch(`${API_BASE}get_asset_checkout_log.php?asset_id=${assetId}`);
+                const data = await response.json();
+                if (data.success) {
+                    renderCheckoutLog(data.log);
+                } else {
+                    document.getElementById('checkoutLogBody').innerHTML =
+                        '<div class="empty-state" style="padding: 20px;">Error loading custody history: ' + escapeHtml(data.error) + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('checkoutLogBody').innerHTML =
+                    '<div class="empty-state" style="padding: 20px;">Failed to load custody history</div>';
+            }
+        }
+
+        function renderCheckoutLog(log) {
+            const container = document.getElementById('checkoutLogBody');
+            if (!log || log.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="padding: 20px;">No check-out / check-in events recorded yet. Assign or remove a user to start the trail.</div>';
+                return;
+            }
+            let html = `<table class="history-table">
+                <thead>
+                    <tr><th>Date</th><th>Event</th><th>User</th><th>Due back</th><th>Analyst</th></tr>
+                </thead>
+                <tbody>`;
+            log.forEach(e => {
+                const isOut = e.action === 'checkout';
+                const badge = isOut
+                    ? '<span class="history-field-badge" style="background:#e8f5e9;color:#2e7d32;">Checked out</span>'
+                    : '<span class="history-field-badge" style="background:#eef2f7;color:#37474f;">Checked in</span>';
+                html += `<tr>
+                    <td class="history-meta">${formatDateTime(e.action_datetime)}</td>
+                    <td>${badge}</td>
+                    <td>${escapeHtml(e.user_name || 'Unknown')}</td>
+                    <td class="history-meta">${e.expected_return_date ? escapeHtml(e.expected_return_date) : '-'}</td>
+                    <td class="history-meta">${escapeHtml(e.analyst_name || 'Unknown')}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function closeCheckoutLog() {
+            document.getElementById('checkoutLogModal').classList.remove('active');
+        }
+
+        document.getElementById('checkoutLogModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCheckoutLog();
             }
         });
     </script>

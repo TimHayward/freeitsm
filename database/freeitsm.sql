@@ -657,10 +657,29 @@ CREATE TABLE IF NOT EXISTS `users_assets` (
     `assigned_datetime`         DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
     `assigned_by_analyst_id`    INT NULL,
     `notes`                     VARCHAR(500) NULL,
+    `expected_return_date`      DATE NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_user_asset` (`user_id`, `asset_id`),
     CONSTRAINT `fk_users_assets_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
     CONSTRAINT `fk_users_assets_analyst` FOREIGN KEY (`assigned_by_analyst_id`) REFERENCES `analysts` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Check-in / check-out custody trail. One row per checkout (assign) and checkin
+-- (unassign) event, with the user name snapshotted so history survives a user
+-- being deleted. expected_return_date carries the due-back date at checkout.
+CREATE TABLE IF NOT EXISTS `asset_checkout_log` (
+    `id`                    INT NOT NULL AUTO_INCREMENT,
+    `asset_id`              INT NOT NULL,
+    `user_id`               INT NULL,
+    `user_name`             VARCHAR(150) NULL,
+    `action`                VARCHAR(10) NOT NULL,
+    `expected_return_date`  DATE NULL,
+    `analyst_id`            INT NULL,
+    `notes`                 VARCHAR(500) NULL,
+    `action_datetime`       DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_acl_asset` (`asset_id`),
+    CONSTRAINT `fk_acl_asset` FOREIGN KEY (`asset_id`) REFERENCES `assets` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `asset_history` (

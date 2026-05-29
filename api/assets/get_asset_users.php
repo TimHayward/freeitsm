@@ -45,6 +45,7 @@ try {
                 ua.id as assignment_id,
                 ua.user_id,
                 ua.assigned_datetime,
+                ua.expected_return_date,
                 ua.notes,
                 u.display_name,
                 u.email,

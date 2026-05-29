@@ -560,6 +560,8 @@ The primary module. Three-panel Outlook-style interface.
 IT asset management with vCenter integration.
 
 - **Assets tab**: Searchable asset list with user assignments (many-to-many)
+- **Check-in / check-out**: assigning a user records a check-out (with an optional expected return date shown as "Due back"); removing them records a check-in. A **Custody** button on the asset opens the full check-out/check-in trail (who held it, when, due-back date, which analyst actioned it), stored in `asset_checkout_log`
+- **Location, procurement & warranty**: each asset can be placed in the location hierarchy and carry purchase date, cost, supplier, order number and warranty expiry — all editable inline on the detail panel and shown in the table; every change is logged to asset history
 - **Table view** (`table.php`): Full-screen spreadsheet-style alternative to the split-pane Assets tab. Excel-style per-column tickbox filters (drop down from any header, shows the distinct values in the current view and counts), click-to-sort on every column, global search across visible columns, and a Columns drawer to show/hide and drag-reorder. Layout (visible columns, column order, sort) persists per analyst via `user_preferences`. Exports the current view to CSV and to landscape A4 PDF (selectable text, via jsPDF + autotable — same approach as the morning-checks export). Click any row to jump to that asset's detail in the split-pane view
 - **Servers tab** (`servers/`): Virtual machine inventory synced from VMware vCenter REST API
   - Displays VM name, OS, IP, host, cluster, CPU, memory, disk

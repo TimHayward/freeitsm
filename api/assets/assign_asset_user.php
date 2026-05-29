@@ -22,6 +22,7 @@ $assetId = $data['asset_id'] ?? null;
 $userId = $data['user_id'] ?? null;
 $notes = $data['notes'] ?? null;
 $previousUserId = $data['previous_user_id'] ?? null;
+$expectedReturn = (isset($data['expected_return_date']) && $data['expected_return_date'] !== '') ? $data['expected_return_date'] : null;
 
 if (!$assetId || !$userId) {
     echo json_encode(['success' => false, 'error' => 'Asset ID and User ID are required']);
@@ -61,11 +62,19 @@ try {
     $userName = $userRow ? $userRow['display_name'] : $userId;
 
     // Insert the assignment
-    $sql = "INSERT INTO users_assets (asset_id, user_id, assigned_by_analyst_id, notes, assigned_datetime)
-            VALUES (?, ?, ?, ?, UTC_TIMESTAMP())";
+    $sql = "INSERT INTO users_assets (asset_id, user_id, assigned_by_analyst_id, notes, expected_return_date, assigned_datetime)
+            VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP())";
 
     $stmt = $conn->prepare($sql);
-    $stmt->execute([$assetId, $userId, $_SESSION['analyst_id'], $notes]);
+    $stmt->execute([$assetId, $userId, $_SESSION['analyst_id'], $notes, $expectedReturn]);
+
+    // Record the check-out in the custody trail (best-effort; the table may not
+    // exist until DB verification has run).
+    try {
+        $clog = $conn->prepare("INSERT INTO asset_checkout_log (asset_id, user_id, user_name, action, expected_return_date, analyst_id, notes, action_datetime)
+                                VALUES (?, ?, ?, 'checkout', ?, ?, ?, UTC_TIMESTAMP())");
+        $clog->execute([$assetId, $userId, $userName, $expectedReturn, $_SESSION['analyst_id'], $notes]);
+    } catch (Exception $clogEx) { /* custody log not critical to the assignment */ }
 
     // Log to asset_history
     $oldUserName = null;
