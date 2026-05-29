@@ -464,7 +464,7 @@ $path_prefix = '../';
         }
 
         .user-search-results {
-            max-height: 300px;
+            height: 300px;
             overflow-y: auto;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -922,11 +922,11 @@ $path_prefix = '../';
     <div class="modal" id="assignUserModal">
         <div class="modal-content">
             <div class="modal-header">
-                <span>Assign User to Asset</span>
+                <span>Assign user to asset</span>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Search for User</label>
+                    <label class="form-label">Search for user</label>
                     <input type="text" class="search-box" id="userSearchInput" placeholder="Search by name or email..." oninput="searchUsersForAssign()">
                 </div>
                 <div class="user-search-results" id="userSearchResults">
@@ -939,7 +939,7 @@ $path_prefix = '../';
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeAssignModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="confirmAssignUser()" id="assignBtn" disabled>Assign User</button>
+                <button class="btn btn-primary" onclick="confirmAssignUser()" id="assignBtn" disabled>Assign</button>
             </div>
         </div>
     </div>
