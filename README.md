@@ -1150,6 +1150,7 @@ Controls which modules an analyst can access. No rows = full access to all modul
 - AES-256-GCM encryption for sensitive settings, mailbox credentials, and TOTP secrets with key stored outside web root
 - Bcrypt password hashing (`PASSWORD_DEFAULT`)
 - TOTP multi-factor authentication (RFC 6238) — optional per analyst, enforced at login
+- Single sign-on via OpenID Connect (OIDC) — multiple identity providers (Keycloak, Microsoft Entra, Okta, Google Workspace, Authentik, etc.) configurable side by side, alongside local login (see *Single Sign-On* below)
 - Session-based authentication on all pages and API endpoints
 - PDO prepared statements throughout (SQL injection prevention)
 - Output encoding with `htmlspecialchars()` (XSS prevention)
@@ -1180,6 +1181,15 @@ Controls which modules an analyst can access. No rows = full access to all modul
 - **Nonce**: 96-bit random IV per encryption (same value encrypted twice produces different ciphertext)
 - **Auth tag**: 128-bit — detects any tampering with encrypted data
 - **Prefix**: `ENC:` allows coexistence of encrypted and plaintext values during migration
+
+### Single Sign-On (SSO / OIDC)
+- **Generic OpenID Connect** — one implementation works for any compliant identity provider (Keycloak, Microsoft Entra/Azure AD, Okta, Auth0, Google Workspace, Authentik, …). Configuration is driven by the provider's discovery document (`/.well-known/openid-configuration`), so the admin only supplies a display name, issuer URL, client ID and client secret.
+- **Multiple providers at once** — each provider is a row in `auth_providers` with its own enable switch, so different cohorts of users can be migrated to different IdPs in parallel (e.g. a phased rollout or side-by-side pilots).
+- **Configured under System → Single Sign-On** — add/edit providers (with a discovery *Test* button), copy the redirect URI to register in the IdP, and set two global break-glass switches: a master *Enable single sign-on* kill switch and *Allow local login*.
+- **Login flow** — Authorization Code + PKCE (S256), with `state` (CSRF) and `nonce` (replay) protection. The ID token's signature is validated against the provider's JWKS using the vendored `firebase/php-jwt` library; issuer, audience, nonce and expiry are all checked.
+- **Account mapping** — an IdP identity is matched to an analyst by a stored identity link (`provider`+`subject`) or by verified email. **Just-in-time provisioning** (per-provider toggle) can auto-create the analyst on first login. **Strict isolation**: an analyst may only sign in via the provider they're assigned to, so an SSO login can never silently take over another account.
+- **Break-glass** — local username/password login always remains available as a fallback (and can be force-enabled), and the master switch instantly reverts everyone to local login if an IdP is down or misconfigured. SSO users skip the local TOTP/MFA step — the identity provider owns MFA.
+- **Client secrets** are encrypted at rest (AES-256-GCM) and never returned to the browser.
 
 ---
 

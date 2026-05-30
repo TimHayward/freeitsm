@@ -6,6 +6,10 @@ session_start();
 require_once 'config.php';
 require_once 'includes/functions.php';
 
+// An SSO sign-in attempt that failed bounces back here with a message.
+$sso_error = $_SESSION['sso_error'] ?? null;
+unset($_SESSION['sso_error']);
+
 /**
  * Get a security setting from system_settings (returns string or null)
  */
@@ -571,6 +575,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if ($error): ?>
                 <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
+            <?php if (!empty($sso_error)): ?>
+                <div class="error-message"><?php echo htmlspecialchars($sso_error); ?></div>
+            <?php endif; ?>
 
             <form method="POST" action="" autocomplete="off">
                 <div class="form-group">
@@ -586,6 +593,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="submit" class="login-button">Sign In</button>
             </form>
             <a href="forgot-password.php" class="forgot-link">Forgot password?</a>
+
+            <?php
+            // Single sign-on buttons — shown only when SSO is enabled and at
+            // least one provider is enabled. Each links to the OIDC entry point.
+            $ssoProviders = [];
+            try {
+                $ssoConn = connectToDatabase();
+                $ssoOn = (($ssoConn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'sso_enabled'")->fetchColumn()) ?: '0') === '1';
+                if ($ssoOn) {
+                    $ssoProviders = $ssoConn->query("SELECT id, display_name FROM auth_providers WHERE enabled = 1 ORDER BY sort_order, display_name")->fetchAll(PDO::FETCH_ASSOC);
+                }
+            } catch (Exception $e) { $ssoProviders = []; }
+            ?>
+            <?php if (!empty($ssoProviders)): ?>
+                <div style="display:flex;align-items:center;gap:10px;margin:20px 0 14px;color:#9aa;font-size:12px;">
+                    <span style="flex:1;height:1px;background:#ddd;"></span>or<span style="flex:1;height:1px;background:#ddd;"></span>
+                </div>
+                <?php foreach ($ssoProviders as $p): ?>
+                    <a href="<?php echo htmlspecialchars(BASE_URL . 'api/auth/oidc_login.php?provider=' . (int)$p['id']); ?>"
+                       style="display:block;text-align:center;padding:11px;margin-bottom:8px;border:1px solid #cfd8dc;border-radius:6px;color:#37474f;text-decoration:none;font-weight:600;font-size:14px;background:#fff;">
+                        <?php echo htmlspecialchars($p['display_name']); ?>
+                    </a>
+                <?php endforeach; ?>
+            <?php endif; ?>
         <?php endif; ?>
     </div>
 </body>
