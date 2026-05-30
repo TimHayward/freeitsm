@@ -2,7 +2,8 @@
 /**
  * API: Create or update an SSO / OIDC identity provider.
  * POST JSON { id?, display_name, issuer_url, client_id, client_secret,
- *             scopes, enabled, auto_create_users, default_modules, sort_order }
+ *             scopes, enabled, auto_create_users, require_verified_email,
+ *             default_modules, sort_order }
  *
  * The client_secret is encrypted at rest (AES-256-GCM via encryptValue()).
  * On update, a blank or masked ("****") secret means "leave the stored one
@@ -45,6 +46,7 @@ $scopes          = trim($data['scopes'] ?? '');
 if ($scopes === '') $scopes = 'openid email profile';
 $enabled         = !empty($data['enabled']) ? 1 : 0;
 $autoCreate      = !empty($data['auto_create_users']) ? 1 : 0;
+$requireVerified = !empty($data['require_verified_email']) ? 1 : 0;
 $defaultModules  = isset($data['default_modules']) && trim($data['default_modules']) !== ''
                    ? trim($data['default_modules']) : null;
 $sortOrder       = (int)($data['sort_order'] ?? 0);
@@ -62,23 +64,25 @@ try {
             $stmt = $conn->prepare(
                 "UPDATE auth_providers
                     SET display_name = ?, issuer_url = ?, client_id = ?, scopes = ?,
-                        enabled = ?, auto_create_users = ?, default_modules = ?, sort_order = ?,
+                        enabled = ?, auto_create_users = ?, require_verified_email = ?,
+                        default_modules = ?, sort_order = ?,
                         last_modified_datetime = UTC_TIMESTAMP()
                   WHERE id = ?"
             );
             $stmt->execute([$displayName, $issuerUrl, $clientId, $scopes,
-                            $enabled, $autoCreate, $defaultModules, $sortOrder, $id]);
+                            $enabled, $autoCreate, $requireVerified, $defaultModules, $sortOrder, $id]);
         } else {
             $encSecret = encryptValue($secretInput);
             $stmt = $conn->prepare(
                 "UPDATE auth_providers
                     SET display_name = ?, issuer_url = ?, client_id = ?, client_secret = ?, scopes = ?,
-                        enabled = ?, auto_create_users = ?, default_modules = ?, sort_order = ?,
+                        enabled = ?, auto_create_users = ?, require_verified_email = ?,
+                        default_modules = ?, sort_order = ?,
                         last_modified_datetime = UTC_TIMESTAMP()
                   WHERE id = ?"
             );
             $stmt->execute([$displayName, $issuerUrl, $clientId, $encSecret, $scopes,
-                            $enabled, $autoCreate, $defaultModules, $sortOrder, $id]);
+                            $enabled, $autoCreate, $requireVerified, $defaultModules, $sortOrder, $id]);
         }
         echo json_encode(['success' => true, 'id' => $id]);
 
@@ -89,11 +93,11 @@ try {
         $stmt = $conn->prepare(
             "INSERT INTO auth_providers
                 (display_name, issuer_url, client_id, client_secret, scopes,
-                 enabled, auto_create_users, default_modules, sort_order, protocol)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'oidc')"
+                 enabled, auto_create_users, require_verified_email, default_modules, sort_order, protocol)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'oidc')"
         );
         $stmt->execute([$displayName, $issuerUrl, $clientId, $encSecret, $scopes,
-                        $enabled, $autoCreate, $defaultModules, $sortOrder]);
+                        $enabled, $autoCreate, $requireVerified, $defaultModules, $sortOrder]);
         echo json_encode(['success' => true, 'id' => (int)$conn->lastInsertId()]);
     }
 

@@ -20,7 +20,8 @@ try {
 
     $stmt = $conn->query(
         "SELECT id, display_name, protocol, issuer_url, client_id, client_secret,
-                scopes, enabled, auto_create_users, default_modules, sort_order
+                scopes, enabled, auto_create_users, require_verified_email,
+                default_modules, sort_order
            FROM auth_providers
           ORDER BY sort_order, display_name"
     );
@@ -36,6 +37,7 @@ try {
             'scopes'            => $r['scopes'],
             'enabled'           => (int)$r['enabled'],
             'auto_create_users' => (int)$r['auto_create_users'],
+            'require_verified_email' => (int)$r['require_verified_email'],
             'default_modules'   => $r['default_modules'],
             'sort_order'        => (int)$r['sort_order'],
             // Boolean flag only — the encrypted secret itself never leaves the server.

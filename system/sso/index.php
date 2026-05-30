@@ -202,6 +202,10 @@ $redirectUri = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . BASE_U
                     <input type="checkbox" id="fAutoCreate">
                     <div class="cb-label"><strong>Auto-create users on first login (JIT)</strong><span>Create an analyst automatically the first time someone signs in via this provider. Leave off for tightly controlled pilots where only pre-created users may enter.</span></div>
                 </div>
+                <div class="checkbox-field">
+                    <input type="checkbox" id="fRequireVerified">
+                    <div class="cb-label"><strong>Require a verified-email claim</strong><span>Refuse sign-in unless the provider sends <code>email_verified: true</code>. Leave off for providers that omit the claim entirely (e.g. Okta's org server). An explicit <code>email_verified: false</code> is always refused regardless of this setting. Turn on only for IdPs where users can self-register with unverified addresses.</span></div>
+                </div>
                 <div class="form-field" id="defaultModulesField">
                     <label>Default module access for auto-created users</label>
                     <div class="hint">Comma-separated module keys granted to JIT-created analysts (e.g. <code>tickets, knowledge</code>). <strong>Leave blank and they get full access to every module</strong> — set this for pilots so auto-created users aren't admins.</div>
@@ -296,6 +300,7 @@ $redirectUri = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . BASE_U
         document.getElementById('fScopes').value = p ? (p.scopes || 'openid email profile') : 'openid email profile';
         document.getElementById('fEnabled').checked = p ? !!p.enabled : true;
         document.getElementById('fAutoCreate').checked = p ? !!p.auto_create_users : false;
+        document.getElementById('fRequireVerified').checked = p ? !!p.require_verified_email : false;
         document.getElementById('fDefaultModules').value = p ? (p.default_modules || '') : '';
         const secret = document.getElementById('fClientSecret');
         secret.value = '';
@@ -357,6 +362,7 @@ $redirectUri = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . BASE_U
             scopes: document.getElementById('fScopes').value.trim(),
             enabled: document.getElementById('fEnabled').checked ? 1 : 0,
             auto_create_users: document.getElementById('fAutoCreate').checked ? 1 : 0,
+            require_verified_email: document.getElementById('fRequireVerified').checked ? 1 : 0,
             default_modules: document.getElementById('fDefaultModules').value.trim()
         };
         if (!payload.display_name || !payload.issuer_url || !payload.client_id) {

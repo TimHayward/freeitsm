@@ -65,7 +65,17 @@ try {
     // --- Identity claims ---
     $sub           = $claims['sub'] ?? '';
     $email         = strtolower(trim($claims['email'] ?? ''));
-    $emailVerified = !empty($claims['email_verified']);
+    // email_verified handling. IdPs differ: Keycloak/Entra send the claim
+    // (true/false); Okta's org authorization server omits it entirely.
+    //  - An explicit `false` is ALWAYS rejected.
+    //  - A MISSING claim is accepted by default, but a provider can be set to
+    //    require an explicit verified-email claim (require_verified_email) for
+    //    IdPs that permit unverified self-registration.
+    if (array_key_exists('email_verified', $claims)) {
+        $emailVerified = ($claims['email_verified'] === true || $claims['email_verified'] === 'true');
+    } else {
+        $emailVerified = (int)($provider['require_verified_email'] ?? 0) !== 1;
+    }
     $name          = $claims['name']
                      ?? trim(($claims['given_name'] ?? '') . ' ' . ($claims['family_name'] ?? ''))
                      ?: ($claims['preferred_username'] ?? $email);

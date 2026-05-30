@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS `auth_providers` (
     `scopes`                 VARCHAR(255) NOT NULL DEFAULT 'openid email profile',
     `enabled`                TINYINT(1) NOT NULL DEFAULT 1,
     `auto_create_users`      TINYINT(1) NOT NULL DEFAULT 0,
+    `require_verified_email` TINYINT(1) NOT NULL DEFAULT 0,
     `default_modules`        VARCHAR(500) NULL,
     `sort_order`             INT NOT NULL DEFAULT 0,
     `created_datetime`       DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
