@@ -598,8 +598,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ssoActive = $ssoOn && !empty($ssoProviders);
             // Break-glass: ?local=1 always reveals the local form, even when local login is "off".
             $forceLocal = isset($_GET['local']);
-            // Show the local form up-front unless SSO is leading and local login is switched off.
-            $localVisible = !$ssoActive || $localOn || $forceLocal;
+            // Is local login permitted at all (for the reveal link / email-first fallback)?
+            $localAllowed = $localOn || $forceLocal;
+            // When SSO is leading, tuck the local form away behind a link by default;
+            // only show it up-front when SSO isn't active, or via break-glass.
+            $localVisible = !$ssoActive || $forceLocal;
             $divider = 'display:flex;align-items:center;gap:10px;margin:20px 0 14px;color:#9aa;font-size:12px;';
             ?>
 
@@ -639,7 +642,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
             <a href="forgot-password.php" class="forgot-link">Forgot password?</a>
 
-            <?php if ($ssoActive && !$localVisible): ?>
+            <?php if ($ssoActive && !$localVisible && $localAllowed): ?>
                 <a href="#" id="showLocalLink" class="forgot-link" style="display:block;margin-top:10px;">Sign in with a local account</a>
             <?php endif; ?>
 
@@ -647,6 +650,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <script>
             (function () {
                 var BASE = <?php echo json_encode(BASE_URL); ?>;
+                var localAllowed = <?php echo $localAllowed ? 'true' : 'false'; ?>;
                 var contBtn = document.getElementById('continueBtn');
                 var emailEl = document.getElementById('ssoEmail');
                 var routerErr = document.getElementById('routerError');
@@ -676,7 +680,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             return;
                         }
                     } catch (e) { /* fall through to local */ }
-                    revealLocal(true); // local or unknown email
+                    // local or unknown email
+                    if (localAllowed) {
+                        revealLocal(true);
+                    } else {
+                        routerErr.textContent = 'No single sign-on provider is set up for that email. Please contact your administrator.';
+                        routerErr.style.display = 'block';
+                    }
                     contBtn.disabled = false;
                 }
                 if (contBtn) contBtn.addEventListener('click', resolve);
