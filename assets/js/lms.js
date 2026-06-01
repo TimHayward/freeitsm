@@ -56,20 +56,20 @@ const LMS = (() => {
     function renderCourses() {
         const tbody = document.getElementById('coursesBody');
         if (!courses.length) {
-            tbody.innerHTML = '<tr><td colspan="5" class="lms-empty">No courses uploaded yet</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="lms-empty">' + esc(window.t('lms.courses.empty')) + '</td></tr>';
             return;
         }
         tbody.innerHTML = courses.map(c => {
-            const version = c.scorm_version ? `<span class="scorm-badge">SCORM ${esc(c.scorm_version)}</span>` : '<span style="color:#999;">Unknown</span>';
+            const version = c.scorm_version ? `<span class="scorm-badge">SCORM ${esc(c.scorm_version)}</span>` : `<span style="color:#999;">${esc(window.t('lms.courses.version_unknown'))}</span>`;
             const date = c.created_datetime ? new Date(c.created_datetime).toLocaleDateString() : '';
             return `<tr>
                 <td><strong>${esc(c.title)}</strong>${c.description ? '<br><small style="color:#888;">' + esc(c.description).substring(0, 80) + '</small>' : ''}</td>
                 <td>${version}</td>
                 <td>${date}</td>
-                <td>${c.is_active == 1 ? '<span class="lms-status completed">Active</span>' : '<span class="lms-status not_started">Inactive</span>'}</td>
+                <td>${c.is_active == 1 ? '<span class="lms-status completed">' + esc(window.t('lms.courses.active')) + '</span>' : '<span class="lms-status not_started">' + esc(window.t('lms.courses.inactive')) + '</span>'}</td>
                 <td class="lms-actions">
-                    <a class="table-action-btn" href="player.php?course_id=${c.id}" title="Launch">${ICON_LAUNCH}</a>
-                    <button class="table-action-btn delete" onclick="LMS.deleteCourse(${c.id})" title="Delete">${ICON_DELETE}</button>
+                    <a class="table-action-btn" href="player.php?course_id=${c.id}" title="${esc(window.t('lms.courses.launch'))}">${ICON_LAUNCH}</a>
+                    <button class="table-action-btn delete" onclick="LMS.deleteCourse(${c.id})" title="${esc(window.t('lms.courses.delete'))}">${ICON_DELETE}</button>
                 </td>
             </tr>`;
         }).join('');
@@ -95,7 +95,7 @@ const LMS = (() => {
         formData.append('file', document.getElementById('courseFile').files[0]);
 
         document.getElementById('uploadProgress').style.display = '';
-        document.getElementById('uploadStatus').textContent = 'Uploading...';
+        document.getElementById('uploadStatus').textContent = window.t('lms.upload_modal.uploading');
 
         try {
             const xhr = new XMLHttpRequest();
@@ -103,7 +103,7 @@ const LMS = (() => {
                 if (e.lengthComputable) {
                     const pct = Math.round((e.loaded / e.total) * 100);
                     document.getElementById('uploadBar').style.width = pct + '%';
-                    document.getElementById('uploadStatus').textContent = pct + '% uploaded';
+                    document.getElementById('uploadStatus').textContent = window.t('lms.upload_modal.percent_uploaded', { pct: pct });
                 }
             });
 
@@ -118,8 +118,8 @@ const LMS = (() => {
             });
 
             if (result.success) {
-                document.getElementById('uploadStatus').textContent = 'Done! SCORM ' + (result.scorm_version || '?') + ' detected.';
-                showToast('Course uploaded', 'success');
+                document.getElementById('uploadStatus').textContent = window.t('lms.upload_modal.done', { version: result.scorm_version || '?' });
+                showToast(window.t('lms.toast.course_uploaded'), 'success');
                 setTimeout(() => {
                     closeModal('uploadModal');
                     loadCourses();
@@ -129,13 +129,13 @@ const LMS = (() => {
                 btn.disabled = false;
             }
         } catch (e) {
-            showToast('Upload failed', 'error');
+            showToast(window.t('lms.toast.upload_failed'), 'error');
             btn.disabled = false;
         }
     }
 
     async function deleteCourse(id) {
-        if (!(await showConfirm({ title: 'Delete', message: 'Delete this course?', okLabel: 'Delete', okClass: 'danger' }))) return;
+        if (!(await showConfirm({ title: window.t('lms.confirm.delete_title'), message: window.t('lms.confirm.delete_course'), okLabel: window.t('lms.confirm.ok_delete'), okClass: 'danger' }))) return;
         try {
             const r = await fetch(API_BASE + 'course.php', {
                 method: 'POST',
@@ -143,9 +143,9 @@ const LMS = (() => {
                 body: JSON.stringify({ id, _method: 'DELETE' })
             });
             const d = await r.json();
-            if (d.success) { showToast('Deleted', 'success'); loadCourses(); }
+            if (d.success) { showToast(window.t('lms.toast.deleted'), 'success'); loadCourses(); }
             else showToast(d.error, 'error');
-        } catch (e) { showToast('Failed to delete', 'error'); }
+        } catch (e) { showToast(window.t('lms.toast.delete_failed'), 'error'); }
     }
 
     // =========================================================
@@ -165,18 +165,18 @@ const LMS = (() => {
     function renderGroups() {
         const tbody = document.getElementById('groupsBody');
         if (!groups.length) {
-            tbody.innerHTML = '<tr><td colspan="4" class="lms-empty">No learning groups created yet</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="lms-empty">' + esc(window.t('lms.groups.empty')) + '</td></tr>';
             return;
         }
         tbody.innerHTML = groups.map(g => {
-            const members = (g.members || []).map(m => esc(m.full_name)).join(', ') || '<em style="color:#999;">No members</em>';
+            const members = (g.members || []).map(m => esc(m.full_name)).join(', ') || `<em style="color:#999;">${esc(window.t('lms.groups.no_members'))}</em>`;
             return `<tr>
                 <td><strong>${esc(g.name)}</strong></td>
                 <td>${esc(g.description || '')}</td>
                 <td>${members}</td>
                 <td class="lms-actions">
-                    <button class="table-action-btn" onclick="LMS.editGroup(${g.id})" title="Edit">${ICON_EDIT}</button>
-                    <button class="table-action-btn delete" onclick="LMS.deleteGroup(${g.id})" title="Delete">${ICON_DELETE}</button>
+                    <button class="table-action-btn" onclick="LMS.editGroup(${g.id})" title="${esc(window.t('lms.groups.edit'))}">${ICON_EDIT}</button>
+                    <button class="table-action-btn delete" onclick="LMS.deleteGroup(${g.id})" title="${esc(window.t('lms.groups.delete'))}">${ICON_DELETE}</button>
                 </td>
             </tr>`;
         }).join('');
@@ -191,7 +191,7 @@ const LMS = (() => {
     }
 
     function openGroupModal(group = null) {
-        document.getElementById('groupModalTitle').textContent = group ? 'Edit Group' : 'New Group';
+        document.getElementById('groupModalTitle').textContent = group ? window.t('lms.group_modal.title_edit') : window.t('lms.group_modal.title_new');
         document.getElementById('groupId').value = group ? group.id : '';
         document.getElementById('groupName').value = group ? group.name : '';
         document.getElementById('groupDescription').value = group ? (group.description || '') : '';
@@ -241,17 +241,17 @@ const LMS = (() => {
             }
             const d = await r.json();
             if (d.success) {
-                showToast('Saved', 'success');
+                showToast(window.t('lms.toast.saved'), 'success');
                 closeModal('groupModal');
                 loadGroups();
             } else {
                 showToast(d.error, 'error');
             }
-        } catch (e) { showToast('Failed to save', 'error'); }
+        } catch (e) { showToast(window.t('lms.toast.save_failed'), 'error'); }
     }
 
     async function deleteGroup(id) {
-        if (!(await showConfirm({ title: 'Delete', message: 'Delete this group?', okLabel: 'Delete', okClass: 'danger' }))) return;
+        if (!(await showConfirm({ title: window.t('lms.confirm.delete_title'), message: window.t('lms.confirm.delete_group'), okLabel: window.t('lms.confirm.ok_delete'), okClass: 'danger' }))) return;
         try {
             const r = await fetch(API_BASE + 'group.php', {
                 method: 'POST',
@@ -259,8 +259,8 @@ const LMS = (() => {
                 body: JSON.stringify({ id, _method: 'DELETE' })
             });
             const d = await r.json();
-            if (d.success) { showToast('Deleted', 'success'); loadGroups(); }
-        } catch (e) { showToast('Failed', 'error'); }
+            if (d.success) { showToast(window.t('lms.toast.deleted'), 'success'); loadGroups(); }
+        } catch (e) { showToast(window.t('lms.toast.failed'), 'error'); }
     }
 
     // =========================================================
@@ -280,18 +280,18 @@ const LMS = (() => {
     function renderAssignments() {
         const tbody = document.getElementById('assignmentsBody');
         if (!assignments.length) {
-            tbody.innerHTML = '<tr><td colspan="5" class="lms-empty">No courses assigned yet</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="lms-empty">' + esc(window.t('lms.assignments.empty')) + '</td></tr>';
             return;
         }
         tbody.innerHTML = assignments.map(a => {
-            const deadline = a.deadline ? new Date(a.deadline).toLocaleDateString() : '<em style="color:#999;">None</em>';
+            const deadline = a.deadline ? new Date(a.deadline).toLocaleDateString() : `<em style="color:#999;">${esc(window.t('lms.assignments.no_deadline'))}</em>`;
             return `<tr>
                 <td>${esc(a.course_title)}</td>
                 <td>${esc(a.group_name)}</td>
                 <td>${deadline}</td>
                 <td>${esc(a.assigned_by_name || '')}</td>
                 <td class="lms-actions">
-                    <button class="table-action-btn delete" onclick="LMS.deleteAssignment(${a.id})" title="Delete">${ICON_DELETE}</button>
+                    <button class="table-action-btn delete" onclick="LMS.deleteAssignment(${a.id})" title="${esc(window.t('lms.assignments.delete'))}">${ICON_DELETE}</button>
                 </td>
             </tr>`;
         }).join('');
@@ -303,11 +303,11 @@ const LMS = (() => {
         if (!groups.length) await loadGroups();
 
         const courseSelect = document.getElementById('assignCourse');
-        courseSelect.innerHTML = '<option value="">Select course...</option>' +
+        courseSelect.innerHTML = '<option value="">' + esc(window.t('lms.assign_modal.select_course')) + '</option>' +
             courses.map(c => `<option value="${c.id}">${esc(c.title)}</option>`).join('');
 
         const groupSelect = document.getElementById('assignGroup');
-        groupSelect.innerHTML = '<option value="">Select group...</option>' +
+        groupSelect.innerHTML = '<option value="">' + esc(window.t('lms.assign_modal.select_group')) + '</option>' +
             groups.map(g => `<option value="${g.id}">${esc(g.name)}</option>`).join('');
 
         document.getElementById('assignDeadline').value = '';
@@ -330,17 +330,17 @@ const LMS = (() => {
             });
             const d = await r.json();
             if (d.success) {
-                showToast('Assigned', 'success');
+                showToast(window.t('lms.toast.assigned'), 'success');
                 closeModal('assignModal');
                 loadAssignments();
             } else {
                 showToast(d.error, 'error');
             }
-        } catch (e) { showToast('Failed', 'error'); }
+        } catch (e) { showToast(window.t('lms.toast.failed'), 'error'); }
     }
 
     async function deleteAssignment(id) {
-        if (!(await showConfirm({ title: 'Delete', message: 'Remove this assignment?', okLabel: 'Delete', okClass: 'danger' }))) return;
+        if (!(await showConfirm({ title: window.t('lms.confirm.delete_title'), message: window.t('lms.confirm.remove_assignment'), okLabel: window.t('lms.confirm.ok_delete'), okClass: 'danger' }))) return;
         try {
             const r = await fetch(API_BASE + 'assignment.php', {
                 method: 'POST',
@@ -348,8 +348,8 @@ const LMS = (() => {
                 body: JSON.stringify({ id, _method: 'DELETE' })
             });
             const d = await r.json();
-            if (d.success) { showToast('Removed', 'success'); loadAssignments(); }
-        } catch (e) { showToast('Failed', 'error'); }
+            if (d.success) { showToast(window.t('lms.toast.removed'), 'success'); loadAssignments(); }
+        } catch (e) { showToast(window.t('lms.toast.failed'), 'error'); }
     }
 
     // =========================================================
@@ -362,12 +362,12 @@ const LMS = (() => {
 
         const fc = document.getElementById('filterCourse');
         if (fc.options.length <= 1) {
-            fc.innerHTML = '<option value="">All courses</option>' +
+            fc.innerHTML = '<option value="">' + esc(window.t('lms.progress.all_courses')) + '</option>' +
                 courses.map(c => `<option value="${c.id}">${esc(c.title)}</option>`).join('');
         }
         const fg = document.getElementById('filterGroup');
         if (fg.options.length <= 1) {
-            fg.innerHTML = '<option value="">All groups</option>' +
+            fg.innerHTML = '<option value="">' + esc(window.t('lms.progress.all_groups')) + '</option>' +
                 groups.map(g => `<option value="${g.id}">${esc(g.name)}</option>`).join('');
         }
 
@@ -389,15 +389,15 @@ const LMS = (() => {
     function renderProgress(data) {
         const tbody = document.getElementById('progressBody');
         if (!data.length) {
-            tbody.innerHTML = '<tr><td colspan="8" class="lms-empty">No progress data found</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="lms-empty">' + esc(window.t('lms.progress.empty')) + '</td></tr>';
             return;
         }
         tbody.innerHTML = data.map(row => {
             let statusClass = row.status;
-            let statusLabel = row.status.replace('_', ' ');
+            let statusLabel = statusText(row.status);
             if (row.is_overdue) {
                 statusClass = 'overdue';
-                statusLabel = 'Overdue';
+                statusLabel = window.t('lms.status.overdue');
             }
 
             const score = row.score_raw !== null ? row.score_raw + (row.score_max ? '/' + row.score_max : '') : '';
@@ -406,7 +406,7 @@ const LMS = (() => {
             const trStyle = row.is_overdue ? ' style="background: #fff5f5;"' : '';
 
             const viewBtn = row.status !== 'not_started'
-                ? `<button class="table-action-btn" onclick="LMS.viewLearnerData(${row.analyst_id}, ${row.course_id})" title="View">${ICON_VIEW}</button>`
+                ? `<button class="table-action-btn" onclick="LMS.viewLearnerData(${row.analyst_id}, ${row.course_id})" title="${esc(window.t('lms.progress.view'))}">${ICON_VIEW}</button>`
                 : '';
 
             return `<tr${trStyle}>
@@ -427,7 +427,7 @@ const LMS = (() => {
     // =========================================================
     async function viewLearnerData(analystId, courseId) {
         const body = document.getElementById('learnerDataBody');
-        body.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">Loading...</div>';
+        body.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">' + esc(window.t('lms.learner_modal.loading')) + '</div>';
         openModal('learnerDataModal');
 
         try {
@@ -444,21 +444,21 @@ const LMS = (() => {
             let html = '';
 
             // Summary cards
-            const statusLabel = (p.status || 'not_started').replace('_', ' ');
+            const statusLabel = statusText(p.status || 'not_started');
             const scoreDisplay = p.score_raw !== null ? p.score_raw + (p.score_max ? ' / ' + p.score_max : '') : '—';
             html += `<div class="ld-summary">
-                <div class="ld-stat"><div class="ld-stat-value"><span class="lms-status ${p.status}">${statusLabel}</span></div><div class="ld-stat-label">Status</div></div>
-                <div class="ld-stat"><div class="ld-stat-value">${esc(scoreDisplay)}</div><div class="ld-stat-label">Score</div></div>
-                <div class="ld-stat"><div class="ld-stat-value">${p.attempt_count || 0}</div><div class="ld-stat-label">Attempts</div></div>
-                <div class="ld-stat"><div class="ld-stat-value">${formatTime(p.total_time)}</div><div class="ld-stat-label">Time Spent</div></div>
-                <div class="ld-stat"><div class="ld-stat-value">${p.first_access ? new Date(p.first_access).toLocaleDateString() : '—'}</div><div class="ld-stat-label">First Access</div></div>
-                <div class="ld-stat"><div class="ld-stat-value">${p.last_access ? new Date(p.last_access).toLocaleDateString() : '—'}</div><div class="ld-stat-label">Last Access</div></div>
+                <div class="ld-stat"><div class="ld-stat-value"><span class="lms-status ${p.status}">${statusLabel}</span></div><div class="ld-stat-label">${esc(window.t('lms.learner_modal.stat_status'))}</div></div>
+                <div class="ld-stat"><div class="ld-stat-value">${esc(scoreDisplay)}</div><div class="ld-stat-label">${esc(window.t('lms.learner_modal.stat_score'))}</div></div>
+                <div class="ld-stat"><div class="ld-stat-value">${p.attempt_count || 0}</div><div class="ld-stat-label">${esc(window.t('lms.learner_modal.stat_attempts'))}</div></div>
+                <div class="ld-stat"><div class="ld-stat-value">${formatTime(p.total_time)}</div><div class="ld-stat-label">${esc(window.t('lms.learner_modal.stat_time_spent'))}</div></div>
+                <div class="ld-stat"><div class="ld-stat-value">${p.first_access ? new Date(p.first_access).toLocaleDateString() : '—'}</div><div class="ld-stat-label">${esc(window.t('lms.learner_modal.stat_first_access'))}</div></div>
+                <div class="ld-stat"><div class="ld-stat-value">${p.last_access ? new Date(p.last_access).toLocaleDateString() : '—'}</div><div class="ld-stat-label">${esc(window.t('lms.learner_modal.stat_last_access'))}</div></div>
             </div>`;
 
             // Interactions (quiz responses)
             if (d.interactions.length > 0) {
                 html += `<div class="ld-section">
-                    <div class="ld-section-title">Responses <span class="ld-count">${d.interactions.length}</span></div>`;
+                    <div class="ld-section-title">${esc(window.t('lms.learner_modal.responses'))} <span class="ld-count">${d.interactions.length}</span></div>`;
 
                 d.interactions.forEach((ix, i) => {
                     const result = ix.result || '';
@@ -468,16 +468,16 @@ const LMS = (() => {
 
                     html += `<div class="ld-interaction">
                         <div class="ld-interaction-header">
-                            <span class="ld-interaction-id">${esc(ix.id || 'Question ' + (i + 1))}</span>
+                            <span class="ld-interaction-id">${esc(ix.id || window.t('lms.learner_modal.question_n', { n: i + 1 }))}</span>
                             ${result ? '<span class="ld-result ' + resultClass + '">' + esc(result) + '</span>' : ''}
                         </div>`;
 
-                    if (ix.description) html += `<div class="ld-field"><span class="ld-field-label">Question</span><span class="ld-field-value">${esc(ix.description)}</span></div>`;
-                    if (ix.type) html += `<div class="ld-field"><span class="ld-field-label">Type</span><span class="ld-field-value">${esc(ix.type)}</span></div>`;
-                    if (ix.learner_response || ix.student_response) html += `<div class="ld-field"><span class="ld-field-label">Response</span><span class="ld-field-value">${esc(ix.learner_response || ix.student_response)}</span></div>`;
-                    if (ix.correct_responses) html += `<div class="ld-field"><span class="ld-field-label">Correct Answer</span><span class="ld-field-value">${esc(ix.correct_responses)}</span></div>`;
-                    if (ix.weighting) html += `<div class="ld-field"><span class="ld-field-label">Weight</span><span class="ld-field-value">${esc(ix.weighting)}</span></div>`;
-                    if (ix.latency) html += `<div class="ld-field"><span class="ld-field-label">Time Taken</span><span class="ld-field-value">${esc(ix.latency)}</span></div>`;
+                    if (ix.description) html += `<div class="ld-field"><span class="ld-field-label">${esc(window.t('lms.learner_modal.field_question'))}</span><span class="ld-field-value">${esc(ix.description)}</span></div>`;
+                    if (ix.type) html += `<div class="ld-field"><span class="ld-field-label">${esc(window.t('lms.learner_modal.field_type'))}</span><span class="ld-field-value">${esc(ix.type)}</span></div>`;
+                    if (ix.learner_response || ix.student_response) html += `<div class="ld-field"><span class="ld-field-label">${esc(window.t('lms.learner_modal.field_response'))}</span><span class="ld-field-value">${esc(ix.learner_response || ix.student_response)}</span></div>`;
+                    if (ix.correct_responses) html += `<div class="ld-field"><span class="ld-field-label">${esc(window.t('lms.learner_modal.field_correct'))}</span><span class="ld-field-value">${esc(ix.correct_responses)}</span></div>`;
+                    if (ix.weighting) html += `<div class="ld-field"><span class="ld-field-label">${esc(window.t('lms.learner_modal.field_weight'))}</span><span class="ld-field-value">${esc(ix.weighting)}</span></div>`;
+                    if (ix.latency) html += `<div class="ld-field"><span class="ld-field-label">${esc(window.t('lms.learner_modal.field_time_taken'))}</span><span class="ld-field-value">${esc(ix.latency)}</span></div>`;
 
                     html += '</div>';
                 });
@@ -488,16 +488,16 @@ const LMS = (() => {
             // Objectives
             if (d.objectives.length > 0) {
                 html += `<div class="ld-section">
-                    <div class="ld-section-title">Objectives <span class="ld-count">${d.objectives.length}</span></div>`;
+                    <div class="ld-section-title">${esc(window.t('lms.learner_modal.objectives'))} <span class="ld-count">${d.objectives.length}</span></div>`;
                 d.objectives.forEach(obj => {
                     const objStatus = obj.status || obj.completion_status || '';
                     html += `<div class="ld-interaction">
                         <div class="ld-interaction-header">
-                            <span class="ld-interaction-id">${esc(obj.id || 'Objective')}</span>
+                            <span class="ld-interaction-id">${esc(obj.id || window.t('lms.learner_modal.objective'))}</span>
                             ${objStatus ? '<span class="lms-status ' + objStatus + '">' + esc(objStatus) + '</span>' : ''}
                         </div>`;
-                    if (obj.description) html += `<div class="ld-field"><span class="ld-field-label">Description</span><span class="ld-field-value">${esc(obj.description)}</span></div>`;
-                    if (obj.score_raw) html += `<div class="ld-field"><span class="ld-field-label">Score</span><span class="ld-field-value">${esc(obj.score_raw)}${obj.score_max ? ' / ' + esc(obj.score_max) : ''}</span></div>`;
+                    if (obj.description) html += `<div class="ld-field"><span class="ld-field-label">${esc(window.t('lms.learner_modal.field_description'))}</span><span class="ld-field-value">${esc(obj.description)}</span></div>`;
+                    if (obj.score_raw) html += `<div class="ld-field"><span class="ld-field-label">${esc(window.t('lms.learner_modal.field_score'))}</span><span class="ld-field-value">${esc(obj.score_raw)}${obj.score_max ? ' / ' + esc(obj.score_max) : ''}</span></div>`;
                     html += '</div>';
                 });
                 html += '</div>';
@@ -506,7 +506,7 @@ const LMS = (() => {
             // Suspend data
             if (d.suspend_data_raw) {
                 html += `<div class="ld-section">
-                    <div class="ld-section-title">Learner Data (suspend_data)</div>`;
+                    <div class="ld-section-title">${esc(window.t('lms.learner_modal.suspend_data'))}</div>`;
 
                 if (d.suspend_data_decoded) {
                     html += '<div class="ld-suspend ld-suspend-json">' + formatJson(d.suspend_data_decoded) + '</div>';
@@ -514,7 +514,7 @@ const LMS = (() => {
                     // Try to detect and format common patterns
                     const raw = d.suspend_data_raw;
                     if (raw.length > 2000) {
-                        html += '<div class="ld-suspend">' + esc(raw.substring(0, 2000)) + '... (' + raw.length + ' chars total)</div>';
+                        html += '<div class="ld-suspend">' + window.t('lms.learner_modal.suspend_truncated', { shown: esc(raw.substring(0, 2000)), total: raw.length }) + '</div>';
                     } else {
                         html += '<div class="ld-suspend">' + esc(raw) + '</div>';
                     }
@@ -525,7 +525,7 @@ const LMS = (() => {
             // All CMI data (raw key-value pairs)
             if (d.general.length > 0) {
                 html += `<div class="ld-section">
-                    <div class="ld-section-title">All Data Elements <span class="ld-count">${d.general.length}</span></div>
+                    <div class="ld-section-title">${esc(window.t('lms.learner_modal.all_elements'))} <span class="ld-count">${d.general.length}</span></div>
                     <table class="ld-kv-table">`;
                 d.general.forEach(g => {
                     const val = g.value || '';
@@ -536,13 +536,13 @@ const LMS = (() => {
             }
 
             if (!d.interactions.length && !d.objectives.length && !d.suspend_data_raw && !d.general.length) {
-                html += '<div style="text-align:center; padding:30px; color:#999;">No detailed data recorded by this course yet.</div>';
+                html += '<div style="text-align:center; padding:30px; color:#999;">' + esc(window.t('lms.learner_modal.no_data')) + '</div>';
             }
 
             body.innerHTML = html;
 
         } catch (e) {
-            body.innerHTML = '<div style="color:#c33; padding:20px;">Failed to load learner data.</div>';
+            body.innerHTML = '<div style="color:#c33; padding:20px;">' + esc(window.t('lms.learner_modal.load_failed')) + '</div>';
         }
     }
 
@@ -605,6 +605,15 @@ const LMS = (() => {
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
+    }
+
+    // Translate a normalised LMS status code to its display label. Unknown
+    // codes (e.g. SCORM-reported values without a key) fall back to a
+    // prettified version of the raw code.
+    function statusText(status) {
+        const known = ['not_started', 'incomplete', 'completed', 'passed', 'failed', 'overdue'];
+        if (known.includes(status)) return window.t('lms.status.' + status);
+        return (status || '').replace('_', ' ');
     }
 
     // Boot

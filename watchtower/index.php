@@ -5,17 +5,22 @@
  */
 session_start();
 require_once '../config.php';
+require_once '../includes/i18n.php';
+I18n::initFromSession();
 
 $current_page = 'dashboard';
 $path_prefix = '../';
+$translationNamespaces = ['common', 'watchtower'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Watchtower</title>
+    <title>Service Desk - <?php echo htmlspecialchars(t('watchtower.title')); ?></title>
     <link rel="stylesheet" href="../assets/css/inbox.css">
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../assets/js/i18n.js"></script>
     <style>
         /* ── Watchtower Layout ──────────────────────────────────────────────── */
         .wt-container {
@@ -286,7 +291,7 @@ $path_prefix = '../';
 
     <div class="wt-container">
         <div class="wt-top-bar">
-            <div class="wt-title">Attention Overview</div>
+            <div class="wt-title"><?php echo htmlspecialchars(t('watchtower.dashboard.heading')); ?></div>
             <div class="wt-refresh-info">
                 <span id="wtLastRefresh"></span>
                 <button class="wt-refresh-btn" id="wtRefreshBtn" onclick="loadDashboard()">
@@ -294,7 +299,7 @@ $path_prefix = '../';
                         <polyline points="23 4 23 10 17 10"></polyline>
                         <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
                     </svg>
-                    Refresh
+                    <?php echo htmlspecialchars(t('watchtower.dashboard.refresh')); ?>
                 </button>
             </div>
         </div>
@@ -307,7 +312,7 @@ $path_prefix = '../';
                         <div class="wt-card-icon" style="background:#00acc1;">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                         </div>
-                        <div class="wt-card-name"><a href="../morning-checks/">Morning Checks</a></div>
+                        <div class="wt-card-name"><a href="../morning-checks/"><?php echo htmlspecialchars(t('watchtower.cards.morning_checks')); ?></a></div>
                     </div>
                     <div class="wt-status-dot" id="wtMcDot"></div>
                 </div>
@@ -321,7 +326,7 @@ $path_prefix = '../';
                         <div class="wt-card-icon" style="background:#0078d4;">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>
                         </div>
-                        <div class="wt-card-name"><a href="../tickets/">Tickets</a></div>
+                        <div class="wt-card-name"><a href="../tickets/"><?php echo htmlspecialchars(t('watchtower.cards.tickets')); ?></a></div>
                     </div>
                     <div class="wt-status-dot" id="wtTkDot"></div>
                 </div>
@@ -335,7 +340,7 @@ $path_prefix = '../';
                         <div class="wt-card-icon" style="background:#00897b;">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
                         </div>
-                        <div class="wt-card-name"><a href="../change-management/">Changes</a></div>
+                        <div class="wt-card-name"><a href="../change-management/"><?php echo htmlspecialchars(t('watchtower.cards.changes')); ?></a></div>
                     </div>
                     <div class="wt-status-dot" id="wtChDot"></div>
                 </div>
@@ -349,7 +354,7 @@ $path_prefix = '../';
                         <div class="wt-card-icon" style="background:#ef6c00;">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                         </div>
-                        <div class="wt-card-name"><a href="../calendar/">Calendar</a></div>
+                        <div class="wt-card-name"><a href="../calendar/"><?php echo htmlspecialchars(t('watchtower.cards.calendar')); ?></a></div>
                     </div>
                     <div class="wt-status-dot" id="wtCalDot"></div>
                 </div>
@@ -363,7 +368,7 @@ $path_prefix = '../';
                         <div class="wt-card-icon" style="background:#10b981;">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
                         </div>
-                        <div class="wt-card-name"><a href="../service-status/">Service Status</a></div>
+                        <div class="wt-card-name"><a href="../service-status/"><?php echo htmlspecialchars(t('watchtower.cards.service_status')); ?></a></div>
                     </div>
                     <div class="wt-status-dot" id="wtSsDot"></div>
                 </div>
@@ -377,7 +382,7 @@ $path_prefix = '../';
                         <div class="wt-card-icon" style="background:#f59e0b;">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="12" y1="9" x2="8" y2="9"></line></svg>
                         </div>
-                        <div class="wt-card-name"><a href="../contracts/">Contracts</a></div>
+                        <div class="wt-card-name"><a href="../contracts/"><?php echo htmlspecialchars(t('watchtower.cards.contracts')); ?></a></div>
                     </div>
                     <div class="wt-status-dot" id="wtCtDot"></div>
                 </div>
@@ -391,7 +396,7 @@ $path_prefix = '../';
                         <div class="wt-card-icon" style="background:#8764b8;">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                         </div>
-                        <div class="wt-card-name"><a href="../knowledge/">Knowledge</a></div>
+                        <div class="wt-card-name"><a href="../knowledge/"><?php echo htmlspecialchars(t('watchtower.cards.knowledge')); ?></a></div>
                     </div>
                     <div class="wt-status-dot" id="wtKbDot"></div>
                 </div>
@@ -405,7 +410,7 @@ $path_prefix = '../';
                         <div class="wt-card-icon" style="background:#107c10;">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
                         </div>
-                        <div class="wt-card-name"><a href="../asset-management/">Assets</a></div>
+                        <div class="wt-card-name"><a href="../asset-management/"><?php echo htmlspecialchars(t('watchtower.cards.assets')); ?></a></div>
                     </div>
                     <div class="wt-status-dot" id="wtAsDot"></div>
                 </div>
@@ -419,7 +424,7 @@ $path_prefix = '../';
                         <div class="wt-card-icon" style="background:#7c3aed;">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
                         </div>
-                        <div class="wt-card-name"><a href="../tasks/">Tasks</a></div>
+                        <div class="wt-card-name"><a href="../tasks/"><?php echo htmlspecialchars(t('watchtower.cards.tasks')); ?></a></div>
                     </div>
                     <div class="wt-status-dot" id="wtTasksDot"></div>
                 </div>
@@ -473,26 +478,26 @@ $path_prefix = '../';
         }
 
         html += '<div class="wt-metrics">';
-        html += metric(mc.completed_today + '/' + mc.total_checks, 'Done', mc.completed_today >= mc.total_checks ? '#22c55e' : '#f59e0b');
-        html += metric(mc.statuses['OK'] || 0, 'OK', '#22c55e');
-        html += metric(mc.statuses['Warning'] || 0, 'Warn', (mc.statuses['Warning'] || 0) > 0 ? '#f59e0b' : '#94a3b8');
-        html += metric(mc.statuses['Fail'] || 0, 'Fail', (mc.statuses['Fail'] || 0) > 0 ? '#ef4444' : '#94a3b8');
+        html += metric(mc.completed_today + '/' + mc.total_checks, window.t('watchtower.mc.metric_done'), mc.completed_today >= mc.total_checks ? '#22c55e' : '#f59e0b');
+        html += metric(mc.statuses['OK'] || 0, window.t('watchtower.mc.metric_ok'), '#22c55e');
+        html += metric(mc.statuses['Warning'] || 0, window.t('watchtower.mc.metric_warn'), (mc.statuses['Warning'] || 0) > 0 ? '#f59e0b' : '#94a3b8');
+        html += metric(mc.statuses['Fail'] || 0, window.t('watchtower.mc.metric_fail'), (mc.statuses['Fail'] || 0) > 0 ? '#ef4444' : '#94a3b8');
         html += '</div>';
 
         html += '<div class="wt-attention">';
         if (mc.not_started) {
-            html += attentionItem('red', '<span class="wt-attention-bold">Checks not started today</span>');
+            html += attentionItem('red', '<span class="wt-attention-bold">' + window.t('watchtower.mc.not_started') + '</span>');
         } else if (mc.completed_today < mc.total_checks) {
-            html += attentionItem('amber', (mc.total_checks - mc.completed_today) + ' checks still pending');
+            html += attentionItem('amber', window.t('watchtower.mc.pending', { count: mc.total_checks - mc.completed_today }));
         }
         if ((mc.statuses['Fail'] || 0) > 0) {
-            html += attentionItem('red', mc.statuses['Fail'] + ' check(s) failed');
+            html += attentionItem('red', window.t('watchtower.mc.failed', { count: mc.statuses['Fail'] }));
         }
         if ((mc.statuses['Warning'] || 0) > 0) {
-            html += attentionItem('amber', mc.statuses['Warning'] + ' check(s) with warnings');
+            html += attentionItem('amber', window.t('watchtower.mc.warnings', { count: mc.statuses['Warning'] }));
         }
         if (mc.completed_today >= mc.total_checks && mc.total_checks > 0 && !(mc.statuses['Fail'] || 0) && !(mc.statuses['Warning'] || 0)) {
-            html += attentionItem('green', 'All checks completed and passing');
+            html += attentionItem('green', window.t('watchtower.mc.all_passing'));
         }
         html += '</div>';
 
@@ -512,25 +517,25 @@ $path_prefix = '../';
         }
 
         let html = '<div class="wt-metrics">';
-        html += metric(totalOpen, 'Open', '#334155');
-        html += metric(tk.open, 'New', '#3b82f6');
-        html += metric(tk.in_progress, 'Active', '#f59e0b');
-        html += metric(tk.on_hold, 'Hold', '#94a3b8');
+        html += metric(totalOpen, window.t('watchtower.tickets.metric_open'), '#334155');
+        html += metric(tk.open, window.t('watchtower.tickets.metric_new'), '#3b82f6');
+        html += metric(tk.in_progress, window.t('watchtower.tickets.metric_active'), '#f59e0b');
+        html += metric(tk.on_hold, window.t('watchtower.tickets.metric_hold'), '#94a3b8');
         html += '</div>';
 
         html += '<div class="wt-attention">';
         if (tk.urgent_high > 0) {
-            html += attentionItem('red', '<span class="wt-attention-bold">' + tk.urgent_high + '</span> urgent/high priority tickets');
+            html += attentionItem('red', window.t('watchtower.tickets.urgent_high', { count: tk.urgent_high }));
         }
         if (tk.unassigned > 0) {
-            html += attentionItem('amber', '<span class="wt-attention-bold">' + tk.unassigned + '</span> unassigned tickets');
+            html += attentionItem('amber', window.t('watchtower.tickets.unassigned', { count: tk.unassigned }));
         }
         if (pausedTooLong > 0) {
-            const noun = pausedTooLong === 1 ? 'ticket' : 'tickets';
-            html += attentionItem('amber', '<span class="wt-attention-bold">' + pausedTooLong + '</span> ' + noun + ' paused over ' + pausedThreshold + 'h (SLA clock stopped)');
+            const key = pausedTooLong === 1 ? 'watchtower.tickets.paused_one' : 'watchtower.tickets.paused_many';
+            html += attentionItem('amber', window.t(key, { count: pausedTooLong, hours: pausedThreshold }));
         }
         if (tk.urgent_high === 0 && tk.unassigned === 0 && pausedTooLong === 0) {
-            html += attentionItem('green', 'No urgent items');
+            html += attentionItem('green', window.t('watchtower.tickets.all_clear'));
         }
         html += '</div>';
 
@@ -547,23 +552,23 @@ $path_prefix = '../';
         }
 
         let html = '<div class="wt-metrics">';
-        html += metric(ch.upcoming_7d, 'Next 7d', '#334155');
-        html += metric(ch.in_progress_today, 'Active', ch.in_progress_today > 0 ? '#f59e0b' : '#94a3b8');
-        html += metric(ch.unapproved, 'Pending', ch.unapproved > 0 ? '#ef4444' : '#94a3b8');
+        html += metric(ch.upcoming_7d, window.t('watchtower.changes.metric_next_7d'), '#334155');
+        html += metric(ch.in_progress_today, window.t('watchtower.changes.metric_active'), ch.in_progress_today > 0 ? '#f59e0b' : '#94a3b8');
+        html += metric(ch.unapproved, window.t('watchtower.changes.metric_pending'), ch.unapproved > 0 ? '#ef4444' : '#94a3b8');
         html += '</div>';
 
         html += '<div class="wt-attention">';
         if (ch.unapproved > 0) {
-            html += attentionItem('amber', '<span class="wt-attention-bold">' + ch.unapproved + '</span> change(s) awaiting approval');
+            html += attentionItem('amber', window.t('watchtower.changes.awaiting', { count: ch.unapproved }));
         }
         if (ch.in_progress_today > 0) {
-            html += attentionItem('blue', ch.in_progress_today + ' change(s) in progress now');
+            html += attentionItem('blue', window.t('watchtower.changes.in_progress', { count: ch.in_progress_today }));
         }
         if (ch.upcoming_7d > 0) {
-            html += attentionItem('neutral', ch.upcoming_7d + ' change(s) scheduled this week');
+            html += attentionItem('neutral', window.t('watchtower.changes.scheduled', { count: ch.upcoming_7d }));
         }
         if (ch.unapproved === 0 && ch.in_progress_today === 0 && ch.upcoming_7d === 0) {
-            html += attentionItem('green', 'No upcoming changes');
+            html += attentionItem('green', window.t('watchtower.changes.all_clear'));
         }
         html += '</div>';
 
@@ -576,19 +581,19 @@ $path_prefix = '../';
         setDot('wtCalDot', cal.today_count > 0 ? 'amber' : 'green');
 
         let html = '<div class="wt-metrics">';
-        html += metric(cal.today_count, 'Today', cal.today_count > 0 ? '#ef6c00' : '#94a3b8');
-        html += metric(cal.week_count, 'This week', '#334155');
+        html += metric(cal.today_count, window.t('watchtower.calendar.metric_today'), cal.today_count > 0 ? '#ef6c00' : '#94a3b8');
+        html += metric(cal.week_count, window.t('watchtower.calendar.metric_week'), '#334155');
         html += '</div>';
 
         if (cal.today_events && cal.today_events.length > 0) {
             html += '<div class="wt-event-list">';
             cal.today_events.forEach(function(ev) {
-                const time = ev.all_day == 1 ? 'All day' : formatTime(ev.start_datetime);
+                const time = ev.all_day == 1 ? window.t('watchtower.calendar.all_day') : formatTime(ev.start_datetime);
                 html += `<div class="wt-event"><span class="wt-event-time">${time}</span><span class="wt-event-title">${ev.title}</span></div>`;
             });
             html += '</div>';
         } else {
-            html += '<div class="wt-attention">' + attentionItem('green', 'No events today') + '</div>';
+            html += '<div class="wt-attention">' + attentionItem('green', window.t('watchtower.calendar.no_events')) + '</div>';
         }
 
         setBody('wtCalendar', html);
@@ -606,11 +611,11 @@ $path_prefix = '../';
 
         let html = '';
         if (ss.all_operational) {
-            html += '<div class="wt-all-clear"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>All systems operational</div>';
+            html += '<div class="wt-all-clear"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>' + window.t('watchtower.service.all_operational') + '</div>';
         } else {
             html += '<div class="wt-attention">';
             if (ss.active_incidents > 0) {
-                html += attentionItem('red', '<span class="wt-attention-bold">' + ss.active_incidents + '</span> active incident(s)');
+                html += attentionItem('red', window.t('watchtower.service.active_incidents', { count: ss.active_incidents }));
             }
             html += '</div>';
 
@@ -638,20 +643,20 @@ $path_prefix = '../';
         }
 
         let html = '<div class="wt-metrics">';
-        html += metric(ct.expiring_30d, '30 days', ct.expiring_30d > 0 ? '#ef4444' : '#94a3b8');
-        html += metric(ct.expiring_90d, '90 days', ct.expiring_90d > 0 ? '#f59e0b' : '#94a3b8');
-        html += metric(ct.notice_periods_30d, 'Notices', ct.notice_periods_30d > 0 ? '#f59e0b' : '#94a3b8');
+        html += metric(ct.expiring_30d, window.t('watchtower.contracts.metric_30d'), ct.expiring_30d > 0 ? '#ef4444' : '#94a3b8');
+        html += metric(ct.expiring_90d, window.t('watchtower.contracts.metric_90d'), ct.expiring_90d > 0 ? '#f59e0b' : '#94a3b8');
+        html += metric(ct.notice_periods_30d, window.t('watchtower.contracts.metric_notices'), ct.notice_periods_30d > 0 ? '#f59e0b' : '#94a3b8');
         html += '</div>';
 
         html += '<div class="wt-attention">';
         if (ct.expiring_30d > 0) {
-            html += attentionItem('red', '<span class="wt-attention-bold">' + ct.expiring_30d + '</span> contract(s) expiring within 30 days');
+            html += attentionItem('red', window.t('watchtower.contracts.expiring', { count: ct.expiring_30d }));
         }
         if (ct.notice_periods_30d > 0) {
-            html += attentionItem('amber', '<span class="wt-attention-bold">' + ct.notice_periods_30d + '</span> notice period(s) approaching');
+            html += attentionItem('amber', window.t('watchtower.contracts.notices', { count: ct.notice_periods_30d }));
         }
         if (ct.expiring_30d === 0 && ct.expiring_90d === 0 && ct.notice_periods_30d === 0) {
-            html += attentionItem('green', 'No contracts requiring attention');
+            html += attentionItem('green', window.t('watchtower.contracts.all_clear'));
         }
         html += '</div>';
 
@@ -669,12 +674,12 @@ $path_prefix = '../';
 
         let html = '<div class="wt-attention">';
         if (kb.overdue_reviews > 0) {
-            html += attentionItem('amber', '<span class="wt-attention-bold">' + kb.overdue_reviews + '</span> article(s) overdue for review');
+            html += attentionItem('amber', window.t('watchtower.knowledge.overdue', { count: kb.overdue_reviews }));
         }
         html += '</div>';
 
         if (kb.recent_articles && kb.recent_articles.length > 0) {
-            html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px;text-transform:uppercase;letter-spacing:0.3px;">Published this week</div>';
+            html += '<div style="font-size:11px;color:#94a3b8;margin-top:8px;text-transform:uppercase;letter-spacing:0.3px;">' + window.t('watchtower.knowledge.published_week') + '</div>';
             html += '<div class="wt-article-list">';
             kb.recent_articles.forEach(function(art) {
                 html += `<div class="wt-article">${art.title}</div>`;
@@ -682,7 +687,7 @@ $path_prefix = '../';
             html += '</div>';
         } else {
             if (kb.overdue_reviews === 0) {
-                html += '<div class="wt-attention">' + attentionItem('green', 'Knowledge base up to date') + '</div>';
+                html += '<div class="wt-attention">' + attentionItem('green', window.t('watchtower.knowledge.up_to_date')) + '</div>';
             }
         }
 
@@ -702,21 +707,21 @@ $path_prefix = '../';
         }
 
         let html = '<div class="wt-metrics">';
-        html += metric(as.total, 'Total', '#334155');
-        html += metric(as.not_seen_7d, 'Offline', as.not_seen_7d > 0 ? '#f59e0b' : '#94a3b8');
+        html += metric(as.total, window.t('watchtower.assets.metric_total'), '#334155');
+        html += metric(as.not_seen_7d, window.t('watchtower.assets.metric_offline'), as.not_seen_7d > 0 ? '#f59e0b' : '#94a3b8');
         if (as.warranty_show) {
-            html += metric(as.warranty_soon, 'Warranty', as.warranty_soon > 0 ? '#d13438' : '#94a3b8');
+            html += metric(as.warranty_soon, window.t('watchtower.assets.metric_warranty'), as.warranty_soon > 0 ? '#d13438' : '#94a3b8');
         }
         html += '</div>';
 
         html += '<div class="wt-attention">';
         if (warrantyAlert) {
-            html += attentionItem('red', '<span class="wt-attention-bold">' + as.warranty_soon + '</span> asset(s) with warranty expired or expiring within ' + as.warranty_days + ' days');
+            html += attentionItem('red', window.t('watchtower.assets.warranty', { count: as.warranty_soon, days: as.warranty_days }));
         }
         if (as.not_seen_7d > 0) {
-            html += attentionItem('amber', '<span class="wt-attention-bold">' + as.not_seen_7d + '</span> asset(s) not seen in 7+ days');
+            html += attentionItem('amber', window.t('watchtower.assets.offline', { count: as.not_seen_7d }));
         } else if (!warrantyAlert) {
-            html += attentionItem('green', 'All assets recently active');
+            html += attentionItem('green', window.t('watchtower.assets.all_active'));
         }
         html += '</div>';
 
@@ -736,19 +741,19 @@ $path_prefix = '../';
         }
 
         let html = '<div class="wt-metrics">';
-        html += metric(t.todo, 'To Do', '#334155');
-        html += metric(t.in_progress, 'Active', '#0078d4');
+        html += metric(t.todo, window.t('watchtower.tasks.metric_todo'), '#334155');
+        html += metric(t.in_progress, window.t('watchtower.tasks.metric_active'), '#0078d4');
         html += '</div>';
 
         html += '<div class="wt-attention">';
         if (t.overdue > 0) {
-            html += attentionItem('red', '<span class="wt-attention-bold">' + t.overdue + '</span> overdue task(s)');
+            html += attentionItem('red', window.t('watchtower.tasks.overdue', { count: t.overdue }));
         }
         if (t.due_today > 0) {
-            html += attentionItem('amber', '<span class="wt-attention-bold">' + t.due_today + '</span> due today');
+            html += attentionItem('amber', window.t('watchtower.tasks.due_today', { count: t.due_today }));
         }
         if (t.overdue === 0 && t.due_today === 0) {
-            html += attentionItem('green', 'No overdue tasks');
+            html += attentionItem('green', window.t('watchtower.tasks.all_clear'));
         }
         html += '</div>';
 
@@ -780,7 +785,7 @@ $path_prefix = '../';
                 // Update timestamp
                 const now = new Date();
                 document.getElementById('wtLastRefresh').textContent =
-                    'Updated ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    window.t('watchtower.dashboard.updated', { time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
             })
             .catch(err => {
                 console.error('Watchtower fetch error:', err);

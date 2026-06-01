@@ -5,16 +5,21 @@
  */
 session_start();
 require_once '../../config.php';
+require_once '../../includes/i18n.php';
+I18n::initFromSession();
 
 $current_page = 'dashboard';
 $path_prefix = '../../';
+$translationNamespaces = ['common', 'software'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Software Widget Library</title>
+    <title><?php echo htmlspecialchars(t('software.library.page_title')); ?></title>
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../../assets/js/i18n.js"></script>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
     <style>
         .dashboard-page {
@@ -288,15 +293,15 @@ $path_prefix = '../../';
         <div class="library-toolbar-left">
             <a href="./">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                Dashboard
+                <?php echo htmlspecialchars(t('software.library.back')); ?>
             </a>
-            <h2>Widget Library</h2>
+            <h2><?php echo htmlspecialchars(t('software.library.heading')); ?></h2>
         </div>
         <div class="library-toolbar-right">
-            <input type="text" class="search-input" id="searchInput" placeholder="Search widgets..." oninput="filterWidgets()">
+            <input type="text" class="search-input" id="searchInput" placeholder="<?php echo htmlspecialchars(t('software.library.search')); ?>" oninput="filterWidgets()">
             <button class="btn btn-primary" onclick="showNewForm()">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                New
+                <?php echo htmlspecialchars(t('software.library.new')); ?>
             </button>
         </div>
     </div>
@@ -304,47 +309,47 @@ $path_prefix = '../../';
     <div class="library-container">
         <!-- Edit/New panel -->
         <div class="edit-panel" id="editPanel">
-            <h3 id="editPanelTitle">New Widget</h3>
+            <h3 id="editPanelTitle"><?php echo htmlspecialchars(t('software.library.new_widget')); ?></h3>
             <input type="hidden" id="editId">
             <div class="edit-form">
                 <div class="form-group">
-                    <label>Title</label>
-                    <input type="text" id="editTitle" maxlength="100" placeholder="e.g. Chrome Versions">
+                    <label><?php echo htmlspecialchars(t('software.library.field_title')); ?></label>
+                    <input type="text" id="editTitle" maxlength="100" placeholder="<?php echo htmlspecialchars(t('software.library.title_placeholder')); ?>">
                 </div>
                 <div class="form-group">
-                    <label>Chart Type</label>
+                    <label><?php echo htmlspecialchars(t('software.library.field_chart_type')); ?></label>
                     <select id="editChartType">
-                        <option value="bar">Bar</option>
-                        <option value="doughnut">Doughnut</option>
-                        <option value="pie">Pie</option>
+                        <option value="bar"><?php echo htmlspecialchars(t('software.dashboard.chart_bar')); ?></option>
+                        <option value="doughnut"><?php echo htmlspecialchars(t('software.dashboard.chart_doughnut')); ?></option>
+                        <option value="pie"><?php echo htmlspecialchars(t('software.dashboard.chart_pie')); ?></option>
                     </select>
                 </div>
                 <div class="form-group full-width">
-                    <label>Description</label>
-                    <textarea id="editDescription" maxlength="255" placeholder="Brief description of what this widget shows"></textarea>
+                    <label><?php echo htmlspecialchars(t('software.library.field_description')); ?></label>
+                    <textarea id="editDescription" maxlength="255" placeholder="<?php echo htmlspecialchars(t('software.library.description_placeholder')); ?>"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Type</label>
+                    <label><?php echo htmlspecialchars(t('software.library.field_type')); ?></label>
                     <select id="editAggProperty" onchange="onAggChange()">
-                        <option value="version_distribution">Version Distribution</option>
-                        <option value="top_installed">Top Installed</option>
-                        <option value="publisher_distribution">Publisher Distribution</option>
+                        <option value="version_distribution"><?php echo htmlspecialchars(t('software.dashboard.agg_version')); ?></option>
+                        <option value="top_installed"><?php echo htmlspecialchars(t('software.dashboard.agg_top')); ?></option>
+                        <option value="publisher_distribution"><?php echo htmlspecialchars(t('software.dashboard.agg_publisher')); ?></option>
                     </select>
                 </div>
                 <div class="form-group" id="appIdGroup">
-                    <label>Application</label>
+                    <label><?php echo htmlspecialchars(t('software.library.field_application')); ?></label>
                     <select id="editAppId">
-                        <option value="">-- Select --</option>
+                        <option value=""><?php echo htmlspecialchars(t('software.library.select')); ?></option>
                     </select>
                 </div>
                 <div class="form-group checkbox-group" id="excludeGroup" style="display:none;">
                     <input type="checkbox" id="editExcludeComponents" checked>
-                    <label for="editExcludeComponents">Exclude system components</label>
+                    <label for="editExcludeComponents"><?php echo htmlspecialchars(t('software.library.exclude_components')); ?></label>
                 </div>
             </div>
             <div class="edit-panel-actions">
-                <button class="btn btn-primary" onclick="saveWidget()">Save</button>
-                <button class="btn" onclick="closeEditPanel()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveWidget()"><?php echo htmlspecialchars(t('common.save')); ?></button>
+                <button class="btn" onclick="closeEditPanel()"><?php echo htmlspecialchars(t('common.cancel')); ?></button>
             </div>
         </div>
 
@@ -352,16 +357,16 @@ $path_prefix = '../../';
         <table class="widget-table" id="widgetTable">
             <thead>
                 <tr>
-                    <th>Widget</th>
-                    <th>Chart</th>
-                    <th>Type</th>
-                    <th>Application</th>
-                    <th>Actions</th>
+                    <th><?php echo htmlspecialchars(t('software.library.col_widget')); ?></th>
+                    <th><?php echo htmlspecialchars(t('software.library.col_chart')); ?></th>
+                    <th><?php echo htmlspecialchars(t('software.library.col_type')); ?></th>
+                    <th><?php echo htmlspecialchars(t('software.library.col_application')); ?></th>
+                    <th><?php echo htmlspecialchars(t('software.library.col_actions')); ?></th>
                 </tr>
             </thead>
             <tbody id="widgetTableBody"></tbody>
         </table>
-        <div class="no-results" id="noResults" style="display:none;">No widgets match your search</div>
+        <div class="no-results" id="noResults" style="display:none;"><?php echo htmlspecialchars(t('software.library.no_results')); ?></div>
     </div>
 
     </div><!-- /.dashboard-page -->
@@ -374,9 +379,9 @@ $path_prefix = '../../';
         let descriptionManuallyEdited = false;
 
         const AGG_LABELS = {
-            version_distribution: 'Version Distribution',
-            top_installed: 'Top Installed',
-            publisher_distribution: 'Publisher Distribution'
+            version_distribution: window.t('software.dashboard.agg_version'),
+            top_installed: window.t('software.dashboard.agg_top'),
+            publisher_distribution: window.t('software.dashboard.agg_publisher')
         };
 
         async function init() {
@@ -400,7 +405,7 @@ $path_prefix = '../../';
 
         function populateAppDropdown() {
             const sel = document.getElementById('editAppId');
-            sel.innerHTML = '<option value="">-- Select --</option>';
+            sel.innerHTML = '<option value="">' + window.t('software.library.select') + '</option>';
             allApps.forEach(a => {
                 const opt = document.createElement('option');
                 opt.value = a.id;
@@ -434,16 +439,16 @@ $path_prefix = '../../';
                     <td>${escapeHtml(aggLabel)}</td>
                     <td>${escapeHtml(appName)}</td>
                     <td class="actions-cell">
-                        <button class="btn btn-sm btn-primary" onclick="addToDashboard(${w.id})" ${onDash ? 'disabled title="Already on dashboard"' : ''}>
-                            ${onDash ? 'Added' : 'Add'}
+                        <button class="btn btn-sm btn-primary" onclick="addToDashboard(${w.id})" ${onDash ? 'disabled title="' + window.t('software.library.already_on_dashboard') + '"' : ''}>
+                            ${onDash ? window.t('software.library.added') : window.t('software.library.add')}
                         </button>
-                        <button class="btn btn-sm" onclick="editWidget(${w.id})" title="Edit">
+                        <button class="btn btn-sm" onclick="editWidget(${w.id})" title="${window.t('software.library.edit_aria')}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         </button>
-                        <button class="btn btn-sm" onclick="duplicateWidget(${w.id})" title="Duplicate">
+                        <button class="btn btn-sm" onclick="duplicateWidget(${w.id})" title="${window.t('software.library.duplicate_aria')}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteWidget(${w.id}, '${escapeHtml(w.title).replace(/'/g, "\\'")}')" title="Delete">
+                        <button class="btn btn-sm btn-danger" onclick="deleteWidget(${w.id}, '${escapeHtml(w.title).replace(/'/g, "\\'")}')" title="${window.t('software.library.delete_aria')}">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
                     </td>
@@ -469,12 +474,12 @@ $path_prefix = '../../';
             const appName = appSel.selectedOptions[0]?.textContent || '';
             let desc = '';
 
-            if (agg === 'version_distribution' && appName && appName !== '-- Select --') {
-                desc = 'Version distribution for ' + appName.split(' (')[0];
+            if (agg === 'version_distribution' && appName && appName !== window.t('software.library.select')) {
+                desc = window.t('software.library.auto_desc_version', { name: appName.split(' (')[0] });
             } else if (agg === 'top_installed') {
-                desc = 'Most installed applications across all machines';
+                desc = window.t('software.library.auto_desc_top');
             } else if (agg === 'publisher_distribution') {
-                desc = 'Software distribution by publisher';
+                desc = window.t('software.library.auto_desc_publisher');
             }
 
             document.getElementById('editDescription').value = desc;
@@ -482,7 +487,7 @@ $path_prefix = '../../';
 
         // Edit panel
         function showNewForm() {
-            document.getElementById('editPanelTitle').textContent = 'New Widget';
+            document.getElementById('editPanelTitle').textContent = window.t('software.library.new_widget');
             document.getElementById('editId').value = '';
             document.getElementById('editTitle').value = '';
             document.getElementById('editDescription').value = '';
@@ -500,7 +505,7 @@ $path_prefix = '../../';
             const w = allWidgets.find(w => parseInt(w.id) === id);
             if (!w) return;
 
-            document.getElementById('editPanelTitle').textContent = 'Edit Widget';
+            document.getElementById('editPanelTitle').textContent = window.t('software.library.edit_widget');
             document.getElementById('editId').value = w.id;
             document.getElementById('editTitle').value = w.title;
             document.getElementById('editDescription').value = w.description || '';
@@ -529,12 +534,12 @@ $path_prefix = '../../';
             const exclude_system_components = document.getElementById('editExcludeComponents').checked ? 1 : 0;
 
             if (!title) {
-                showToast('Title is required', 'error');
+                showToast(window.t('software.library.title_required'), 'error');
                 return;
             }
 
             if (aggregate_property === 'version_distribution' && !app_id) {
-                showToast('Application is required for version distribution', 'error');
+                showToast(window.t('software.library.app_required'), 'error');
                 return;
             }
 
@@ -547,7 +552,7 @@ $path_prefix = '../../';
                 const data = await res.json();
 
                 if (!data.success) {
-                    showToast(data.error || 'Failed to save', 'error');
+                    showToast(data.error || window.t('software.library.save_failed'), 'error');
                     return;
                 }
 
@@ -560,9 +565,9 @@ $path_prefix = '../../';
 
                 closeEditPanel();
                 renderTable();
-                showToast(id ? 'Widget updated' : 'Widget created', 'success');
+                showToast(id ? window.t('software.library.widget_updated') : window.t('software.library.widget_created'), 'success');
             } catch (err) {
-                showToast('Failed to save widget', 'error');
+                showToast(window.t('software.library.save_widget_failed'), 'error');
             }
         }
 
@@ -575,7 +580,7 @@ $path_prefix = '../../';
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        title: w.title + ' (Copy)',
+                        title: w.title + window.t('software.library.copy_suffix'),
                         description: w.description || '',
                         chart_type: w.chart_type,
                         aggregate_property: w.aggregate_property,
@@ -586,20 +591,20 @@ $path_prefix = '../../';
                 const data = await res.json();
 
                 if (!data.success) {
-                    showToast(data.error || 'Failed to duplicate', 'error');
+                    showToast(data.error || window.t('software.library.duplicate_failed'), 'error');
                     return;
                 }
 
                 allWidgets.push(data.widget);
                 renderTable();
-                showToast('Widget duplicated', 'success');
+                showToast(window.t('software.library.widget_duplicated'), 'success');
             } catch (err) {
-                showToast('Failed to duplicate widget', 'error');
+                showToast(window.t('software.library.duplicate_widget_failed'), 'error');
             }
         }
 
         async function deleteWidget(id, title) {
-            if (!(await showConfirm({ title: 'Delete', message: 'Delete "' + title + '"? This will also remove it from all analyst dashboards.', okLabel: 'Delete', okClass: 'danger' }))) return;
+            if (!(await showConfirm({ title: window.t('software.library.delete_confirm_title'), message: window.t('software.library.delete_confirm', { title: title }), okLabel: window.t('software.library.delete_ok'), okClass: 'danger' }))) return;
 
             try {
                 const res = await fetch(API_BASE + 'delete_software_dashboard_widget.php', {
@@ -610,16 +615,16 @@ $path_prefix = '../../';
                 const data = await res.json();
 
                 if (!data.success) {
-                    showToast(data.error || 'Failed to delete', 'error');
+                    showToast(data.error || window.t('software.library.delete_failed'), 'error');
                     return;
                 }
 
                 allWidgets = allWidgets.filter(w => parseInt(w.id) !== id);
                 dashboardWidgetIds.delete(id);
                 renderTable();
-                showToast('Widget deleted', 'success');
+                showToast(window.t('software.library.widget_deleted'), 'success');
             } catch (err) {
-                showToast('Failed to delete widget', 'error');
+                showToast(window.t('software.library.delete_widget_failed'), 'error');
             }
         }
 
@@ -633,15 +638,15 @@ $path_prefix = '../../';
                 const data = await res.json();
 
                 if (!data.success) {
-                    showToast(data.error || 'Failed to add', 'error');
+                    showToast(data.error || window.t('software.library.add_failed'), 'error');
                     return;
                 }
 
                 dashboardWidgetIds.add(widgetId);
                 renderTable();
-                showToast('Added to dashboard', 'success');
+                showToast(window.t('software.library.added_to_dashboard'), 'success');
             } catch (err) {
-                showToast('Failed to add to dashboard', 'error');
+                showToast(window.t('software.library.add_dashboard_failed'), 'error');
             }
         }
 

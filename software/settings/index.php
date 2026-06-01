@@ -4,16 +4,21 @@
  */
 session_start();
 require_once '../../config.php';
+require_once '../../includes/i18n.php';
+I18n::initFromSession();
 
 $current_page = 'settings';
 $path_prefix = '../../';
+$translationNamespaces = ['common', 'software'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Software Settings</title>
+    <title><?php echo htmlspecialchars(t('software.settings.page_title')); ?></title>
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../../assets/js/i18n.js"></script>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
     <style>
         body { padding-top: 0; }
@@ -351,7 +356,7 @@ $path_prefix = '../../';
 
     <div class="settings-container">
         <div class="tabs">
-            <button class="tab active" data-tab="api-keys" onclick="switchTab('api-keys')">API Keys</button>
+            <button class="tab active" data-tab="api-keys" onclick="switchTab('api-keys')"><?php echo htmlspecialchars(t('software.settings.tab_api_keys')); ?></button>
         </div>
 
         <div class="tab-content active" id="api-keys-tab">
@@ -360,47 +365,47 @@ $path_prefix = '../../';
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
                     </svg>
-                    API Keys
+                    <?php echo htmlspecialchars(t('software.settings.heading')); ?>
                 </h3>
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <input type="text" id="keyLabelInput" placeholder="Label (optional)" maxlength="100"
+                    <input type="text" id="keyLabelInput" placeholder="<?php echo htmlspecialchars(t('software.settings.label_input')); ?>" maxlength="100"
                            style="padding:7px 12px;border:1px solid #ddd;border-radius:4px;font-size:13px;width:180px;">
                     <button class="btn btn-primary" onclick="generateKey()">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
-                        Generate
+                        <?php echo htmlspecialchars(t('software.settings.generate')); ?>
                     </button>
                 </div>
             </div>
             <div class="section-description">
-                API keys authenticate requests to external APIs (software inventory, device manager, Watchtower extension).<br>
-                Clients send the key in the <code>Authorization</code> header. Each key is bound to the analyst who created it.
+                <?php echo htmlspecialchars(t('software.settings.intro_line1')); ?><br>
+                <?php echo t('software.settings.intro_line2', ['header' => '<code>Authorization</code>']); ?>
             </div>
             <div id="newKeyBanner" class="new-key-banner">
-                <p>New API key generated. Copy it now — it won't be shown in full again.</p>
+                <p><?php echo htmlspecialchars(t('software.settings.banner_new')); ?></p>
                 <div class="key-display">
                     <span id="newKeyValue"></span>
-                    <button class="copy-btn" onclick="copyNewKey()" title="Copy to clipboard">
+                    <button class="copy-btn" onclick="copyNewKey()" title="<?php echo htmlspecialchars(t('software.settings.banner_copy')); ?>">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                         </svg>
                     </button>
                 </div>
-                <p class="hint">Use this key as the Authorization header value when calling the inventory API.</p>
+                <p class="hint"><?php echo htmlspecialchars(t('software.settings.banner_hint')); ?></p>
             </div>
             <div class="section-body">
                 <table class="key-table">
                     <thead>
                         <tr>
-                            <th>API Key</th>
-                            <th>Label</th>
-                            <th>Owner</th>
-                            <th>Created</th>
-                            <th>Status</th>
-                            <th>Actions</th>
+                            <th><?php echo htmlspecialchars(t('software.settings.col_key')); ?></th>
+                            <th><?php echo htmlspecialchars(t('software.settings.col_label')); ?></th>
+                            <th><?php echo htmlspecialchars(t('software.settings.col_owner')); ?></th>
+                            <th><?php echo htmlspecialchars(t('software.settings.col_created')); ?></th>
+                            <th><?php echo htmlspecialchars(t('software.settings.col_status')); ?></th>
+                            <th><?php echo htmlspecialchars(t('software.settings.col_actions')); ?></th>
                         </tr>
                     </thead>
                     <tbody id="keyTableBody">
@@ -445,12 +450,12 @@ $path_prefix = '../../';
                     renderTable();
                 } else {
                     document.getElementById('keyTableBody').innerHTML =
-                        '<tr><td colspan="6"><div class="empty-state">Error: ' + escapeHtml(data.error) + '</div></td></tr>';
+                        '<tr><td colspan="6"><div class="empty-state">' + window.t('software.settings.load_error', { message: escapeHtml(data.error) }) + '</div></td></tr>';
                 }
             } catch (error) {
                 console.error('Error loading keys:', error);
                 document.getElementById('keyTableBody').innerHTML =
-                    '<tr><td colspan="6"><div class="empty-state">Failed to load API keys</div></td></tr>';
+                    '<tr><td colspan="6"><div class="empty-state">' + window.t('software.settings.load_failed') + '</div></td></tr>';
             }
         }
 
@@ -458,7 +463,7 @@ $path_prefix = '../../';
             const tbody = document.getElementById('keyTableBody');
 
             if (allKeys.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">No API keys configured. Generate one to enable inventory submissions.</div></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">' + window.t('software.settings.none') + '</div></td></tr>';
                 return;
             }
 
@@ -466,11 +471,11 @@ $path_prefix = '../../';
                 const masked = maskKey(key.apikey);
                 const isActive = key.active == 1;
                 const statusClass = isActive ? 'status-active' : 'status-revoked';
-                const statusText = isActive ? 'Active' : 'Revoked';
+                const statusText = isActive ? window.t('software.settings.status_active') : window.t('software.settings.status_revoked');
                 // Power icon is the same in both states; title attr tells
                 // the user which way the click will toggle. delete class
                 // is only used for the trash icon (red on hover).
-                const toggleTitle = isActive ? 'Revoke' : 'Activate';
+                const toggleTitle = isActive ? window.t('software.settings.action_revoke') : window.t('software.settings.action_activate');
                 const label = key.label || '<span style="color:#bbb">—</span>';
                 const owner = key.analyst_name || '<span style="color:#bbb">—</span>';
 
@@ -479,7 +484,7 @@ $path_prefix = '../../';
                     <td>
                         <span class="api-key-value">
                             <span class="api-key-masked">${escapeHtml(masked)}</span>
-                            <button class="copy-btn" onclick="copyKey('${escapeHtml(key.apikey)}')" title="Copy full key">
+                            <button class="copy-btn" onclick="copyKey('${escapeHtml(key.apikey)}')" title="${window.t('software.settings.copy_full')}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -494,7 +499,7 @@ $path_prefix = '../../';
                     <td>
                         <div class="key-actions">
                             <button class="action-btn" onclick="toggleKey(${key.id})" title="${toggleTitle}">${ICON_TOGGLE}</button>
-                            <button class="action-btn delete" onclick="promptDelete(${key.id})" title="Delete">${ICON_DELETE}</button>
+                            <button class="action-btn delete" onclick="promptDelete(${key.id})" title="${window.t('software.settings.action_delete')}">${ICON_DELETE}</button>
                         </div>
                     </td>
                 </tr>`;
@@ -531,11 +536,11 @@ $path_prefix = '../../';
                     labelInput.value = '';
                     loadKeys();
                 } else {
-                    showToast('Error: ' + data.error, 'error');
+                    showToast(window.t('software.settings.generate_error', { message: data.error }), 'error');
                 }
             } catch (error) {
                 console.error('Error generating key:', error);
-                showToast('Failed to generate API key.', 'error');
+                showToast(window.t('software.settings.generate_failed'), 'error');
             }
         }
 
@@ -548,22 +553,22 @@ $path_prefix = '../../';
                 });
                 const data = await response.json();
                 if (data.success) {
-                    showToast('API key updated', 'success');
+                    showToast(window.t('software.settings.key_updated'), 'success');
                     loadKeys();
                 } else {
-                    showToast('Error: ' + data.error, 'error');
+                    showToast(window.t('software.settings.toggle_error', { message: data.error }), 'error');
                 }
             } catch (error) {
                 console.error('Error toggling key:', error);
-                showToast('Failed to update API key.', 'error');
+                showToast(window.t('software.settings.toggle_failed'), 'error');
             }
         }
 
         async function promptDelete(id) {
             const ok = await showConfirm({
-                title: 'Delete API key',
-                message: 'Delete this API key? Any integrations using it will stop working immediately. This cannot be undone.',
-                okLabel: 'Delete',
+                title: window.t('software.settings.delete_title'),
+                message: window.t('software.settings.delete_confirm'),
+                okLabel: window.t('software.settings.delete_ok'),
                 okClass: 'danger'
             });
             if (!ok) return;
@@ -575,14 +580,14 @@ $path_prefix = '../../';
                 });
                 const data = await response.json();
                 if (data.success) {
-                    showToast('API key deleted', 'success');
+                    showToast(window.t('software.settings.key_deleted'), 'success');
                     loadKeys();
                 } else {
-                    showToast('Error: ' + data.error, 'error');
+                    showToast(window.t('software.settings.delete_error', { message: data.error }), 'error');
                 }
             } catch (error) {
                 console.error('Error deleting key:', error);
-                showToast('Failed to delete API key.', 'error');
+                showToast(window.t('software.settings.delete_failed'), 'error');
             }
         }
 

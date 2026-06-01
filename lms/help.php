@@ -8,6 +8,8 @@
  */
 session_start();
 require_once '../config.php';
+require_once '../includes/i18n.php';
+I18n::initFromSession();
 require_once '../includes/functions.php';
 
 if (!isset($_SESSION['analyst_id'])) {
@@ -17,13 +19,16 @@ if (!isset($_SESSION['analyst_id'])) {
 
 $current_page = 'help';
 $path_prefix = '../';
+$translationNamespaces = ['common', 'lms'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FreeITSM &mdash; LMS Guide</title>
+    <title><?php echo htmlspecialchars(t('lms.help.page_title')); ?></title>
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../assets/js/i18n.js"></script>
     <link rel="stylesheet" href="../assets/css/inbox.css">
     <style>
         .lh-container { display: flex; height: calc(100vh - 48px); background: #f5f5f5; }
@@ -251,41 +256,41 @@ $path_prefix = '../';
     <div class="lh-container">
         <!-- Sidebar nav -->
         <div class="lh-sidebar">
-            <h3>Guide</h3>
+            <h3><?php echo htmlspecialchars(t('lms.help.nav_label')); ?></h3>
             <a href="#overview" class="lh-nav-link active" data-section="overview">
-                <span class="lh-nav-num">1</span> Overview
+                <span class="lh-nav-num">1</span> <?php echo htmlspecialchars(t('lms.help.nav_overview')); ?>
             </a>
             <a href="#uploading" class="lh-nav-link" data-section="uploading">
-                <span class="lh-nav-num">2</span> Uploading a course
+                <span class="lh-nav-num">2</span> <?php echo htmlspecialchars(t('lms.help.nav_uploading')); ?>
             </a>
             <a href="#groups" class="lh-nav-link" data-section="groups">
-                <span class="lh-nav-num">3</span> Learning groups
+                <span class="lh-nav-num">3</span> <?php echo htmlspecialchars(t('lms.help.nav_groups')); ?>
             </a>
             <a href="#assigning" class="lh-nav-link" data-section="assigning">
-                <span class="lh-nav-num">4</span> Assigning courses
+                <span class="lh-nav-num">4</span> <?php echo htmlspecialchars(t('lms.help.nav_assigning')); ?>
             </a>
             <a href="#launching" class="lh-nav-link" data-section="launching">
-                <span class="lh-nav-num">5</span> Launching a course
+                <span class="lh-nav-num">5</span> <?php echo htmlspecialchars(t('lms.help.nav_launching')); ?>
             </a>
             <a href="#progress" class="lh-nav-link" data-section="progress">
-                <span class="lh-nav-num">6</span> Tracking progress
+                <span class="lh-nav-num">6</span> <?php echo htmlspecialchars(t('lms.help.nav_progress')); ?>
             </a>
             <a href="#learner-data" class="lh-nav-link" data-section="learner-data">
-                <span class="lh-nav-num">7</span> Learner data drill-down
+                <span class="lh-nav-num">7</span> <?php echo htmlspecialchars(t('lms.help.nav_learner_data')); ?>
             </a>
             <a href="#scorm" class="lh-nav-link" data-section="scorm">
-                <span class="lh-nav-num">8</span> SCORM support
+                <span class="lh-nav-num">8</span> <?php echo htmlspecialchars(t('lms.help.nav_scorm')); ?>
             </a>
             <a href="#tips" class="lh-nav-link" data-section="tips">
-                <span class="lh-nav-num">9</span> Quick tips
+                <span class="lh-nav-num">9</span> <?php echo htmlspecialchars(t('lms.help.nav_tips')); ?>
             </a>
         </div>
 
         <!-- Main content -->
         <div class="lh-main" id="helpMain">
             <div class="lh-hero">
-                <h2>LMS guide</h2>
-                <p>Upload SCORM packages, group your analysts, assign training, and track every learner's progress &mdash; right alongside the rest of the service desk.</p>
+                <h2><?php echo htmlspecialchars(t('lms.help.hero_title')); ?></h2>
+                <p><?php echo t('lms.help.hero_sub'); ?></p>
             </div>
 
             <div class="lh-content">
@@ -295,19 +300,19 @@ $path_prefix = '../';
                     <div class="lh-section-header">
                         <span class="lh-section-num">1</span>
                         <div>
-                            <h3>Overview</h3>
-                            <p>The LMS module is a full SCORM player and tracker built into the service desk. Drop in any SCORM 1.1, 1.2, or 2004 package, organise your analysts into learning groups, assign courses with optional deadlines, and watch progress roll in as people work through the content. No external LMS, no paid integration, no separate login.</p>
+                            <h3><?php echo htmlspecialchars(t('lms.help.overview_heading')); ?></h3>
+                            <p><?php echo t('lms.help.overview_intro'); ?></p>
                         </div>
                     </div>
 
                     <div class="lh-flow">
-                        <div class="lh-flow-step s1">Upload SCORM</div>
+                        <div class="lh-flow-step s1"><?php echo htmlspecialchars(t('lms.help.flow_upload')); ?></div>
                         <div class="lh-flow-arrow">&rarr;</div>
-                        <div class="lh-flow-step s2">Create groups</div>
+                        <div class="lh-flow-step s2"><?php echo htmlspecialchars(t('lms.help.flow_groups')); ?></div>
                         <div class="lh-flow-arrow">&rarr;</div>
-                        <div class="lh-flow-step s3">Assign</div>
+                        <div class="lh-flow-step s3"><?php echo htmlspecialchars(t('lms.help.flow_assign')); ?></div>
                         <div class="lh-flow-arrow">&rarr;</div>
-                        <div class="lh-flow-step s4">Track progress</div>
+                        <div class="lh-flow-step s4"><?php echo htmlspecialchars(t('lms.help.flow_track')); ?></div>
                     </div>
 
                     <div class="lh-features-grid">
@@ -315,29 +320,29 @@ $path_prefix = '../';
                             <div class="lh-feature-icon blue">
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5"/></svg>
                             </div>
-                            <h4>SCORM 1.1 / 1.2 / 2004</h4>
-                            <p>Version auto-detected from the manifest. Both runtime APIs (LMS-prefixed for 1.x, IEEE 1484.11 for 2004) supported on the same player.</p>
+                            <h4><?php echo htmlspecialchars(t('lms.help.overview_card1_title')); ?></h4>
+                            <p><?php echo t('lms.help.overview_card1_body'); ?></p>
                         </div>
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon indigo">
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                             </div>
-                            <h4>Learning groups</h4>
-                            <p>Group analysts by team, role, or topic; assign training to a group with one click.</p>
+                            <h4><?php echo htmlspecialchars(t('lms.help.overview_card2_title')); ?></h4>
+                            <p><?php echo t('lms.help.overview_card2_body'); ?></p>
                         </div>
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon green">
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7L9 18l-5-5"/></svg>
                             </div>
-                            <h4>Bookmarks &amp; resume</h4>
-                            <p>SCORM <code>lesson_location</code> and <code>suspend_data</code> persist between sessions &mdash; learners pick up where they left off.</p>
+                            <h4><?php echo t('lms.help.overview_card3_title'); ?></h4>
+                            <p><?php echo t('lms.help.overview_card3_body'); ?></p>
                         </div>
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon amber">
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                             </div>
-                            <h4>Granular tracking</h4>
-                            <p>Status, score, attempts, total time, every interaction and objective &mdash; visible per learner in the drill-down view.</p>
+                            <h4><?php echo htmlspecialchars(t('lms.help.overview_card4_title')); ?></h4>
+                            <p><?php echo t('lms.help.overview_card4_body'); ?></p>
                         </div>
                     </div>
                 </div>
@@ -347,21 +352,21 @@ $path_prefix = '../';
                     <div class="lh-section-header">
                         <span class="lh-section-num highlight">2</span>
                         <div>
-                            <h3>Uploading a course</h3>
-                            <p>From the <strong>Courses</strong> tab, hit <strong>Upload</strong>. Give the course a title (the manifest title isn't always learner-friendly, so this is your chance to rename it for the catalogue) and an optional description. Pick the SCORM ZIP and submit.</p>
+                            <h3><?php echo htmlspecialchars(t('lms.help.uploading_heading')); ?></h3>
+                            <p><?php echo t('lms.help.uploading_intro'); ?></p>
                         </div>
                     </div>
 
                     <div class="lh-steps">
-                        <div class="lh-step-item"><span class="lh-step-num">1</span><div>Click <strong>Upload</strong> on the Courses tab.</div></div>
-                        <div class="lh-step-item"><span class="lh-step-num">2</span><div>Enter a title (required) and a description (optional).</div></div>
-                        <div class="lh-step-item"><span class="lh-step-num">3</span><div>Pick the <code>.zip</code> file &mdash; upload the package as-is, don't extract it first.</div></div>
-                        <div class="lh-step-item"><span class="lh-step-num">4</span><div>Submit. The server unzips, parses <code>imsmanifest.xml</code>, detects the SCORM version, and stores the launch URL.</div></div>
+                        <div class="lh-step-item"><span class="lh-step-num">1</span><div><?php echo t('lms.help.uploading_step1'); ?></div></div>
+                        <div class="lh-step-item"><span class="lh-step-num">2</span><div><?php echo t('lms.help.uploading_step2'); ?></div></div>
+                        <div class="lh-step-item"><span class="lh-step-num">3</span><div><?php echo t('lms.help.uploading_step3'); ?></div></div>
+                        <div class="lh-step-item"><span class="lh-step-num">4</span><div><?php echo t('lms.help.uploading_step4'); ?></div></div>
                     </div>
 
-                    <p class="lh-tip"><strong>Manifest location:</strong> the upload handler looks for <code>imsmanifest.xml</code> at the root of the ZIP first, then falls back to checking inside a single top-level subfolder. Both layouts work.</p>
-                    <p class="lh-tip"><strong>Launch URL detection:</strong> the first <code>&lt;resource&gt;</code> with <code>scormType="sco"</code> wins. If no SCO is flagged, the first resource with an <code>href</code> is used as a fallback.</p>
-                    <p class="lh-warn"><strong>Upload size limits:</strong> SCORM ZIPs can be large (hundreds of MB if they contain video). If a big package fails to upload, check your PHP <code>upload_max_filesize</code> and <code>post_max_size</code> in <code>php.ini</code> &mdash; the LMS doesn't impose its own cap, but the web server might.</p>
+                    <p class="lh-tip"><?php echo t('lms.help.uploading_tip1'); ?></p>
+                    <p class="lh-tip"><?php echo t('lms.help.uploading_tip2'); ?></p>
+                    <p class="lh-warn"><?php echo t('lms.help.uploading_warn'); ?></p>
                 </div>
 
                 <!-- 3. Learning groups -->
@@ -369,19 +374,19 @@ $path_prefix = '../';
                     <div class="lh-section-header">
                         <span class="lh-section-num">3</span>
                         <div>
-                            <h3>Learning groups</h3>
-                            <p>Groups are the unit of assignment. Rather than assigning every course to every analyst individually, you group analysts &mdash; by team (Service Desk Tier 1), by role (New Starter), by topic (Compliance 2026) &mdash; and assign courses to the group. Anyone added to a group later automatically inherits its assignments.</p>
+                            <h3><?php echo htmlspecialchars(t('lms.help.groups_heading')); ?></h3>
+                            <p><?php echo t('lms.help.groups_intro'); ?></p>
                         </div>
                     </div>
 
                     <div class="lh-steps">
-                        <div class="lh-step-item"><span class="lh-step-num">1</span><div>Switch to the <strong>Groups</strong> tab and hit <strong>New</strong>.</div></div>
-                        <div class="lh-step-item"><span class="lh-step-num">2</span><div>Give the group a name (e.g. <em>New Starters</em>) and an optional description.</div></div>
-                        <div class="lh-step-item"><span class="lh-step-num">3</span><div>Tick the analysts who should be members &mdash; you can change membership any time.</div></div>
-                        <div class="lh-step-item"><span class="lh-step-num">4</span><div>Save. The group is now available in the Assignments tab.</div></div>
+                        <div class="lh-step-item"><span class="lh-step-num">1</span><div><?php echo t('lms.help.groups_step1'); ?></div></div>
+                        <div class="lh-step-item"><span class="lh-step-num">2</span><div><?php echo t('lms.help.groups_step2'); ?></div></div>
+                        <div class="lh-step-item"><span class="lh-step-num">3</span><div><?php echo t('lms.help.groups_step3'); ?></div></div>
+                        <div class="lh-step-item"><span class="lh-step-num">4</span><div><?php echo t('lms.help.groups_step4'); ?></div></div>
                     </div>
 
-                    <p class="lh-tip"><strong>An analyst can be in many groups:</strong> overlapping memberships are fine. If Jane is in both <em>Tier 1</em> and <em>New Starters</em>, she just sees both groups' assignments in her progress view.</p>
+                    <p class="lh-tip"><?php echo t('lms.help.groups_tip'); ?></p>
                 </div>
 
                 <!-- 4. Assigning courses -->
@@ -389,20 +394,20 @@ $path_prefix = '../';
                     <div class="lh-section-header">
                         <span class="lh-section-num">4</span>
                         <div>
-                            <h3>Assigning courses</h3>
-                            <p>The <strong>Assignments</strong> tab pairs a course with a group, optionally with a deadline. As soon as the assignment is saved, every member of the group gets a progress record for that course (status <span class="lh-pill not-started">Not Started</span>) and the course becomes playable for them.</p>
+                            <h3><?php echo htmlspecialchars(t('lms.help.assigning_heading')); ?></h3>
+                            <p><?php echo t('lms.help.assigning_intro'); ?></p>
                         </div>
                     </div>
 
                     <div class="lh-steps">
-                        <div class="lh-step-item"><span class="lh-step-num">1</span><div>Click <strong>Assign</strong> on the Assignments tab.</div></div>
-                        <div class="lh-step-item"><span class="lh-step-num">2</span><div>Pick a course and a group from the dropdowns.</div></div>
-                        <div class="lh-step-item"><span class="lh-step-num">3</span><div>Set a deadline (optional). Leave blank for open-ended training.</div></div>
-                        <div class="lh-step-item"><span class="lh-step-num">4</span><div>Save. Progress records appear immediately in the Progress tab.</div></div>
+                        <div class="lh-step-item"><span class="lh-step-num">1</span><div><?php echo t('lms.help.assigning_step1'); ?></div></div>
+                        <div class="lh-step-item"><span class="lh-step-num">2</span><div><?php echo t('lms.help.assigning_step2'); ?></div></div>
+                        <div class="lh-step-item"><span class="lh-step-num">3</span><div><?php echo t('lms.help.assigning_step3'); ?></div></div>
+                        <div class="lh-step-item"><span class="lh-step-num">4</span><div><?php echo t('lms.help.assigning_step4'); ?></div></div>
                     </div>
 
-                    <p class="lh-tip"><strong>Deadlines drive the Overdue filter:</strong> any progress record where the deadline has passed and the status isn't <span class="lh-pill completed">Completed</span> or <span class="lh-pill passed">Passed</span> shows up under the <span class="lh-pill overdue">Overdue</span> filter on the Progress tab.</p>
-                    <p class="lh-warn"><strong>One assignment per course/group pair:</strong> a duplicate combination is rejected (you'll see a friendly error). Want to re-assign with a new deadline? Delete the old assignment first, then create a new one.</p>
+                    <p class="lh-tip"><?php echo t('lms.help.assigning_tip'); ?></p>
+                    <p class="lh-warn"><?php echo t('lms.help.assigning_warn'); ?></p>
                 </div>
 
                 <!-- 5. Launching a course -->
@@ -410,36 +415,36 @@ $path_prefix = '../';
                     <div class="lh-section-header">
                         <span class="lh-section-num highlight">5</span>
                         <div>
-                            <h3>Launching a course</h3>
-                            <p>Click the play icon next to a course in the Courses tab (or open it from the Progress tab) and the SCORM player loads in an iframe. The SCORM API bridge runs on the parent window, so the course's runtime calls (<code>LMSInitialize</code>, <code>LMSGetValue</code>, <code>LMSSetValue</code>, <code>LMSCommit</code>, <code>LMSFinish</code> for 1.x, or <code>Initialize</code> / <code>GetValue</code> / <code>SetValue</code> / <code>Commit</code> / <code>Terminate</code> for 2004) are intercepted and persisted to the database.</p>
+                            <h3><?php echo htmlspecialchars(t('lms.help.launching_heading')); ?></h3>
+                            <p><?php echo t('lms.help.launching_intro'); ?></p>
                         </div>
                     </div>
 
                     <div class="lh-features-grid" style="margin-top: 14px;">
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon blue">&#x21BB;</div>
-                            <h4>Resume from bookmark</h4>
-                            <p><code>cmi.core.lesson_location</code> (1.2) or <code>cmi.location</code> (2004) is restored on launch &mdash; courses that track which slide you're on will jump straight there.</p>
+                            <h4><?php echo htmlspecialchars(t('lms.help.launching_card1_title')); ?></h4>
+                            <p><?php echo t('lms.help.launching_card1_body'); ?></p>
                         </div>
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon indigo">&#x1F4BE;</div>
-                            <h4>Suspend data preserved</h4>
-                            <p><code>cmi.suspend_data</code> survives between sessions, so quiz state, branching choices, and progress within a SCO all carry over.</p>
+                            <h4><?php echo htmlspecialchars(t('lms.help.launching_card2_title')); ?></h4>
+                            <p><?php echo t('lms.help.launching_card2_body'); ?></p>
                         </div>
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon green">&#x2713;</div>
-                            <h4>Auto-commit on close</h4>
-                            <p>The <code>beforeunload</code> handler fires <code>Commit</code> + <code>Finish</code> / <code>Terminate</code> automatically, so closing the tab without clicking the course's exit button still saves progress.</p>
+                            <h4><?php echo htmlspecialchars(t('lms.help.launching_card3_title')); ?></h4>
+                            <p><?php echo t('lms.help.launching_card3_body'); ?></p>
                         </div>
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon amber">&#x1F4CA;</div>
-                            <h4>Status flows through</h4>
-                            <p><code>lesson_status</code> / <code>completion_status</code> / <code>success_status</code> are mapped into the normalised LMS status (Incomplete &rarr; Completed &rarr; Passed/Failed) and denormalised onto the progress row.</p>
+                            <h4><?php echo htmlspecialchars(t('lms.help.launching_card4_title')); ?></h4>
+                            <p><?php echo t('lms.help.launching_card4_body'); ?></p>
                         </div>
                     </div>
 
-                    <p style="margin-top: 14px;">Each launch increments the <strong>attempt count</strong> on the progress record. The first access timestamp is set on the very first launch; the last access timestamp updates on every launch and every commit.</p>
-                    <p class="lh-tip"><strong>Player sandbox:</strong> the iframe runs with <code>sandbox="allow-scripts allow-same-origin allow-forms allow-popups"</code> &mdash; tight enough to limit what a hostile package could do, loose enough that legitimate SCORM content works.</p>
+                    <p style="margin-top: 14px;"><?php echo t('lms.help.launching_attempts'); ?></p>
+                    <p class="lh-tip"><?php echo t('lms.help.launching_tip'); ?></p>
                 </div>
 
                 <!-- 6. Tracking progress -->
@@ -447,37 +452,37 @@ $path_prefix = '../';
                     <div class="lh-section-header">
                         <span class="lh-section-num">6</span>
                         <div>
-                            <h3>Tracking progress</h3>
-                            <p>The <strong>Progress</strong> tab is the dashboard for every analyst &times; course pair. Each row shows the analyst, the course, the group it came through, the current status, the score (if scored), the deadline, and the last access time. Three filters let you slice the view: by course, by group, and by status.</p>
+                            <h3><?php echo htmlspecialchars(t('lms.help.progress_heading')); ?></h3>
+                            <p><?php echo t('lms.help.progress_intro'); ?></p>
                         </div>
                     </div>
 
-                    <p>Status values, in roughly the order learners progress through them:</p>
+                    <p><?php echo htmlspecialchars(t('lms.help.progress_status_intro')); ?></p>
 
                     <div class="lh-features-grid">
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon" style="background: #f5f5f5; color: #666;">&#x25CB;</div>
-                            <h4><span class="lh-pill not-started">Not Started</span></h4>
-                            <p>Course is assigned but the learner hasn't launched it yet.</p>
+                            <h4><span class="lh-pill not-started"><?php echo htmlspecialchars(t('lms.help.progress_card1_title')); ?></span></h4>
+                            <p><?php echo t('lms.help.progress_card1_body'); ?></p>
                         </div>
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon amber">&#x25D0;</div>
-                            <h4><span class="lh-pill incomplete">Incomplete</span></h4>
-                            <p>Learner has started but the course hasn't reported completion yet.</p>
+                            <h4><span class="lh-pill incomplete"><?php echo htmlspecialchars(t('lms.help.progress_card2_title')); ?></span></h4>
+                            <p><?php echo t('lms.help.progress_card2_body'); ?></p>
                         </div>
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon blue">&#x2714;</div>
-                            <h4><span class="lh-pill completed">Completed</span></h4>
-                            <p>Course reported completion (no pass/fail concept, or not yet judged).</p>
+                            <h4><span class="lh-pill completed"><?php echo htmlspecialchars(t('lms.help.progress_card3_title')); ?></span></h4>
+                            <p><?php echo t('lms.help.progress_card3_body'); ?></p>
                         </div>
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon green">&#x2605;</div>
-                            <h4><span class="lh-pill passed">Passed</span> / <span class="lh-pill failed">Failed</span></h4>
-                            <p>Course reported success or failure (scored courses). Outranks plain Completed.</p>
+                            <h4><span class="lh-pill passed"><?php echo htmlspecialchars(t('lms.help.progress_card4_title_passed')); ?></span> / <span class="lh-pill failed"><?php echo htmlspecialchars(t('lms.help.progress_card4_title_failed')); ?></span></h4>
+                            <p><?php echo t('lms.help.progress_card4_body'); ?></p>
                         </div>
                     </div>
 
-                    <p class="lh-tip"><strong>Overdue is computed live:</strong> there's no "Overdue" status stored on the row &mdash; the filter checks the deadline against today and excludes anything already Completed or Passed. So a deadline you change later, or a course that gets completed on the deadline day, behaves the way you'd expect.</p>
+                    <p class="lh-tip"><?php echo t('lms.help.progress_tip'); ?></p>
                 </div>
 
                 <!-- 7. Learner data drill-down -->
@@ -485,45 +490,45 @@ $path_prefix = '../';
                     <div class="lh-section-header">
                         <span class="lh-section-num">7</span>
                         <div>
-                            <h3>Learner data drill-down</h3>
-                            <p>Click the eye icon at the end of any progress row and the Learner Data modal opens. This is the full SCORM CMI dump for that analyst's attempt at that course &mdash; useful for audits, troubleshooting "I thought I passed" disputes, and just understanding what a course is actually tracking.</p>
+                            <h3><?php echo htmlspecialchars(t('lms.help.learner_heading')); ?></h3>
+                            <p><?php echo t('lms.help.learner_intro'); ?></p>
                         </div>
                     </div>
 
-                    <p>The modal groups the data into:</p>
+                    <p><?php echo htmlspecialchars(t('lms.help.learner_groups_into')); ?></p>
 
                     <div class="lh-features-grid">
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon blue">
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                             </div>
-                            <h4>Summary</h4>
-                            <p>Status, score (raw / min / max), total time spent, attempt count, first &amp; last access, completion date, bookmark.</p>
+                            <h4><?php echo htmlspecialchars(t('lms.help.learner_card1_title')); ?></h4>
+                            <p><?php echo t('lms.help.learner_card1_body'); ?></p>
                         </div>
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon indigo">
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                             </div>
-                            <h4>Interactions</h4>
-                            <p>Every quiz question, answer given, correct answer, score, and result &mdash; one row per <code>cmi.interactions.N</code>.</p>
+                            <h4><?php echo htmlspecialchars(t('lms.help.learner_card2_title')); ?></h4>
+                            <p><?php echo t('lms.help.learner_card2_body'); ?></p>
                         </div>
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon green">
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>
                             </div>
-                            <h4>Objectives</h4>
-                            <p>SCORM 2004 learning objectives with per-objective status and score (when the course tracks them).</p>
+                            <h4><?php echo htmlspecialchars(t('lms.help.learner_card3_title')); ?></h4>
+                            <p><?php echo t('lms.help.learner_card3_body'); ?></p>
                         </div>
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon amber">
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                             </div>
-                            <h4>Suspend data + raw CMI</h4>
-                            <p>The opaque <code>cmi.suspend_data</code> blob (decoded if it's JSON) plus every other CMI element written by the course.</p>
+                            <h4><?php echo htmlspecialchars(t('lms.help.learner_card4_title')); ?></h4>
+                            <p><?php echo t('lms.help.learner_card4_body'); ?></p>
                         </div>
                     </div>
 
-                    <p class="lh-tip"><strong>Audit-friendly:</strong> the Interactions table is the closest thing to a tamper-evident answer log most LMS systems offer &mdash; useful evidence if you ever need to prove someone completed mandatory training honestly.</p>
+                    <p class="lh-tip"><?php echo t('lms.help.learner_tip'); ?></p>
                 </div>
 
                 <!-- 8. SCORM support -->
@@ -531,37 +536,37 @@ $path_prefix = '../';
                     <div class="lh-section-header">
                         <span class="lh-section-num">8</span>
                         <div>
-                            <h3>SCORM support</h3>
-                            <p>The LMS speaks all three mainstream SCORM versions and detects which one a course expects automatically.</p>
+                            <h3><?php echo htmlspecialchars(t('lms.help.scorm_heading')); ?></h3>
+                            <p><?php echo t('lms.help.scorm_intro'); ?></p>
                         </div>
                     </div>
 
                     <div class="lh-features-grid">
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon blue">1.1</div>
-                            <h4>SCORM 1.1</h4>
-                            <p>Legacy AICC-style API. Detected when <code>schemaversion</code> reads "1.1". Same runtime contract as 1.2 in practice.</p>
+                            <h4><?php echo htmlspecialchars(t('lms.help.scorm_card1_title')); ?></h4>
+                            <p><?php echo t('lms.help.scorm_card1_body'); ?></p>
                         </div>
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon indigo">1.2</div>
-                            <h4>SCORM 1.2</h4>
-                            <p>The classic. <code>API</code> object exposed on the parent window with the <code>LMS</code>-prefixed methods. Default fallback if version detection is ambiguous.</p>
+                            <h4><?php echo htmlspecialchars(t('lms.help.scorm_card2_title')); ?></h4>
+                            <p><?php echo t('lms.help.scorm_card2_body'); ?></p>
                         </div>
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon green">2004</div>
-                            <h4>SCORM 2004 (2nd, 3rd, 4th Edition)</h4>
-                            <p><code>API_1484_11</code> object with IEEE 1484.11 unprefixed methods. Detected from the <code>2004</code> schema version or the <code>adlcp v1p3</code> namespace.</p>
+                            <h4><?php echo htmlspecialchars(t('lms.help.scorm_card3_title')); ?></h4>
+                            <p><?php echo t('lms.help.scorm_card3_body'); ?></p>
                         </div>
                         <div class="lh-feature-card">
                             <div class="lh-feature-icon amber">
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
                             </div>
-                            <h4>Manifest requirements</h4>
-                            <p><code>imsmanifest.xml</code> at the ZIP root (or one level deep); at least one <code>&lt;resource&gt;</code> with an <code>href</code>; a <code>scormType="sco"</code> resource preferred but not required.</p>
+                            <h4><?php echo htmlspecialchars(t('lms.help.scorm_card4_title')); ?></h4>
+                            <p><?php echo t('lms.help.scorm_card4_body'); ?></p>
                         </div>
                     </div>
 
-                    <p class="lh-tip"><strong>Testing:</strong> the Rustici Software "Golf Explained" sample packages (scorm.com/scorm-explained/technical-scorm/golf-examples) are the gold-standard SCORM conformance tests and all play cleanly in the LMS module &mdash; useful as a smoke test if you ever wonder whether a problem is in the player or the package.</p>
+                    <p class="lh-tip"><?php echo t('lms.help.scorm_tip'); ?></p>
                 </div>
 
                 <!-- 9. Quick tips -->
@@ -569,18 +574,18 @@ $path_prefix = '../';
                     <div class="lh-section-header">
                         <span class="lh-section-num">9</span>
                         <div>
-                            <h3>Quick tips</h3>
+                            <h3><?php echo htmlspecialchars(t('lms.help.tips_heading')); ?></h3>
                         </div>
                     </div>
                     <div class="lh-tips-grid">
-                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x1F4E6;</span><div>Upload the SCORM ZIP <strong>as-is</strong> &mdash; the server extracts it for you.</div></div>
-                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x1F465;</span><div>Group memberships are <strong>live</strong> &mdash; add an analyst to a group and they pick up that group's existing assignments.</div></div>
-                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x1F4CB;</span><div><strong>One assignment per course+group</strong>. The UI blocks duplicates with a friendly error.</div></div>
-                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x23F2;</span><div>Deadline is optional &mdash; leave it blank for open-ended training.</div></div>
-                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x1F4D6;</span><div>Use the <strong>Title</strong> field to rename a course on upload &mdash; the manifest title isn't always learner-friendly.</div></div>
-                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x1F441;</span><div>The <strong>eye icon</strong> on each progress row opens the full CMI dump for that learner's attempt.</div></div>
-                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x1F501;</span><div>Closing the player tab still saves &mdash; the <code>beforeunload</code> handler fires Commit + Finish automatically.</div></div>
-                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x1F3CC;</span><div>The Rustici <em>Golf Explained</em> samples are a free, well-formed SCORM smoke test &mdash; useful if you're not sure whether a problem is the player or the package.</div></div>
+                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x1F4E6;</span><div><?php echo t('lms.help.tip1'); ?></div></div>
+                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x1F465;</span><div><?php echo t('lms.help.tip2'); ?></div></div>
+                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x1F4CB;</span><div><?php echo t('lms.help.tip3'); ?></div></div>
+                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x23F2;</span><div><?php echo t('lms.help.tip4'); ?></div></div>
+                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x1F4D6;</span><div><?php echo t('lms.help.tip5'); ?></div></div>
+                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x1F441;</span><div><?php echo t('lms.help.tip6'); ?></div></div>
+                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x1F501;</span><div><?php echo t('lms.help.tip7'); ?></div></div>
+                        <div class="lh-tip-card"><span class="lh-tip-icon">&#x1F3CC;</span><div><?php echo t('lms.help.tip8'); ?></div></div>
                     </div>
                 </div>
 

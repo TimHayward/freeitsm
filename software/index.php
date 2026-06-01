@@ -4,16 +4,21 @@
  */
 session_start();
 require_once '../config.php';
+require_once '../includes/i18n.php';
+I18n::initFromSession();
 
 $current_page = 'software';
 $path_prefix = '../';
+$translationNamespaces = ['common', 'software'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Software</title>
+    <title><?php echo htmlspecialchars(t('software.inventory.page_title')); ?></title>
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../assets/js/i18n.js"></script>
     <link rel="stylesheet" href="../assets/css/inbox.css">
     <style>
         .software-container {
@@ -368,31 +373,31 @@ $path_prefix = '../';
 
     <div class="main-container software-container">
         <div class="software-toolbar">
-            <h3>Software Inventory</h3>
+            <h3><?php echo htmlspecialchars(t('software.inventory.heading')); ?></h3>
             <div class="toolbar-right">
                 <input type="text" class="search-box" id="softwareSearch"
-                       placeholder="Search by application name or publisher..."
+                       placeholder="<?php echo htmlspecialchars(t('software.inventory.search')); ?>"
                        oninput="searchSoftware()">
                 <span class="software-count" id="softwareCount"></span>
             </div>
         </div>
         <div class="filter-tabs">
-            <button class="filter-tab active" data-filter="apps" onclick="switchTab('apps')">Applications <span class="tab-count" id="countApps">0</span></button>
-            <button class="filter-tab" data-filter="components" onclick="switchTab('components')">Components <span class="tab-count" id="countComponents">0</span></button>
-            <button class="filter-tab" data-filter="" onclick="switchTab('')">All <span class="tab-count" id="countAll">0</span></button>
+            <button class="filter-tab active" data-filter="apps" onclick="switchTab('apps')"><?php echo htmlspecialchars(t('software.inventory.tab_apps')); ?> <span class="tab-count" id="countApps">0</span></button>
+            <button class="filter-tab" data-filter="components" onclick="switchTab('components')"><?php echo htmlspecialchars(t('software.inventory.tab_components')); ?> <span class="tab-count" id="countComponents">0</span></button>
+            <button class="filter-tab" data-filter="" onclick="switchTab('')"><?php echo htmlspecialchars(t('software.inventory.tab_all')); ?> <span class="tab-count" id="countAll">0</span></button>
         </div>
         <div class="software-table-container">
             <table class="software-table">
                 <thead>
                     <tr>
                         <th onclick="sortBy('display_name')" id="thName">
-                            Application Name <span class="sort-icon">&#9650;</span>
+                            <?php echo htmlspecialchars(t('software.inventory.col_name')); ?> <span class="sort-icon">&#9650;</span>
                         </th>
                         <th onclick="sortBy('publisher')" id="thPublisher">
-                            Publisher <span class="sort-icon"></span>
+                            <?php echo htmlspecialchars(t('software.inventory.col_publisher')); ?> <span class="sort-icon"></span>
                         </th>
                         <th onclick="sortBy('install_count')" id="thCount">
-                            Installed On <span class="sort-icon"></span>
+                            <?php echo htmlspecialchars(t('software.inventory.col_installed')); ?> <span class="sort-icon"></span>
                         </th>
                     </tr>
                 </thead>
@@ -409,18 +414,18 @@ $path_prefix = '../';
     <div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
         <div class="detail-box">
             <div class="detail-header">
-                <h3 id="modalTitle">Application</h3>
+                <h3 id="modalTitle"><?php echo htmlspecialchars(t('software.inventory.modal_title')); ?></h3>
                 <button class="detail-close" onclick="closeDetail()">&times;</button>
             </div>
             <div class="detail-toolbar" id="modalToolbar" style="display:none">
                 <span class="machine-count" id="modalCount"></span>
                 <button class="export-btn" onclick="exportCSV()">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Export CSV
+                    <?php echo htmlspecialchars(t('software.inventory.export_csv')); ?>
                 </button>
             </div>
             <div class="detail-body" id="modalBody">
-                <div class="detail-loading">Loading machines...</div>
+                <div class="detail-loading"><?php echo htmlspecialchars(t('software.inventory.loading_machines')); ?></div>
             </div>
         </div>
     </div>
@@ -451,12 +456,12 @@ $path_prefix = '../';
                     applyFilters();
                 } else {
                     document.getElementById('softwareTableBody').innerHTML =
-                        '<tr><td colspan="3"><div class="empty-state">Error loading software: ' + escapeHtml(data.error) + '</div></td></tr>';
+                        '<tr><td colspan="3"><div class="empty-state">' + window.t('software.inventory.load_error', { message: escapeHtml(data.error) }) + '</div></td></tr>';
                 }
             } catch (error) {
                 console.error('Error loading software:', error);
                 document.getElementById('softwareTableBody').innerHTML =
-                    '<tr><td colspan="3"><div class="empty-state">Failed to load software data</div></td></tr>';
+                    '<tr><td colspan="3"><div class="empty-state">' + window.t('software.inventory.load_failed') + '</div></td></tr>';
             }
         }
 
@@ -537,11 +542,15 @@ $path_prefix = '../';
             const tbody = document.getElementById('softwareTableBody');
             const countEl = document.getElementById('softwareCount');
 
-            const label = activeFilter === 'components' ? 'component' : 'application';
-            countEl.textContent = filteredApps.length + ' ' + label + (filteredApps.length !== 1 ? 's' : '');
+            const n = filteredApps.length;
+            if (activeFilter === 'components') {
+                countEl.textContent = window.t(n !== 1 ? 'software.inventory.count_components' : 'software.inventory.count_component', { count: n });
+            } else {
+                countEl.textContent = window.t(n !== 1 ? 'software.inventory.count_apps' : 'software.inventory.count_app', { count: n });
+            }
 
             if (filteredApps.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state">No software found</div></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state">' + window.t('software.inventory.none') + '</div></td></tr>';
                 return;
             }
 
@@ -560,7 +569,7 @@ $path_prefix = '../';
 
             document.getElementById('modalTitle').textContent = appName;
             document.getElementById('modalToolbar').style.display = 'none';
-            document.getElementById('modalBody').innerHTML = '<div class="detail-loading">Loading machines...</div>';
+            document.getElementById('modalBody').innerHTML = '<div class="detail-loading">' + window.t('software.inventory.loading_machines') + '</div>';
             document.getElementById('detailOverlay').classList.add('open');
 
             try {
@@ -570,16 +579,16 @@ $path_prefix = '../';
                 if (data.success && data.machines.length > 0) {
                     currentMachines = data.machines;
                     document.getElementById('modalCount').textContent =
-                        'Installed on ' + data.machines.length + ' machine' + (data.machines.length !== 1 ? 's' : '');
+                        window.t(data.machines.length !== 1 ? 'software.inventory.installed_on_many' : 'software.inventory.installed_on_one', { count: data.machines.length });
                     document.getElementById('modalToolbar').style.display = 'flex';
                     document.getElementById('modalBody').innerHTML = `
                         <table class="machine-table">
                             <thead>
                                 <tr>
-                                    <th>Hostname</th>
-                                    <th>Version</th>
-                                    <th>Install Date</th>
-                                    <th>Last Seen</th>
+                                    <th>${window.t('software.inventory.machine_hostname')}</th>
+                                    <th>${window.t('software.inventory.machine_version')}</th>
+                                    <th>${window.t('software.inventory.machine_install_date')}</th>
+                                    <th>${window.t('software.inventory.machine_last_seen')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -596,15 +605,15 @@ $path_prefix = '../';
                     `;
                 } else if (data.success) {
                     document.getElementById('modalBody').innerHTML =
-                        '<div class="detail-loading">No machines found for this application</div>';
+                        '<div class="detail-loading">' + window.t('software.inventory.no_machines') + '</div>';
                 } else {
                     document.getElementById('modalBody').innerHTML =
-                        '<div class="detail-loading">Error loading machine data</div>';
+                        '<div class="detail-loading">' + window.t('software.inventory.machine_error') + '</div>';
                 }
             } catch (error) {
                 console.error('Error loading machines:', error);
                 document.getElementById('modalBody').innerHTML =
-                    '<div class="detail-loading">Failed to load machine data</div>';
+                    '<div class="detail-loading">' + window.t('software.inventory.machine_failed') + '</div>';
             }
         }
 
@@ -627,7 +636,12 @@ $path_prefix = '../';
         function exportCSV() {
             if (!currentMachines.length) return;
 
-            const rows = [['Hostname', 'Version', 'Install Date', 'Last Seen'].map(h => csvCell(h)).join(',')];
+            const rows = [[
+                window.t('software.inventory.machine_hostname'),
+                window.t('software.inventory.machine_version'),
+                window.t('software.inventory.machine_install_date'),
+                window.t('software.inventory.machine_last_seen')
+            ].map(h => csvCell(h)).join(',')];
 
             currentMachines.forEach(m => {
                 rows.push([
@@ -643,7 +657,7 @@ $path_prefix = '../';
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = (currentModalApp || 'software').replace(/[^a-zA-Z0-9 _-]/g, '') + ' - Machines.csv';
+            a.download = (currentModalApp || 'software').replace(/[^a-zA-Z0-9 _-]/g, '') + window.t('software.inventory.csv_machines_suffix') + '.csv';
             a.click();
             URL.revokeObjectURL(url);
         }

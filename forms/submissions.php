@@ -4,16 +4,21 @@
  */
 session_start();
 require_once '../config.php';
+require_once '../includes/i18n.php';
+I18n::initFromSession();
 
 $current_page = 'forms';
 $path_prefix = '../';
+$translationNamespaces = ['common', 'forms'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Form Submissions</title>
+    <title><?php echo htmlspecialchars(t('forms.subs.page_title')); ?></title>
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../assets/js/i18n.js"></script>
     <link rel="stylesheet" href="../assets/css/inbox.css">
     <style>
         .subs-container {
@@ -342,24 +347,24 @@ $path_prefix = '../';
                 <div class="subs-toolbar-left">
                     <a href="./" class="btn btn-secondary">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                        Back
+                        <?php echo htmlspecialchars(t('forms.subs.back')); ?>
                     </a>
-                    <h2 id="pageTitle">Submissions</h2>
+                    <h2 id="pageTitle"><?php echo htmlspecialchars(t('forms.subs.heading')); ?></h2>
                     <span class="sub-count" id="subCount"></span>
                 </div>
                 <div class="subs-toolbar-right">
                     <div class="filter-group">
-                        <label>From</label>
+                        <label><?php echo htmlspecialchars(t('forms.subs.from')); ?></label>
                         <input type="date" id="dateFrom" onchange="applyFilter()">
                     </div>
                     <div class="filter-group">
-                        <label>To</label>
+                        <label><?php echo htmlspecialchars(t('forms.subs.to')); ?></label>
                         <input type="date" id="dateTo" onchange="applyFilter()">
                     </div>
-                    <button class="btn btn-secondary" onclick="clearFilter()">Clear</button>
+                    <button class="btn btn-secondary" onclick="clearFilter()"><?php echo htmlspecialchars(t('forms.subs.clear')); ?></button>
                     <button class="btn btn-export" onclick="exportCSV()">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        Export CSV
+                        <?php echo htmlspecialchars(t('forms.subs.export_csv')); ?>
                     </button>
                 </div>
             </div>
@@ -367,7 +372,7 @@ $path_prefix = '../';
             <div class="subs-card">
                 <div class="subs-table-wrap">
                     <div id="subsContent">
-                        <div style="text-align:center;padding:40px;color:#888">Loading...</div>
+                        <div style="text-align:center;padding:40px;color:#888"><?php echo htmlspecialchars(t('forms.subs.loading')); ?></div>
                     </div>
                 </div>
             </div>
@@ -378,7 +383,7 @@ $path_prefix = '../';
     <div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
         <div class="detail-box">
             <div class="detail-header">
-                <h3>Submission Detail</h3>
+                <h3><?php echo htmlspecialchars(t('forms.subs.detail_heading')); ?></h3>
                 <button class="detail-close" onclick="closeDetail()">&times;</button>
             </div>
             <div class="detail-body" id="detailBody"></div>
@@ -388,11 +393,11 @@ $path_prefix = '../';
     <!-- Confirm delete -->
     <div class="confirm-overlay" id="confirmOverlay" onclick="if(event.target===this)closeConfirm()">
         <div class="confirm-box">
-            <h3>Delete Submission</h3>
-            <p>This will permanently delete this submission and its data. Are you sure?</p>
+            <h3><?php echo htmlspecialchars(t('forms.subs.confirm_title')); ?></h3>
+            <p><?php echo htmlspecialchars(t('forms.subs.confirm_message')); ?></p>
             <div class="confirm-actions">
-                <button class="btn btn-cancel" onclick="closeConfirm()">Cancel</button>
-                <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+                <button class="btn btn-cancel" onclick="closeConfirm()"><?php echo htmlspecialchars(t('forms.subs.confirm_cancel')); ?></button>
+                <button class="btn btn-danger" id="confirmDeleteBtn"><?php echo htmlspecialchars(t('forms.subs.confirm_delete')); ?></button>
             </div>
         </div>
     </div>
@@ -409,7 +414,7 @@ $path_prefix = '../';
             if (id) {
                 loadSubmissions(id);
             } else {
-                document.getElementById('subsContent').innerHTML = '<p style="color:#c00;text-align:center;padding:20px">No form ID specified</p>';
+                document.getElementById('subsContent').innerHTML = '<p style="color:#c00;text-align:center;padding:20px">' + esc(window.t('forms.subs.no_id')) + '</p>';
             }
         });
 
@@ -424,8 +429,8 @@ $path_prefix = '../';
                     allSubmissions = data.submissions;
                     filteredSubmissions = allSubmissions;
 
-                    document.getElementById('pageTitle').textContent = esc(formData.title) + ' — Submissions';
-                    document.title = 'Service Desk - ' + formData.title + ' Submissions';
+                    document.getElementById('pageTitle').textContent = window.t('forms.subs.heading_named', { title: formData.title });
+                    document.title = window.t('forms.subs.page_title_named', { title: formData.title });
 
                     renderTable();
                 } else {
@@ -433,27 +438,29 @@ $path_prefix = '../';
                 }
             } catch (e) {
                 console.error(e);
-                document.getElementById('subsContent').innerHTML = '<p style="color:#c00;text-align:center;padding:20px">Failed to load submissions</p>';
+                document.getElementById('subsContent').innerHTML = '<p style="color:#c00;text-align:center;padding:20px">' + esc(window.t('forms.subs.load_failed')) + '</p>';
             }
         }
 
         function renderTable() {
             const count = filteredSubmissions.length;
-            document.getElementById('subCount').textContent = count + ' submission' + (count !== 1 ? 's' : '');
+            document.getElementById('subCount').textContent = count !== 1
+                ? window.t('forms.subs.count_plural', { n: count })
+                : window.t('forms.subs.count', { n: count });
 
             if (count === 0) {
                 document.getElementById('subsContent').innerHTML = `<div class="empty-state">
                     <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                    <h3>No submissions yet</h3>
-                    <p><a href="fill.php?id=${formData.id}">Fill in this form</a> to create the first submission</p>
+                    <h3>${esc(window.t('forms.subs.empty_title'))}</h3>
+                    <p>${window.t('forms.subs.empty_body', { url: 'fill.php?id=' + formData.id })}</p>
                 </div>`;
                 return;
             }
 
             let html = '<table class="subs-table"><thead><tr>';
-            html += '<th>#</th>';
-            html += '<th>Submitted By</th>';
-            html += '<th>Date</th>';
+            html += '<th>' + esc(window.t('forms.subs.col_num')) + '</th>';
+            html += '<th>' + esc(window.t('forms.subs.col_submitted_by')) + '</th>';
+            html += '<th>' + esc(window.t('forms.subs.col_date')) + '</th>';
 
             formData.fields.forEach(f => {
                 html += `<th>${esc(f.label)}</th>`;
@@ -465,7 +472,7 @@ $path_prefix = '../';
             filteredSubmissions.forEach((sub, idx) => {
                 html += `<tr onclick="showDetail(${idx})">`;
                 html += `<td>${count - idx}</td>`;
-                html += `<td>${esc(sub.submitted_by || 'Unknown')}</td>`;
+                html += `<td>${esc(sub.submitted_by || window.t('forms.subs.unknown_user'))}</td>`;
                 html += `<td>${esc(formatDate(sub.submitted_date))}</td>`;
 
                 formData.fields.forEach(f => {
@@ -485,7 +492,7 @@ $path_prefix = '../';
                     }
                 });
 
-                html += `<td><button class="delete-btn" onclick="event.stopPropagation();confirmDelete(${sub.id})" title="Delete">
+                html += `<td><button class="delete-btn" onclick="event.stopPropagation();confirmDelete(${sub.id})" title="${escAttr(window.t('forms.subs.delete'))}">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button></td>`;
                 html += '</tr>';
@@ -500,8 +507,8 @@ $path_prefix = '../';
             if (!sub) return;
 
             let html = `<div class="detail-meta">
-                <span><strong>Submitted by:</strong> ${esc(sub.submitted_by || 'Unknown')}</span>
-                <span><strong>Date:</strong> ${esc(formatDate(sub.submitted_date))}</span>
+                <span><strong>${esc(window.t('forms.subs.detail_submitted_by'))}</strong> ${esc(sub.submitted_by || window.t('forms.subs.unknown_user'))}</span>
+                <span><strong>${esc(window.t('forms.subs.detail_date'))}</strong> ${esc(formatDate(sub.submitted_date))}</span>
             </div>`;
 
             formData.fields.forEach(f => {
@@ -511,16 +518,16 @@ $path_prefix = '../';
 
                 if (f.field_type === 'checkbox') {
                     const checked = val === '1';
-                    html += `<div class="detail-field-value"><span class="cb-value ${checked ? 'cb-yes' : 'cb-no'}">${checked ? '&#10003;' : '&#10007;'}</span> ${checked ? 'Yes' : 'No'}</div>`;
+                    html += `<div class="detail-field-value"><span class="cb-value ${checked ? 'cb-yes' : 'cb-no'}">${checked ? '&#10003;' : '&#10007;'}</span> ${checked ? esc(window.t('forms.subs.yes')) : esc(window.t('forms.subs.no'))}</div>`;
                 } else if (f.field_type === 'checkboxes') {
                     const list = decodeMultiValue(val);
                     if (list.length === 0) {
-                        html += `<div class="detail-field-value empty">No response</div>`;
+                        html += `<div class="detail-field-value empty">${esc(window.t('forms.subs.no_response'))}</div>`;
                     } else {
                         html += `<div class="detail-field-value"><ul style="margin:0; padding-left: 18px;">${list.map(v => `<li>${esc(v)}</li>`).join('')}</ul></div>`;
                     }
                 } else {
-                    html += `<div class="detail-field-value ${!val ? 'empty' : ''}">${esc(val) || 'No response'}</div>`;
+                    html += `<div class="detail-field-value ${!val ? 'empty' : ''}">${esc(val) || esc(window.t('forms.subs.no_response'))}</div>`;
                 }
 
                 html += '</div>';
@@ -560,7 +567,7 @@ $path_prefix = '../';
         function exportCSV() {
             if (!formData || filteredSubmissions.length === 0) return;
 
-            const headers = ['#', 'Submitted By', 'Date'];
+            const headers = [window.t('forms.subs.csv_num'), window.t('forms.subs.csv_submitted_by'), window.t('forms.subs.csv_date')];
             formData.fields.forEach(f => headers.push(f.label));
 
             const rows = [headers.map(h => csvCell(h)).join(',')];
@@ -568,14 +575,14 @@ $path_prefix = '../';
             filteredSubmissions.forEach((sub, idx) => {
                 const row = [
                     filteredSubmissions.length - idx,
-                    sub.submitted_by || 'Unknown',
+                    sub.submitted_by || window.t('forms.subs.unknown_user'),
                     formatDate(sub.submitted_date)
                 ];
 
                 formData.fields.forEach(f => {
                     const val = sub.data[f.id] ?? '';
                     if (f.field_type === 'checkbox') {
-                        row.push(val === '1' ? 'Yes' : 'No');
+                        row.push(val === '1' ? window.t('forms.subs.csv_yes') : window.t('forms.subs.csv_no'));
                     } else if (f.field_type === 'checkboxes') {
                         row.push(decodeMultiValue(val).join('; '));
                     } else {
@@ -591,7 +598,7 @@ $path_prefix = '../';
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = (formData.title || 'submissions').replace(/[^a-zA-Z0-9 _-]/g, '') + '_submissions.csv';
+            a.download = (formData.title || window.t('forms.subs.csv_default_name')).replace(/[^a-zA-Z0-9 _-]/g, '') + '_submissions.csv';
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -660,6 +667,11 @@ $path_prefix = '../';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+        function escAttr(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
         // Decode the JSON-encoded array stored for multi-checkbox values.

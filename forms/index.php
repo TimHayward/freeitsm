@@ -9,16 +9,21 @@
  */
 session_start();
 require_once '../config.php';
+require_once '../includes/i18n.php';
+I18n::initFromSession();
 
 $current_page = 'forms';
 $path_prefix = '../';
+$translationNamespaces = ['common', 'forms'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Forms</title>
+    <title><?php echo htmlspecialchars(t('forms.list.page_title')); ?></title>
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="<?php echo BASE_URL; ?>assets/js/i18n.js"></script>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/inbox.css">
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/forms.css?v=<?= time() ?>">
     <style>
@@ -222,12 +227,12 @@ $path_prefix = '../';
 
     <div class="forms-list-container">
         <div class="forms-list-toolbar">
-            <h1>Forms</h1>
+            <h1><?php echo htmlspecialchars(t('forms.list.title')); ?></h1>
             <div class="toolbar-actions">
-                <input type="text" id="formSearch" class="forms-list-search" placeholder="Search by title or description..." oninput="filterForms()">
+                <input type="text" id="formSearch" class="forms-list-search" placeholder="<?php echo htmlspecialchars(t('forms.list.search_placeholder')); ?>" oninput="filterForms()">
                 <a href="<?php echo BASE_URL; ?>forms/edit/" class="new-form-btn">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    New form
+                    <?php echo htmlspecialchars(t('forms.list.new_form')); ?>
                 </a>
             </div>
         </div>
@@ -236,18 +241,18 @@ $path_prefix = '../';
             <table class="forms-table" id="formsTable">
                 <thead>
                     <tr>
-                        <th data-sort="title">Title <span class="sort-arrow">&#9650;&#9660;</span></th>
-                        <th data-sort="version" style="width: 80px;">Version <span class="sort-arrow">&#9650;&#9660;</span></th>
-                        <th data-sort="status" style="width: 100px;">Status <span class="sort-arrow">&#9650;&#9660;</span></th>
-                        <th data-sort="fields" style="width: 80px; text-align: right;">Fields <span class="sort-arrow">&#9650;&#9660;</span></th>
-                        <th data-sort="submissions" style="width: 110px; text-align: right;">Submissions <span class="sort-arrow">&#9650;&#9660;</span></th>
-                        <th data-sort="modified" style="width: 200px;">Last modified <span class="sort-arrow">&#9650;&#9660;</span></th>
-                        <th>Modified by</th>
+                        <th data-sort="title"><?php echo htmlspecialchars(t('forms.list.col_title')); ?> <span class="sort-arrow">&#9650;&#9660;</span></th>
+                        <th data-sort="version" style="width: 80px;"><?php echo htmlspecialchars(t('forms.list.col_version')); ?> <span class="sort-arrow">&#9650;&#9660;</span></th>
+                        <th data-sort="status" style="width: 100px;"><?php echo htmlspecialchars(t('forms.list.col_status')); ?> <span class="sort-arrow">&#9650;&#9660;</span></th>
+                        <th data-sort="fields" style="width: 80px; text-align: right;"><?php echo htmlspecialchars(t('forms.list.col_fields')); ?> <span class="sort-arrow">&#9650;&#9660;</span></th>
+                        <th data-sort="submissions" style="width: 110px; text-align: right;"><?php echo htmlspecialchars(t('forms.list.col_submissions')); ?> <span class="sort-arrow">&#9650;&#9660;</span></th>
+                        <th data-sort="modified" style="width: 200px;"><?php echo htmlspecialchars(t('forms.list.col_modified')); ?> <span class="sort-arrow">&#9650;&#9660;</span></th>
+                        <th><?php echo htmlspecialchars(t('forms.list.col_modified_by')); ?></th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody id="formsTableBody">
-                    <tr><td colspan="8" class="forms-empty">Loading forms&hellip;</td></tr>
+                    <tr><td colspan="8" class="forms-empty"><?php echo htmlspecialchars(t('forms.list.loading')); ?></td></tr>
                 </tbody>
             </table>
         </div>
@@ -296,11 +301,11 @@ $path_prefix = '../';
                     render();
                 } else {
                     document.getElementById('formsTableBody').innerHTML =
-                        '<tr><td colspan="8" class="forms-empty">Error loading forms</td></tr>';
+                        '<tr><td colspan="8" class="forms-empty">' + esc(window.t('forms.list.error_loading')) + '</td></tr>';
                 }
             } catch (e) {
                 document.getElementById('formsTableBody').innerHTML =
-                    '<tr><td colspan="8" class="forms-empty">Error loading forms</td></tr>';
+                    '<tr><td colspan="8" class="forms-empty">' + esc(window.t('forms.list.error_loading')) + '</td></tr>';
             }
         }
 
@@ -347,10 +352,10 @@ $path_prefix = '../';
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                         <polyline points="14 2 14 8 20 8"></polyline>
                     </svg>
-                    <h3>${allForms.length === 0 ? 'No forms yet' : 'No matching forms'}</h3>
+                    <h3>${allForms.length === 0 ? esc(window.t('forms.list.empty_none_title')) : esc(window.t('forms.list.empty_match_title'))}</h3>
                     <p>${allForms.length === 0
-                        ? 'Click <strong>New form</strong> to create your first one.'
-                        : 'Try a different search term, or clear the search box.'}</p>
+                        ? window.t('forms.list.empty_none_body')
+                        : window.t('forms.list.empty_match_body')}</p>
                 </div></td></tr>`;
                 return;
             }
@@ -358,8 +363,8 @@ $path_prefix = '../';
             tbody.innerHTML = sorted.map(f => {
                 const desc = f.description ? `<small>${esc(f.description)}</small>` : '';
                 const statusPill = f.is_active == 1
-                    ? '<span class="ft-pill active">Active</span>'
-                    : '<span class="ft-pill inactive">Inactive</span>';
+                    ? '<span class="ft-pill active">' + esc(window.t('forms.list.status_active')) + '</span>'
+                    : '<span class="ft-pill inactive">' + esc(window.t('forms.list.status_inactive')) + '</span>';
                 return `<tr onclick="openEdit(${f.id})">
                     <td class="col-title">
                         <strong>${esc(f.title)}</strong>
@@ -370,11 +375,11 @@ $path_prefix = '../';
                     <td style="text-align: right;">${f.field_count}</td>
                     <td style="text-align: right;">${f.submission_count}</td>
                     <td title="${esc(f.modified_date || '')}">${esc(relativeDate(f.modified_date))}</td>
-                    <td>${esc(f.modified_by_name || f.created_by_name || '—')}</td>
+                    <td>${esc(f.modified_by_name || f.created_by_name || window.t('forms.list.unknown_user'))}</td>
                     <td class="col-actions" onclick="event.stopPropagation()">
-                        <a class="ft-action-btn" href="<?php echo BASE_URL; ?>forms/fill.php?id=${f.id}" title="Fill in this form">${ICON_FILL}</a>
-                        <a class="ft-action-btn" href="<?php echo BASE_URL; ?>forms/submissions.php?id=${f.id}" title="View submissions">${ICON_SUBS}</a>
-                        <button class="ft-action-btn danger" onclick="confirmDelete(${f.id})" title="Delete form">${ICON_DELETE}</button>
+                        <a class="ft-action-btn" href="<?php echo BASE_URL; ?>forms/fill.php?id=${f.id}" title="${escAttr(window.t('forms.list.fill_title'))}">${ICON_FILL}</a>
+                        <a class="ft-action-btn" href="<?php echo BASE_URL; ?>forms/submissions.php?id=${f.id}" title="${escAttr(window.t('forms.list.subs_title'))}">${ICON_SUBS}</a>
+                        <button class="ft-action-btn danger" onclick="confirmDelete(${f.id})" title="${escAttr(window.t('forms.list.delete_title'))}">${ICON_DELETE}</button>
                     </td>
                 </tr>`;
             }).join('');
@@ -406,10 +411,10 @@ $path_prefix = '../';
             if (isNaN(d.getTime())) return iso;
             const now = new Date();
             const secs = Math.floor((now - d) / 1000);
-            if (secs < 60)        return 'Just now';
-            if (secs < 3600)      return Math.floor(secs / 60) + ' min ago';
-            if (secs < 86400)     return Math.floor(secs / 3600) + ' hr ago';
-            if (secs < 604800)    return Math.floor(secs / 86400) + ' days ago';
+            if (secs < 60)        return window.t('forms.list.relative_just_now');
+            if (secs < 3600)      return window.t('forms.list.relative_min_ago', { n: Math.floor(secs / 60) });
+            if (secs < 86400)     return window.t('forms.list.relative_hr_ago', { n: Math.floor(secs / 3600) });
+            if (secs < 604800)    return window.t('forms.list.relative_days_ago', { n: Math.floor(secs / 86400) });
             return d.toLocaleDateString();
         }
 
@@ -419,13 +424,18 @@ $path_prefix = '../';
             div.textContent = String(text);
             return div.innerHTML;
         }
+        function escAttr(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
 
         // ===== Delete =====
         async function confirmDelete(id) {
             const ok = await showConfirm({
-                title: 'Delete form',
-                message: "This will permanently delete this form, every version in its chain, and all submissions across all versions. This can't be undone.",
-                okLabel: 'Delete',
+                title: window.t('forms.delete.title'),
+                message: window.t('forms.delete.message'),
+                okLabel: window.t('forms.delete.ok'),
                 okClass: 'danger'
             });
             if (!ok) return;
@@ -438,12 +448,12 @@ $path_prefix = '../';
                 const data = await res.json();
                 if (data.success) {
                     await loadForms();
-                    showToast('Form deleted', 'success');
+                    showToast(window.t('forms.toast.form_deleted'), 'success');
                 } else {
-                    showToast(data.error || 'Failed to delete', 'error');
+                    showToast(data.error || window.t('forms.toast.delete_failed'), 'error');
                 }
             } catch (e) {
-                showToast('Failed to delete', 'error');
+                showToast(window.t('forms.toast.delete_failed'), 'error');
             }
         }
     </script>

@@ -5,6 +5,8 @@
  */
 session_start();
 require_once '../config.php';
+require_once '../includes/i18n.php';
+I18n::initFromSession();
 require_once '../includes/functions.php';
 
 if (!isset($_SESSION['analyst_id'])) {
@@ -34,15 +36,18 @@ $launchUrl = 'content/' . $courseId . '/' . $course['launch_url'];
 
 $current_page = 'lms';
 $path_prefix = '../';
+$translationNamespaces = ['common', 'lms'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($course['title']); ?> - LMS</title>
+    <title><?php echo htmlspecialchars($course['title']); ?> - <?php echo htmlspecialchars(t('lms.title')); ?></title>
     <link rel="stylesheet" href="../assets/css/inbox.css">
     <link rel="stylesheet" href="../assets/css/lms.css">
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../assets/js/i18n.js"></script>
 </head>
 <body>
     <?php include 'includes/header.php'; ?>
@@ -51,8 +56,8 @@ $path_prefix = '../';
         <div class="lms-player-toolbar">
             <span class="course-title"><?php echo htmlspecialchars($course['title']); ?></span>
             <div style="display: flex; gap: 8px; align-items: center;">
-                <span style="font-size: 12px; color: #666;">SCORM <?php echo htmlspecialchars($course['scorm_version'] ?? '?'); ?></span>
-                <a href="./" class="btn btn-secondary" style="font-size: 12px; padding: 5px 12px;">Back</a>
+                <span style="font-size: 12px; color: #666;"><?php echo htmlspecialchars(t('lms.player.scorm_version', ['version' => $course['scorm_version'] ?? '?'])); ?></span>
+                <a href="./" class="btn btn-secondary" style="font-size: 12px; padding: 5px 12px;"><?php echo htmlspecialchars(t('lms.player.back')); ?></a>
             </div>
         </div>
         <iframe id="scormFrame" class="lms-player-frame" src="<?php echo htmlspecialchars($launchUrl); ?>" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>

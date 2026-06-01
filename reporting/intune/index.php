@@ -10,17 +10,22 @@
  */
 session_start();
 require_once '../../config.php';
+require_once '../../includes/i18n.php';
+I18n::initFromSession();
 
 $current_page = 'intune';
 $path_prefix = '../../';
+$translationNamespaces = ['common', 'reporting'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Intune Dashboard</title>
+    <title>Service Desk - <?php echo htmlspecialchars(t('reporting.intune.heading')); ?></title>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../../assets/js/i18n.js"></script>
     <style>
         .dashboard-page {
             height: calc(100vh - 48px);
@@ -204,13 +209,13 @@ $path_prefix = '../../';
 
     <div class="dashboard-toolbar">
         <div style="display:flex; align-items:baseline;">
-            <h2>Intune Dashboard</h2>
-            <span class="last-sync" id="lastSyncInfo">Loading&hellip;</span>
+            <h2><?php echo htmlspecialchars(t('reporting.intune.heading')); ?></h2>
+            <span class="last-sync" id="lastSyncInfo"><?php echo htmlspecialchars(t('reporting.intune.loading_meta')); ?></span>
         </div>
         <div class="dashboard-toolbar-actions">
-            <button class="btn" onclick="loadDashboard()" title="Refresh data">
+            <button class="btn" onclick="loadDashboard()" title="<?php echo htmlspecialchars(t('reporting.intune.refresh_title')); ?>">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-                Refresh
+                <?php echo htmlspecialchars(t('reporting.intune.refresh')); ?>
             </button>
         </div>
     </div>
@@ -218,7 +223,7 @@ $path_prefix = '../../';
     <div id="kpiStrip" class="kpi-strip"></div>
 
     <div id="dashboardBody">
-        <div class="loading-state" id="loadingState">Loading Intune data&hellip;</div>
+        <div class="loading-state" id="loadingState"><?php echo htmlspecialchars(t('reporting.intune.loading_data')); ?></div>
     </div>
 
     </div><!-- /.dashboard-page -->
@@ -230,20 +235,20 @@ $path_prefix = '../../';
                 <h3 id="drillTitle">&hellip;<span class="drill-count" id="drillCount"></span></h3>
             </div>
             <div class="drill-body" id="drillBody">
-                <div class="drill-loading">Loading&hellip;</div>
+                <div class="drill-loading"><?php echo htmlspecialchars(t('reporting.intune.drill_loading')); ?></div>
             </div>
             <div class="drill-footer">
                 <div class="pager">
-                    <button type="button" class="pager-btn" id="drillPrev" onclick="drillGoto(drillState.page - 1)">&lsaquo; Prev</button>
-                    <span id="drillPageInfo">Page 1 of 1</span>
-                    <button type="button" class="pager-btn" id="drillNext" onclick="drillGoto(drillState.page + 1)">Next &rsaquo;</button>
+                    <button type="button" class="pager-btn" id="drillPrev" onclick="drillGoto(drillState.page - 1)"><?php echo htmlspecialchars(t('reporting.intune.drill_prev')); ?></button>
+                    <span id="drillPageInfo"><?php echo htmlspecialchars(t('reporting.intune.drill_page_info', ['current' => 1, 'total' => 1])); ?></span>
+                    <button type="button" class="pager-btn" id="drillNext" onclick="drillGoto(drillState.page + 1)"><?php echo htmlspecialchars(t('reporting.intune.drill_next')); ?></button>
                 </div>
                 <div class="drill-actions">
                     <button type="button" class="btn btn-export" onclick="exportDrillCsv()">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        Export CSV
+                        <?php echo htmlspecialchars(t('reporting.intune.drill_export')); ?>
                     </button>
-                    <button type="button" class="btn" onclick="closeDrillModal()">Close</button>
+                    <button type="button" class="btn" onclick="closeDrillModal()"><?php echo htmlspecialchars(t('reporting.intune.drill_close')); ?></button>
                 </div>
             </div>
         </div>
@@ -308,14 +313,14 @@ $path_prefix = '../../';
 
         async function loadDashboard() {
             const body = document.getElementById('dashboardBody');
-            body.innerHTML = '<div class="loading-state">Loading Intune data&hellip;</div>';
+            body.innerHTML = `<div class="loading-state">${escapeHtml(t('reporting.intune.loading_data'))}</div>`;
             document.getElementById('kpiStrip').innerHTML = '';
 
             try {
                 const res = await fetch(API_BASE + 'dashboard_data.php');
                 const data = await res.json();
                 if (!data.success) {
-                    body.innerHTML = `<div class="empty-banner"><strong>Error:</strong> ${escapeHtml(data.error)}</div>`;
+                    body.innerHTML = `<div class="empty-banner">${escapeHtml(t('reporting.intune.error', { error: data.error }))}</div>`;
                     return;
                 }
 
@@ -325,7 +330,7 @@ $path_prefix = '../../';
 
                 if (data.kpi.total_devices === 0) {
                     body.innerHTML = `<div class="empty-banner">
-                        <strong>No Intune devices found.</strong> Run an Intune sync from the Assets module to import devices, then come back here.
+                        <strong>${escapeHtml(t('reporting.intune.no_devices_title'))}</strong> ${escapeHtml(t('reporting.intune.no_devices_body'))}
                     </div>`;
                     return;
                 }
@@ -333,7 +338,7 @@ $path_prefix = '../../';
                 renderGrid();
                 renderCharts(data.charts);
             } catch (err) {
-                body.innerHTML = `<div class="empty-banner"><strong>Failed to load dashboard:</strong> ${escapeHtml(err.message)}</div>`;
+                body.innerHTML = `<div class="empty-banner">${escapeHtml(t('reporting.intune.load_failed', { error: err.message }))}</div>`;
             }
         }
 
@@ -345,7 +350,7 @@ $path_prefix = '../../';
             }
             const when = formatDate(job.finished_datetime || job.started_datetime);
             const status = job.status || '';
-            span.innerHTML = `Last sync: ${escapeHtml(when || '?')}${status === 'success' ? '' : ' &middot; <span style="color:#ca5010;">' + escapeHtml(status) + '</span>'}`;
+            span.innerHTML = `${escapeHtml(t('reporting.intune.last_sync', { when: when || '?' }))}${status === 'success' ? '' : ' &middot; <span style="color:#ca5010;">' + escapeHtml(status) + '</span>'}`;
         }
 
         function renderKpiStrip(kpi) {
@@ -356,31 +361,32 @@ $path_prefix = '../../';
             const encryptedTone  = kpi.encrypted_pct >= 90 ? 'good' : (kpi.encrypted_pct >= 70 ? '' : 'bad');
             const staleTone      = kpi.stale_count === 0 ? 'good' : (kpi.stale_count > 50 ? 'bad' : 'warn');
 
+            const totalStr = kpi.total_devices.toLocaleString('en-GB');
             strip.innerHTML = `
                 <div class="kpi-card">
-                    <div class="kpi-label">Total Devices</div>
-                    <div class="kpi-value">${kpi.total_devices.toLocaleString('en-GB')}</div>
-                    <div class="kpi-sub">All managed devices</div>
+                    <div class="kpi-label">${escapeHtml(t('reporting.intune.kpi_total'))}</div>
+                    <div class="kpi-value">${totalStr}</div>
+                    <div class="kpi-sub">${escapeHtml(t('reporting.intune.kpi_total_sub'))}</div>
                 </div>
-                <div class="kpi-card clickable ${compliantTone}" onclick="openDrillModal('kpi_compliant','','Compliant devices')">
-                    <div class="kpi-label">Compliant</div>
+                <div class="kpi-card clickable ${compliantTone}" onclick="openDrillModal('kpi_compliant','',t('reporting.intune.kpi_compliant_drill'))">
+                    <div class="kpi-label">${escapeHtml(t('reporting.intune.kpi_compliant'))}</div>
                     <div class="kpi-value">${kpi.compliant_pct}%</div>
-                    <div class="kpi-sub">${kpi.compliant_count.toLocaleString('en-GB')} of ${kpi.total_devices.toLocaleString('en-GB')}</div>
+                    <div class="kpi-sub">${escapeHtml(t('reporting.intune.kpi_compliant_sub', { count: kpi.compliant_count.toLocaleString('en-GB'), total: totalStr }))}</div>
                 </div>
-                <div class="kpi-card clickable ${encryptedTone}" onclick="openDrillModal('kpi_encrypted','','Encrypted devices')">
-                    <div class="kpi-label">Encrypted</div>
+                <div class="kpi-card clickable ${encryptedTone}" onclick="openDrillModal('kpi_encrypted','',t('reporting.intune.kpi_encrypted_drill'))">
+                    <div class="kpi-label">${escapeHtml(t('reporting.intune.kpi_encrypted'))}</div>
                     <div class="kpi-value">${kpi.encrypted_pct}%</div>
-                    <div class="kpi-sub">${kpi.encrypted_count.toLocaleString('en-GB')} of ${kpi.total_devices.toLocaleString('en-GB')}</div>
+                    <div class="kpi-sub">${escapeHtml(t('reporting.intune.kpi_encrypted_sub', { count: kpi.encrypted_count.toLocaleString('en-GB'), total: totalStr }))}</div>
                 </div>
-                <div class="kpi-card clickable ${staleTone}" onclick="openDrillModal('kpi_stale','','Stale (30+ days)')">
-                    <div class="kpi-label">Stale (30+ days)</div>
+                <div class="kpi-card clickable ${staleTone}" onclick="openDrillModal('kpi_stale','',t('reporting.intune.kpi_stale_drill'))">
+                    <div class="kpi-label">${escapeHtml(t('reporting.intune.kpi_stale'))}</div>
                     <div class="kpi-value">${kpi.stale_count.toLocaleString('en-GB')}</div>
-                    <div class="kpi-sub">No sync in last 30 days</div>
+                    <div class="kpi-sub">${escapeHtml(t('reporting.intune.kpi_stale_sub'))}</div>
                 </div>
-                <div class="kpi-card clickable" onclick="openDrillModal('kpi_recent','','Enrolled in last 30 days')">
-                    <div class="kpi-label">Enrolled (30 days)</div>
+                <div class="kpi-card clickable" onclick="openDrillModal('kpi_recent','',t('reporting.intune.kpi_enrolled_drill'))">
+                    <div class="kpi-label">${escapeHtml(t('reporting.intune.kpi_enrolled'))}</div>
                     <div class="kpi-value">${kpi.enrolled_recently.toLocaleString('en-GB')}</div>
-                    <div class="kpi-sub">New in last 30 days</div>
+                    <div class="kpi-sub">${escapeHtml(t('reporting.intune.kpi_enrolled_sub'))}</div>
                 </div>
             `;
         }
@@ -389,14 +395,14 @@ $path_prefix = '../../';
             const body = document.getElementById('dashboardBody');
             body.innerHTML = `
                 <div class="widget-grid">
-                    ${widgetCard('compliance',      'Compliance Breakdown', 'Devices by compliance state')}
-                    ${widgetCard('osBreakdown',     'Operating System',     'Devices grouped by OS')}
-                    ${widgetCard('ownerType',       'Owner Type',           'Corporate vs personal devices')}
-                    ${widgetCard('manufacturers',   'Top Manufacturers',    'Devices by manufacturer (top 10)')}
-                    ${widgetCard('osVersions',      'Top OS Versions',      'Most common OS + version combinations')}
-                    ${widgetCard('lastSync',        'Last Sync Window',     'How recently devices checked in')}
-                    ${widgetCard('enrolmentTrend',  'Enrolments (last 90 days)', 'New devices enrolled per day')}
-                    ${widgetCard('encryptionByOs',  'Encryption by OS',     'Encrypted vs unencrypted, per OS')}
+                    ${widgetCard('compliance',      t('reporting.intune.w_compliance_title'),   t('reporting.intune.w_compliance_desc'))}
+                    ${widgetCard('osBreakdown',     t('reporting.intune.w_os_title'),           t('reporting.intune.w_os_desc'))}
+                    ${widgetCard('ownerType',       t('reporting.intune.w_owner_title'),        t('reporting.intune.w_owner_desc'))}
+                    ${widgetCard('manufacturers',   t('reporting.intune.w_manufacturers_title'),t('reporting.intune.w_manufacturers_desc'))}
+                    ${widgetCard('osVersions',      t('reporting.intune.w_os_versions_title'),  t('reporting.intune.w_os_versions_desc'))}
+                    ${widgetCard('lastSync',        t('reporting.intune.w_last_sync_title'),    t('reporting.intune.w_last_sync_desc'))}
+                    ${widgetCard('enrolmentTrend',  t('reporting.intune.w_enrolment_title'),    t('reporting.intune.w_enrolment_desc'))}
+                    ${widgetCard('encryptionByOs',  t('reporting.intune.w_encryption_title'),   t('reporting.intune.w_encryption_desc'))}
                 </div>
             `;
         }
@@ -530,7 +536,7 @@ $path_prefix = '../../';
                         tooltip: {
                             callbacks: {
                                 title: ctx => items[ctx[0].dataIndex].label,
-                                label: ctx => ctx.parsed.y + ' enrolled (click to drill down)'
+                                label: ctx => t('reporting.intune.tooltip_enrolled', { count: ctx.parsed.y })
                             }
                         }
                     },
@@ -542,7 +548,7 @@ $path_prefix = '../../';
                         if (!els || !els.length) return;
                         const point = items[els[0].index];
                         if (point && point.value > 0) {
-                            openDrillModal(filterKey, point.raw, 'Enrolled on ' + point.label);
+                            openDrillModal(filterKey, point.raw, t('reporting.intune.drill_enrolled_on', { date: point.label }));
                         }
                     },
                     onHover: (e, els) => { canvas.style.cursor = els && els.length ? 'pointer' : 'default'; }
@@ -615,8 +621,8 @@ $path_prefix = '../../';
             drillState.page = 1;
 
             document.getElementById('drillTitle').innerHTML =
-                escapeHtml(friendlyLabel || 'Devices') + '<span class="drill-count" id="drillCount"></span>';
-            document.getElementById('drillBody').innerHTML = '<div class="drill-loading">Loading&hellip;</div>';
+                escapeHtml(friendlyLabel || t('reporting.intune.drill_devices')) + '<span class="drill-count" id="drillCount"></span>';
+            document.getElementById('drillBody').innerHTML = `<div class="drill-loading">${escapeHtml(t('reporting.intune.drill_loading'))}</div>`;
             document.getElementById('drillOverlay').classList.add('active');
             loadDrillPage();
         }
@@ -637,31 +643,32 @@ $path_prefix = '../../';
                 const data = await res.json();
                 if (!data.success) {
                     document.getElementById('drillBody').innerHTML =
-                        `<div class="drill-loading" style="color:#d13438;">Error: ${escapeHtml(data.error)}</div>`;
+                        `<div class="drill-loading" style="color:#d13438;">${escapeHtml(t('reporting.intune.drill_error', { error: data.error }))}</div>`;
                     return;
                 }
                 drillState.totalPages = data.total_pages;
-                document.getElementById('drillCount').textContent = ' · ' + data.total.toLocaleString('en-GB') + ' device' + (data.total === 1 ? '' : 's');
+                const countKey = data.total === 1 ? 'reporting.intune.drill_count' : 'reporting.intune.drill_count_plural';
+                document.getElementById('drillCount').textContent = ' · ' + t(countKey, { count: data.total.toLocaleString('en-GB') });
                 renderDrillRows(data.devices);
                 updateDrillPager(data);
             } catch (err) {
                 document.getElementById('drillBody').innerHTML =
-                    `<div class="drill-loading" style="color:#d13438;">Failed to load: ${escapeHtml(err.message)}</div>`;
+                    `<div class="drill-loading" style="color:#d13438;">${escapeHtml(t('reporting.intune.drill_load_failed', { error: err.message }))}</div>`;
             }
         }
 
         function renderDrillRows(devices) {
             if (!devices || devices.length === 0) {
                 document.getElementById('drillBody').innerHTML =
-                    '<div class="drill-loading">No devices match this filter.</div>';
+                    `<div class="drill-loading">${escapeHtml(t('reporting.intune.drill_no_match'))}</div>`;
                 return;
             }
             const rows = devices.map(d => {
                 const compClass = (d.compliance_state || 'unknown').toLowerCase().replace(/\s+/g, '-');
-                const compLabel = d.compliance_state ? d.compliance_state.charAt(0).toUpperCase() + d.compliance_state.slice(1) : 'Unknown';
-                const lastSync = d.last_sync_datetime ? formatDate(d.last_sync_datetime) : '<span class="dim">Never</span>';
+                const compLabel = d.compliance_state ? d.compliance_state.charAt(0).toUpperCase() + d.compliance_state.slice(1) : t('reporting.intune.unknown');
+                const lastSync = d.last_sync_datetime ? formatDate(d.last_sync_datetime) : `<span class="dim">${escapeHtml(t('reporting.intune.never'))}</span>`;
                 const user = d.user_display_name || d.user_principal_name || '<span class="dim">—</span>';
-                const enc = d.is_encrypted === true ? 'Yes' : (d.is_encrypted === false ? 'No' : '<span class="dim">—</span>');
+                const enc = d.is_encrypted === true ? t('reporting.intune.yes') : (d.is_encrypted === false ? t('reporting.intune.no') : '<span class="dim">—</span>');
                 return `<tr>
                     <td>${escapeHtml(d.device_name || '—')}</td>
                     <td>${user === '<span class="dim">—</span>' ? user : escapeHtml(user)}</td>
@@ -675,12 +682,12 @@ $path_prefix = '../../';
                 <table>
                     <thead>
                         <tr>
-                            <th>Device</th>
-                            <th>User</th>
-                            <th>OS</th>
-                            <th>Compliance</th>
-                            <th>Encrypted</th>
-                            <th>Last Sync</th>
+                            <th>${escapeHtml(t('reporting.intune.drill_col_device'))}</th>
+                            <th>${escapeHtml(t('reporting.intune.drill_col_user'))}</th>
+                            <th>${escapeHtml(t('reporting.intune.drill_col_os'))}</th>
+                            <th>${escapeHtml(t('reporting.intune.drill_col_compliance'))}</th>
+                            <th>${escapeHtml(t('reporting.intune.drill_col_encrypted'))}</th>
+                            <th>${escapeHtml(t('reporting.intune.drill_col_last_sync'))}</th>
                         </tr>
                     </thead>
                     <tbody>${rows}</tbody>
@@ -690,7 +697,7 @@ $path_prefix = '../../';
 
         function updateDrillPager(data) {
             document.getElementById('drillPageInfo').textContent =
-                `Page ${data.page} of ${data.total_pages}`;
+                t('reporting.intune.drill_page_info', { current: data.page, total: data.total_pages });
             document.getElementById('drillPrev').disabled = (data.page <= 1);
             document.getElementById('drillNext').disabled = (data.page >= data.total_pages);
         }
@@ -698,7 +705,7 @@ $path_prefix = '../../';
         function drillGoto(page) {
             if (page < 1 || page > drillState.totalPages) return;
             drillState.page = page;
-            document.getElementById('drillBody').innerHTML = '<div class="drill-loading">Loading&hellip;</div>';
+            document.getElementById('drillBody').innerHTML = `<div class="drill-loading">${escapeHtml(t('reporting.intune.drill_loading'))}</div>`;
             loadDrillPage();
         }
 
@@ -725,7 +732,7 @@ $path_prefix = '../../';
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const parent = canvas.parentElement;
-            parent.innerHTML = '<div style="color:#aaa;font-size:13px;">No data</div>';
+            parent.innerHTML = `<div style="color:#aaa;font-size:13px;">${escapeHtml(t('reporting.intune.no_data'))}</div>`;
         }
 
         document.addEventListener('DOMContentLoaded', loadDashboard);

@@ -4,6 +4,8 @@
  */
 session_start();
 require_once '../config.php';
+require_once '../includes/i18n.php';
+I18n::initFromSession();
 
 if (!isset($_SESSION['analyst_id'])) {
     header('Location: ../login.php');
@@ -12,14 +14,17 @@ if (!isset($_SESSION['analyst_id'])) {
 
 $current_page = 'help';
 $path_prefix = '../';
+$translationNamespaces = ['common', 'morning-checks'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Morning Checks Guide</title>
+    <title>Service Desk - <?php echo htmlspecialchars(t('morning-checks.help.hero_title')); ?></title>
     <link rel="stylesheet" href="../assets/css/inbox.css">
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../assets/js/i18n.js"></script>
     <style>
         .mc-help-container {
             display: flex;
@@ -449,30 +454,30 @@ $path_prefix = '../';
     <div class="mc-help-container">
         <!-- Left pane navigation -->
         <div class="mc-help-sidebar">
-            <h3>Guide</h3>
+            <h3><?php echo htmlspecialchars(t('morning-checks.help.guide')); ?></h3>
             <a href="#overview" class="mc-help-nav-link active" data-section="overview">
                 <span class="mc-help-nav-num">1</span>
-                Overview
+                <?php echo htmlspecialchars(t('morning-checks.help.nav_overview')); ?>
             </a>
             <a href="#daily-checks" class="mc-help-nav-link" data-section="daily-checks">
                 <span class="mc-help-nav-num">2</span>
-                Performing daily checks
+                <?php echo htmlspecialchars(t('morning-checks.help.nav_daily_checks')); ?>
             </a>
             <a href="#trend-chart" class="mc-help-nav-link" data-section="trend-chart">
                 <span class="mc-help-nav-num">3</span>
-                The trend chart
+                <?php echo htmlspecialchars(t('morning-checks.help.nav_trend_chart')); ?>
             </a>
             <a href="#pdf-export" class="mc-help-nav-link" data-section="pdf-export">
                 <span class="mc-help-nav-num">4</span>
-                PDF export
+                <?php echo htmlspecialchars(t('morning-checks.help.nav_pdf_export')); ?>
             </a>
             <a href="#settings" class="mc-help-nav-link" data-section="settings">
                 <span class="mc-help-nav-num">5</span>
-                Settings
+                <?php echo htmlspecialchars(t('morning-checks.help.nav_settings')); ?>
             </a>
             <a href="#tips" class="mc-help-nav-link" data-section="tips">
                 <span class="mc-help-nav-num">6</span>
-                Quick tips
+                <?php echo htmlspecialchars(t('morning-checks.help.nav_tips')); ?>
             </a>
         </div>
 
@@ -480,8 +485,8 @@ $path_prefix = '../';
         <div class="mc-help-main" id="helpMain">
             <!-- Hero banner -->
             <div class="mc-help-hero">
-                <h2>Morning checks guide</h2>
-                <p>A structured daily checklist to keep your IT operations running smoothly &mdash; every single morning.</p>
+                <h2><?php echo htmlspecialchars(t('morning-checks.help.hero_title')); ?></h2>
+                <p><?php echo htmlspecialchars(t('morning-checks.help.hero_subtitle')); ?></p>
             </div>
 
             <div class="mc-help-content">
@@ -491,8 +496,8 @@ $path_prefix = '../';
                     <div class="mc-help-section-header">
                         <span class="mc-help-section-num">1</span>
                         <div>
-                            <h3>Overview</h3>
-                            <p>Morning Checks provides a structured daily checklist for your IT operations team. Each morning, analysts work through a defined set of checks &mdash; verifying that critical systems are online, backups completed successfully, queues are clear, and services are healthy. Every check is recorded with a status, building a reliable audit trail and a 30-day trend view so you can spot recurring problems before they become incidents.</p>
+                            <h3><?php echo htmlspecialchars(t('morning-checks.help.overview_heading')); ?></h3>
+                            <p><?php echo htmlspecialchars(t('morning-checks.help.overview_intro')); ?></p>
                         </div>
                     </div>
                     <div class="mc-help-features-grid">
@@ -500,29 +505,29 @@ $path_prefix = '../';
                             <div class="mc-help-feature-icon teal">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                             </div>
-                            <h4>Daily checklist</h4>
-                            <p>A repeatable list of operational checks that resets each day. Work through every item, mark a status, and know nothing has been missed before the team starts taking calls.</p>
+                            <h4><?php echo htmlspecialchars(t('morning-checks.help.feature_checklist_title')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('morning-checks.help.feature_checklist_desc')); ?></p>
                         </div>
                         <div class="mc-help-feature-card">
                             <div class="mc-help-feature-icon green">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
                             </div>
-                            <h4>Trend tracking</h4>
-                            <p>A stacked bar chart shows the last 30 days at a glance. Quickly see whether your green rate is improving, or if a particular check keeps failing week after week.</p>
+                            <h4><?php echo htmlspecialchars(t('morning-checks.help.feature_trend_title')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('morning-checks.help.feature_trend_desc')); ?></p>
                         </div>
                         <div class="mc-help-feature-card">
                             <div class="mc-help-feature-icon blue">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
                             </div>
-                            <h4>PDF export</h4>
-                            <p>Generate a professional PDF report for any day's checks. Ideal for management reviews, audit evidence, or handing off to the next shift with a clear record of what was checked.</p>
+                            <h4><?php echo htmlspecialchars(t('morning-checks.help.feature_pdf_title')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('morning-checks.help.feature_pdf_desc')); ?></p>
                         </div>
                         <div class="mc-help-feature-card">
                             <div class="mc-help-feature-icon orange">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09c-.658.003-1.25.396-1.51 1z"></path></svg>
                             </div>
-                            <h4>Configurable</h4>
-                            <p>Define exactly which checks your team needs to perform. Add, edit, remove, and reorder check items from the Settings page to match your operational requirements.</p>
+                            <h4><?php echo htmlspecialchars(t('morning-checks.help.feature_config_title')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('morning-checks.help.feature_config_desc')); ?></p>
                         </div>
                     </div>
                 </div>
@@ -531,64 +536,64 @@ $path_prefix = '../';
                 <div class="mc-help-section" id="daily-checks">
                     <div class="mc-help-section-header">
                         <span class="mc-help-section-num">2</span>
-                        <h3>Performing daily checks</h3>
+                        <h3><?php echo htmlspecialchars(t('morning-checks.help.daily_heading')); ?></h3>
                     </div>
-                    <p>The dashboard shows today's checklist by default. Each row in the table represents one check item with its name, description, status buttons, and a notes column. Work through the list from top to bottom at the start of each day.</p>
+                    <p><?php echo htmlspecialchars(t('morning-checks.help.daily_intro')); ?></p>
 
                     <div class="mc-help-steps">
                         <div class="mc-help-step-item">
                             <div class="mc-help-step-num">1</div>
                             <div>
-                                <strong>Open the dashboard</strong> &mdash; navigate to Morning Checks. Today's date is selected automatically and the checklist loads with all your configured check items.
+                                <strong><?php echo htmlspecialchars(t('morning-checks.help.daily_step1_strong')); ?></strong> <?php echo t('morning-checks.help.daily_step1_text'); ?>
                             </div>
                         </div>
                         <div class="mc-help-step-item">
                             <div class="mc-help-step-num">2</div>
                             <div>
-                                <strong>Perform each check</strong> &mdash; for every row, investigate the system or service described. Then click the appropriate status button: <strong>Green</strong>, <strong>Amber</strong>, or <strong>Red</strong>.
+                                <strong><?php echo htmlspecialchars(t('morning-checks.help.daily_step2_strong')); ?></strong> <?php echo t('morning-checks.help.daily_step2_text'); ?>
                             </div>
                         </div>
                         <div class="mc-help-step-item">
                             <div class="mc-help-step-num">3</div>
                             <div>
-                                <strong>Add notes for non-green statuses</strong> &mdash; when you select Amber or Red, a modal appears requiring you to enter notes explaining the issue. This is mandatory so there is always context for failed or degraded checks.
+                                <strong><?php echo htmlspecialchars(t('morning-checks.help.daily_step3_strong')); ?></strong> <?php echo t('morning-checks.help.daily_step3_text'); ?>
                             </div>
                         </div>
                         <div class="mc-help-step-item">
                             <div class="mc-help-step-num">4</div>
                             <div>
-                                <strong>Results save automatically</strong> &mdash; each status selection is saved to the database immediately. There is no separate save button; your progress is preserved as you go.
+                                <strong><?php echo htmlspecialchars(t('morning-checks.help.daily_step4_strong')); ?></strong> <?php echo t('morning-checks.help.daily_step4_text'); ?>
                             </div>
                         </div>
                     </div>
 
-                    <p style="margin-top: 18px;">The three statuses represent different operational states:</p>
+                    <p style="margin-top: 18px;"><?php echo htmlspecialchars(t('morning-checks.help.daily_states_intro')); ?></p>
 
                     <div class="mc-help-status-grid">
                         <div class="mc-help-status-card status-green">
-                            <strong>Green</strong>
-                            <span>Everything is working as expected. The system or service is fully operational and no action is needed. No notes required.</span>
+                            <strong><?php echo htmlspecialchars(t('morning-checks.help.daily_green_title')); ?></strong>
+                            <span><?php echo htmlspecialchars(t('morning-checks.help.daily_green_desc')); ?></span>
                         </div>
                         <div class="mc-help-status-card status-amber">
-                            <strong>Amber</strong>
-                            <span>Something needs attention but is not critically impacted. For example, a backup completed with warnings, or a queue is higher than usual. Notes are required to explain what was observed.</span>
+                            <strong><?php echo htmlspecialchars(t('morning-checks.help.daily_amber_title')); ?></strong>
+                            <span><?php echo htmlspecialchars(t('morning-checks.help.daily_amber_desc')); ?></span>
                         </div>
                         <div class="mc-help-status-card status-red">
-                            <strong>Red</strong>
-                            <span>A failure or critical issue has been identified. The system or service is down, a backup has failed, or a major problem needs immediate attention. Notes are required to detail the issue and any actions taken.</span>
+                            <strong><?php echo htmlspecialchars(t('morning-checks.help.daily_red_title')); ?></strong>
+                            <span><?php echo htmlspecialchars(t('morning-checks.help.daily_red_desc')); ?></span>
                         </div>
                     </div>
 
-                    <p class="mc-help-tip">Use the date picker at the top of the dashboard to view or update checks for previous days. Click the "Today" button to jump back to the current date at any time.</p>
+                    <p class="mc-help-tip"><?php echo htmlspecialchars(t('morning-checks.help.daily_tip')); ?></p>
                 </div>
 
                 <!-- Section 3: The Trend Chart (highlighted) -->
                 <div class="mc-help-section mc-help-section-highlight" id="trend-chart">
                     <div class="mc-help-section-header">
                         <span class="mc-help-section-num highlight">3</span>
-                        <h3>The trend chart</h3>
+                        <h3><?php echo htmlspecialchars(t('morning-checks.help.trend_heading')); ?></h3>
                     </div>
-                    <p class="mc-help-intro">At the bottom of the dashboard, a collapsible stacked bar chart shows the last 30 days of check results. Each bar represents one day, broken down into green, amber, and red segments so you can see overall operational health at a glance.</p>
+                    <p class="mc-help-intro"><?php echo htmlspecialchars(t('morning-checks.help.trend_intro')); ?></p>
 
                     <div class="mc-help-chart-preview">
                         <div class="mc-help-chart-bars">
@@ -622,9 +627,9 @@ $path_prefix = '../';
                             </div>
                         </div>
                         <div class="mc-help-chart-legend">
-                            <span><span class="mc-help-chart-legend-dot" style="background:#28a745;"></span> Green</span>
-                            <span><span class="mc-help-chart-legend-dot" style="background:#ffc107;"></span> Amber</span>
-                            <span><span class="mc-help-chart-legend-dot" style="background:#dc3545;"></span> Red</span>
+                            <span><span class="mc-help-chart-legend-dot" style="background:#28a745;"></span> <?php echo htmlspecialchars(t('morning-checks.help.trend_legend_green')); ?></span>
+                            <span><span class="mc-help-chart-legend-dot" style="background:#ffc107;"></span> <?php echo htmlspecialchars(t('morning-checks.help.trend_legend_amber')); ?></span>
+                            <span><span class="mc-help-chart-legend-dot" style="background:#dc3545;"></span> <?php echo htmlspecialchars(t('morning-checks.help.trend_legend_red')); ?></span>
                         </div>
                     </div>
 
@@ -632,120 +637,120 @@ $path_prefix = '../';
                         <div class="mc-help-step-item">
                             <div class="mc-help-step-num">1</div>
                             <div>
-                                <strong>Spot recurring failures</strong> &mdash; if the same day of the week regularly shows red or amber, it may indicate a scheduled job that consistently fails or a resource that is under strain at predictable times.
+                                <strong><?php echo htmlspecialchars(t('morning-checks.help.trend_step1_strong')); ?></strong> <?php echo t('morning-checks.help.trend_step1_text'); ?>
                             </div>
                         </div>
                         <div class="mc-help-step-item">
                             <div class="mc-help-step-num">2</div>
                             <div>
-                                <strong>Track improvement</strong> &mdash; after addressing a systemic issue, watch the chart over the following days and weeks to confirm the fix has held and the green rate is recovering.
+                                <strong><?php echo htmlspecialchars(t('morning-checks.help.trend_step2_strong')); ?></strong> <?php echo t('morning-checks.help.trend_step2_text'); ?>
                             </div>
                         </div>
                         <div class="mc-help-step-item">
                             <div class="mc-help-step-num">3</div>
                             <div>
-                                <strong>Click to navigate</strong> &mdash; click any bar in the chart to jump directly to that day's checks. The date picker updates and the checklist reloads, so you can review exactly what happened.
+                                <strong><?php echo htmlspecialchars(t('morning-checks.help.trend_step3_strong')); ?></strong> <?php echo t('morning-checks.help.trend_step3_text'); ?>
                             </div>
                         </div>
                     </div>
 
-                    <p class="mc-help-tip">Click the chart header to collapse or expand the trend view. The chart automatically adjusts when you change the selected date, always showing the 30 days ending on the selected date.</p>
+                    <p class="mc-help-tip"><?php echo htmlspecialchars(t('morning-checks.help.trend_tip')); ?></p>
                 </div>
 
                 <!-- Section 4: PDF Export -->
                 <div class="mc-help-section" id="pdf-export">
                     <div class="mc-help-section-header">
                         <span class="mc-help-section-num">4</span>
-                        <h3>PDF export</h3>
+                        <h3><?php echo htmlspecialchars(t('morning-checks.help.pdf_heading')); ?></h3>
                     </div>
-                    <p>Generate a downloadable PDF report of any day's morning checks. This is useful for management reviews, compliance evidence, shift handover documentation, or simply keeping an offline record of your operational checks.</p>
+                    <p><?php echo htmlspecialchars(t('morning-checks.help.pdf_intro')); ?></p>
 
                     <div class="mc-help-steps">
                         <div class="mc-help-step-item">
                             <div class="mc-help-step-num">1</div>
                             <div>
-                                <strong>Select the date</strong> &mdash; use the date picker to navigate to the day you want to export. The checklist will load with that day's saved results.
+                                <strong><?php echo htmlspecialchars(t('morning-checks.help.pdf_step1_strong')); ?></strong> <?php echo t('morning-checks.help.pdf_step1_text'); ?>
                             </div>
                         </div>
                         <div class="mc-help-step-item">
                             <div class="mc-help-step-num">2</div>
                             <div>
-                                <strong>Click "Save to PDF"</strong> &mdash; the button is located next to the date picker. The PDF is generated instantly in your browser and downloaded automatically.
+                                <strong><?php echo htmlspecialchars(t('morning-checks.help.pdf_step2_strong')); ?></strong> <?php echo t('morning-checks.help.pdf_step2_text'); ?>
                             </div>
                         </div>
                     </div>
 
-                    <p>The exported PDF includes:</p>
+                    <p><?php echo htmlspecialchars(t('morning-checks.help.pdf_includes')); ?></p>
 
                     <div class="mc-help-fields">
-                        <div><strong>Company logo</strong> &mdash; your organisation's logo appears at the top of the report if one has been configured</div>
-                        <div><strong>Date heading</strong> &mdash; the full date of the checks, matching what appears on the dashboard</div>
-                        <div><strong>Results table</strong> &mdash; every check item with its name, description, status (colour-coded), and any notes recorded by the analyst</div>
+                        <div><strong><?php echo htmlspecialchars(t('morning-checks.help.pdf_field_logo_strong')); ?></strong> <?php echo t('morning-checks.help.pdf_field_logo_text'); ?></div>
+                        <div><strong><?php echo htmlspecialchars(t('morning-checks.help.pdf_field_date_strong')); ?></strong> <?php echo t('morning-checks.help.pdf_field_date_text'); ?></div>
+                        <div><strong><?php echo htmlspecialchars(t('morning-checks.help.pdf_field_table_strong')); ?></strong> <?php echo t('morning-checks.help.pdf_field_table_text'); ?></div>
                     </div>
 
-                    <p class="mc-help-tip">The PDF file is named <strong>morning-checks-YYYY-MM-DD.pdf</strong> automatically, making it easy to organise downloaded reports by date in your file system.</p>
+                    <p class="mc-help-tip"><?php echo t('morning-checks.help.pdf_tip'); ?></p>
                 </div>
 
                 <!-- Section 5: Settings (highlighted) -->
                 <div class="mc-help-section mc-help-section-highlight" id="settings">
                     <div class="mc-help-section-header">
                         <span class="mc-help-section-num highlight">5</span>
-                        <h3>Settings</h3>
+                        <h3><?php echo htmlspecialchars(t('morning-checks.help.settings_heading')); ?></h3>
                     </div>
-                    <p class="mc-help-intro">The Settings page is where you define the check items that appear on the daily checklist. Every team has different operational requirements, so Morning Checks is fully configurable. Add checks for backup verification, service health, queue monitoring, certificate expiry, or anything else your team needs to verify each morning.</p>
+                    <p class="mc-help-intro"><?php echo htmlspecialchars(t('morning-checks.help.settings_intro')); ?></p>
 
                     <div class="mc-help-steps">
                         <div class="mc-help-step-item">
                             <div class="mc-help-step-num">1</div>
                             <div>
-                                <strong>Add a check item</strong> &mdash; click the Add button to create a new check. Give it a clear, concise name (e.g. "Backup verification") and an optional description explaining what the analyst should look for.
+                                <strong><?php echo htmlspecialchars(t('morning-checks.help.settings_step1_strong')); ?></strong> <?php echo t('morning-checks.help.settings_step1_text'); ?>
                             </div>
                         </div>
                         <div class="mc-help-step-item">
                             <div class="mc-help-step-num">2</div>
                             <div>
-                                <strong>Edit existing checks</strong> &mdash; click the edit button on any check item to update its name or description. Changes take effect immediately on the dashboard for future checks.
+                                <strong><?php echo htmlspecialchars(t('morning-checks.help.settings_step2_strong')); ?></strong> <?php echo t('morning-checks.help.settings_step2_text'); ?>
                             </div>
                         </div>
                         <div class="mc-help-step-item">
                             <div class="mc-help-step-num">3</div>
                             <div>
-                                <strong>Reorder checks</strong> &mdash; drag and drop check items using the grip handle on the left side to arrange them in the order your team should work through them. The most critical checks should sit at the top.
+                                <strong><?php echo htmlspecialchars(t('morning-checks.help.settings_step3_strong')); ?></strong> <?php echo t('morning-checks.help.settings_step3_text'); ?>
                             </div>
                         </div>
                         <div class="mc-help-step-item">
                             <div class="mc-help-step-num">4</div>
                             <div>
-                                <strong>Remove checks</strong> &mdash; delete a check item you no longer need. Historical data for that check is preserved, so previous day's results remain intact for reporting purposes.
+                                <strong><?php echo htmlspecialchars(t('morning-checks.help.settings_step4_strong')); ?></strong> <?php echo t('morning-checks.help.settings_step4_text'); ?>
                             </div>
                         </div>
                     </div>
 
-                    <p class="mc-help-tip">Think of your check items as a runbook distilled into single-line verifications. If an analyst needs to check three separate backup systems, create three separate check items rather than one generic "Backups" entry. This gives you much better visibility in the trend chart.</p>
+                    <p class="mc-help-tip"><?php echo htmlspecialchars(t('morning-checks.help.settings_tip')); ?></p>
                 </div>
 
                 <!-- Section 6: Quick Tips -->
                 <div class="mc-help-section" id="tips">
                     <div class="mc-help-section-header">
                         <span class="mc-help-section-num">6</span>
-                        <h3>Quick tips</h3>
+                        <h3><?php echo htmlspecialchars(t('morning-checks.help.tips_heading')); ?></h3>
                     </div>
                     <div class="mc-help-tips-grid">
                         <div class="mc-help-tip-card">
                             <div class="mc-help-tip-icon">&#9200;</div>
-                            <div><strong>Be consistent</strong><br>Perform morning checks at the same time every day, ideally before the team starts handling incidents. Consistency builds a reliable data set and ensures nothing is overlooked during busy mornings.</div>
+                            <div><strong><?php echo htmlspecialchars(t('morning-checks.help.tip_consistent_title')); ?></strong><br><?php echo htmlspecialchars(t('morning-checks.help.tip_consistent_desc')); ?></div>
                         </div>
                         <div class="mc-help-tip-card">
                             <div class="mc-help-tip-icon">&#128221;</div>
-                            <div><strong>Write useful notes</strong><br>When marking a check as Amber or Red, include enough detail for someone unfamiliar with the issue to understand what happened. Mention error messages, ticket numbers, and any workarounds applied.</div>
+                            <div><strong><?php echo htmlspecialchars(t('morning-checks.help.tip_notes_title')); ?></strong><br><?php echo htmlspecialchars(t('morning-checks.help.tip_notes_desc')); ?></div>
                         </div>
                         <div class="mc-help-tip-card">
                             <div class="mc-help-tip-icon">&#128257;</div>
-                            <div><strong>Use it for handovers</strong><br>Export the PDF at the end of your shift and share it with the incoming team. It gives them an instant snapshot of what passed, what failed, and what still needs attention.</div>
+                            <div><strong><?php echo htmlspecialchars(t('morning-checks.help.tip_handover_title')); ?></strong><br><?php echo htmlspecialchars(t('morning-checks.help.tip_handover_desc')); ?></div>
                         </div>
                         <div class="mc-help-tip-card">
                             <div class="mc-help-tip-icon">&#128200;</div>
-                            <div><strong>Review the trend weekly</strong><br>Set aside time each week to review the 30-day trend chart. Look for patterns &mdash; checks that regularly go amber on Mondays, services that degrade towards month-end, or gradual decline in pass rates.</div>
+                            <div><strong><?php echo htmlspecialchars(t('morning-checks.help.tip_review_title')); ?></strong><br><?php echo htmlspecialchars(t('morning-checks.help.tip_review_desc')); ?></div>
                         </div>
                     </div>
                 </div>

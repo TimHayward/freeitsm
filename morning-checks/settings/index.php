@@ -4,6 +4,8 @@
  */
 session_start();
 require_once '../../config.php';
+require_once '../../includes/i18n.php';
+I18n::initFromSession();
 
 if (!isset($_SESSION['analyst_id'])) {
     header('Location: ../../login.php');
@@ -13,15 +15,18 @@ if (!isset($_SESSION['analyst_id'])) {
 $analyst_name = $_SESSION['analyst_name'] ?? 'Analyst';
 $current_page = 'settings';
 $path_prefix = '../../';
+$translationNamespaces = ['common', 'morning-checks'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Morning Checks Settings</title>
+    <title>Service Desk - <?php echo htmlspecialchars(t('morning-checks.title') . ' ' . t('morning-checks.nav.settings')); ?></title>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
     <link rel="stylesheet" href="../style.css">
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../../assets/js/i18n.js"></script>
     <style>
         body { padding-top: 0; }
         /* Full-width settings page, matching the canonical padding used by
@@ -167,18 +172,18 @@ $path_prefix = '../../';
 
     <div class="settings-container">
         <div class="tabs">
-            <button class="tab active" data-tab="checks" onclick="switchTab('checks')">Checks</button>
-            <button class="tab" data-tab="statuses" onclick="switchTab('statuses')">Statuses</button>
-            <button class="tab" data-tab="chart" onclick="switchTab('chart')">Chart</button>
+            <button class="tab active" data-tab="checks" onclick="switchTab('checks')"><?php echo htmlspecialchars(t('morning-checks.settings.tab_checks')); ?></button>
+            <button class="tab" data-tab="statuses" onclick="switchTab('statuses')"><?php echo htmlspecialchars(t('morning-checks.settings.tab_statuses')); ?></button>
+            <button class="tab" data-tab="chart" onclick="switchTab('chart')"><?php echo htmlspecialchars(t('morning-checks.settings.tab_chart')); ?></button>
         </div>
 
         <div class="tab-content active" id="checks-tab">
             <div class="section-header">
-                <h2>Checks</h2>
-                <button class="add-btn" onclick="openAddModal()">Add</button>
+                <h2><?php echo htmlspecialchars(t('morning-checks.settings.checks_heading')); ?></h2>
+                <button class="add-btn" onclick="openAddModal()"><?php echo htmlspecialchars(t('morning-checks.settings.add')); ?></button>
             </div>
             <div class="checks-list" id="checksList">
-                <div class="checks-empty">Loading checks...</div>
+                <div class="checks-empty"><?php echo htmlspecialchars(t('morning-checks.settings.checks_loading')); ?></div>
             </div>
         </div>
 
@@ -188,22 +193,22 @@ $path_prefix = '../../';
              notes modal on the dashboard). -->
         <div class="tab-content" id="statuses-tab">
             <div class="section-header">
-                <h2>Statuses</h2>
-                <button class="add-btn" onclick="openAddStatusModal()">Add</button>
+                <h2><?php echo htmlspecialchars(t('morning-checks.settings.statuses_heading')); ?></h2>
+                <button class="add-btn" onclick="openAddStatusModal()"><?php echo htmlspecialchars(t('morning-checks.settings.add')); ?></button>
             </div>
-            <p style="color: #666; margin-bottom: 16px;">Status options shown as buttons on the dashboard for each check. Mark <em>Requires notes</em> to force the analyst to add notes when picking that status.</p>
+            <p style="color: #666; margin-bottom: 16px;"><?php echo t('morning-checks.settings.statuses_intro_html'); ?></p>
             <table class="lookup-table">
                 <thead>
                     <tr>
-                        <th>Label</th>
-                        <th>Colour</th>
-                        <th>Requires notes</th>
-                        <th>Status</th>
+                        <th><?php echo htmlspecialchars(t('morning-checks.settings.col_label')); ?></th>
+                        <th><?php echo htmlspecialchars(t('morning-checks.settings.col_colour')); ?></th>
+                        <th><?php echo htmlspecialchars(t('morning-checks.settings.col_requires_notes')); ?></th>
+                        <th><?php echo htmlspecialchars(t('morning-checks.settings.col_status')); ?></th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody id="statusesTableBody">
-                    <tr><td colspan="5" style="padding: 24px; text-align: center; color: #999;">Loading statuses...</td></tr>
+                    <tr><td colspan="5" style="padding: 24px; text-align: center; color: #999;"><?php echo htmlspecialchars(t('morning-checks.settings.statuses_loading')); ?></td></tr>
                 </tbody>
             </table>
 
@@ -212,23 +217,23 @@ $path_prefix = '../../';
                  to a current StatusID (e.g. left over from a deleted
                  status). Hidden when no orphans exist. -->
             <div id="orphanSection" style="display: none; margin-top: 32px; padding: 16px; background: #fff8e1; border: 1px solid #ffd54f; border-radius: 6px;">
-                <h3 style="margin: 0 0 6px; font-size: 16px; color: #663d00;">⚠ Unmapped result data</h3>
+                <h3 style="margin: 0 0 6px; font-size: 16px; color: #663d00;">⚠ <?php echo htmlspecialchars(t('morning-checks.settings.orphan_heading')); ?></h3>
                 <p style="font-size: 13px; color: #5d4a00; margin-bottom: 14px;">
-                    Some historical check results reference status labels that no longer match any current status (typically because the status was deleted). Pick a current status for each and click <strong>Map</strong> to convert them to the normalised FK.
+                    <?php echo t('morning-checks.settings.orphan_intro_html'); ?>
                 </p>
                 <table class="lookup-table" id="orphanTable">
                     <thead>
                         <tr>
-                            <th>Orphan label</th>
-                            <th>Rows</th>
-                            <th>Map to</th>
+                            <th><?php echo htmlspecialchars(t('morning-checks.settings.orphan_col_label')); ?></th>
+                            <th><?php echo htmlspecialchars(t('morning-checks.settings.orphan_col_rows')); ?></th>
+                            <th><?php echo htmlspecialchars(t('morning-checks.settings.orphan_col_map')); ?></th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody id="orphanTableBody"></tbody>
                 </table>
                 <div style="margin-top: 14px; display: flex; justify-content: flex-end; gap: 10px;">
-                    <button type="button" class="btn btn-primary" id="mapAllBtn" onclick="normaliseAllOrphans()">Map all</button>
+                    <button type="button" class="btn btn-primary" id="mapAllBtn" onclick="normaliseAllOrphans()"><?php echo htmlspecialchars(t('morning-checks.settings.orphan_map_all')); ?></button>
                 </div>
             </div>
         </div>
@@ -238,23 +243,23 @@ $path_prefix = '../../';
              different analysts can choose different looks. -->
         <div class="tab-content" id="chart-tab">
             <div class="section-header">
-                <h2>Chart</h2>
+                <h2><?php echo htmlspecialchars(t('morning-checks.settings.chart_heading')); ?></h2>
             </div>
-            <p style="color: #666; margin-bottom: 16px;">Visual style for the trend chart on the dashboard.</p>
+            <p style="color: #666; margin-bottom: 16px;"><?php echo htmlspecialchars(t('morning-checks.settings.chart_intro')); ?></p>
 
             <div class="form-group">
-                <label style="display: block; font-weight: 500; margin-bottom: 8px; color: #333; font-size: 13px;">Bar fill</label>
+                <label style="display: block; font-weight: 500; margin-bottom: 8px; color: #333; font-size: 13px;"><?php echo htmlspecialchars(t('morning-checks.settings.chart_bar_fill')); ?></label>
                 <div style="display: flex; gap: 24px; margin-top: 4px;">
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: #333;">
                         <input type="radio" name="chartFill" value="plain" id="chartFillPlain">
-                        Plain
+                        <?php echo htmlspecialchars(t('morning-checks.settings.chart_plain')); ?>
                     </label>
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: #333;">
                         <input type="radio" name="chartFill" value="gradient" id="chartFillGradient">
-                        Gradient
+                        <?php echo htmlspecialchars(t('morning-checks.settings.chart_gradient')); ?>
                     </label>
                 </div>
-                <p style="font-size: 12px; color: #888; margin-top: 8px;">Plain uses a solid fill. Gradient fades from a lighter shade at the top of each bar segment down to the full colour.</p>
+                <p style="font-size: 12px; color: #888; margin-top: 8px;"><?php echo htmlspecialchars(t('morning-checks.settings.chart_fill_help')); ?></p>
             </div>
         </div>
     </div>
@@ -262,19 +267,19 @@ $path_prefix = '../../';
     <!-- Add Modal -->
     <div id="addModal" class="modal">
         <div class="modal-content">
-            <h2>Add check</h2>
+            <h2><?php echo htmlspecialchars(t('morning-checks.settings.modal_add_check')); ?></h2>
             <form id="addCheckForm">
                 <div class="form-group">
-                    <label for="addCheckName">Check name *</label>
+                    <label for="addCheckName"><?php echo htmlspecialchars(t('morning-checks.settings.modal_check_name')); ?></label>
                     <input type="text" id="addCheckName" required>
                 </div>
                 <div class="form-group">
-                    <label for="addCheckDescription">Description</label>
+                    <label for="addCheckDescription"><?php echo htmlspecialchars(t('morning-checks.settings.modal_description')); ?></label>
                     <textarea id="addCheckDescription" rows="3"></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAddModal()"><?php echo htmlspecialchars(t('morning-checks.settings.modal_cancel')); ?></button>
+                    <button type="submit" class="btn btn-primary"><?php echo htmlspecialchars(t('morning-checks.settings.modal_add')); ?></button>
                 </div>
             </form>
         </div>
@@ -283,15 +288,15 @@ $path_prefix = '../../';
     <!-- Edit Modal -->
     <div id="editModal" class="modal">
         <div class="modal-content">
-            <h2>Edit check</h2>
+            <h2><?php echo htmlspecialchars(t('morning-checks.settings.modal_edit_check')); ?></h2>
             <form id="editCheckForm">
                 <input type="hidden" id="editCheckId">
                 <div class="form-group">
-                    <label for="editCheckName">Check name *</label>
+                    <label for="editCheckName"><?php echo htmlspecialchars(t('morning-checks.settings.modal_check_name')); ?></label>
                     <input type="text" id="editCheckName" required>
                 </div>
                 <div class="form-group">
-                    <label for="editCheckDescription">Description</label>
+                    <label for="editCheckDescription"><?php echo htmlspecialchars(t('morning-checks.settings.modal_description')); ?></label>
                     <textarea id="editCheckDescription" rows="3"></textarea>
                 </div>
                 <div class="form-group">
@@ -300,12 +305,12 @@ $path_prefix = '../../';
                             <input type="checkbox" id="editIsActive">
                             <span class="toggle-slider"></span>
                         </span>
-                        <span class="toggle-label">Active</span>
+                        <span class="toggle-label"><?php echo htmlspecialchars(t('morning-checks.settings.modal_active')); ?></span>
                     </label>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()"><?php echo htmlspecialchars(t('morning-checks.settings.modal_cancel')); ?></button>
+                    <button type="submit" class="btn btn-primary"><?php echo htmlspecialchars(t('morning-checks.settings.modal_save')); ?></button>
                 </div>
             </form>
         </div>
@@ -314,15 +319,15 @@ $path_prefix = '../../';
     <!-- Status Add/Edit Modal -->
     <div id="statusModal" class="modal">
         <div class="modal-content">
-            <h2 id="statusModalTitle">Add status</h2>
+            <h2 id="statusModalTitle"><?php echo htmlspecialchars(t('morning-checks.settings.modal_add_status')); ?></h2>
             <form id="statusForm" autocomplete="off">
                 <input type="hidden" id="statusId">
                 <div class="form-group">
-                    <label for="statusLabel">Label *</label>
+                    <label for="statusLabel"><?php echo htmlspecialchars(t('morning-checks.settings.modal_label')); ?></label>
                     <input type="text" id="statusLabel" required maxlength="50" autocomplete="off">
                 </div>
                 <div class="form-group">
-                    <label for="statusColour">Colour</label>
+                    <label for="statusColour"><?php echo htmlspecialchars(t('morning-checks.settings.modal_colour')); ?></label>
                     <input type="color" id="statusColour" value="#28a745" style="width: 60px; height: 40px; padding: 2px; cursor: pointer;">
                 </div>
                 <div class="form-group">
@@ -331,7 +336,7 @@ $path_prefix = '../../';
                             <input type="checkbox" id="statusRequiresNotes">
                             <span class="toggle-slider"></span>
                         </span>
-                        <span class="toggle-label">Requires notes</span>
+                        <span class="toggle-label"><?php echo htmlspecialchars(t('morning-checks.settings.modal_requires_notes')); ?></span>
                     </label>
                 </div>
                 <div class="form-group">
@@ -340,12 +345,12 @@ $path_prefix = '../../';
                             <input type="checkbox" id="statusIsActive" checked>
                             <span class="toggle-slider"></span>
                         </span>
-                        <span class="toggle-label">Active</span>
+                        <span class="toggle-label"><?php echo htmlspecialchars(t('morning-checks.settings.modal_active')); ?></span>
                     </label>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeStatusModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeStatusModal()"><?php echo htmlspecialchars(t('morning-checks.settings.modal_cancel')); ?></button>
+                    <button type="submit" class="btn btn-primary"><?php echo htmlspecialchars(t('morning-checks.settings.modal_save')); ?></button>
                 </div>
             </form>
         </div>
@@ -378,13 +383,13 @@ $path_prefix = '../../';
                 checks = await response.json();
                 if (checks.error) {
                     document.getElementById('checksList').innerHTML =
-                        '<div class="checks-empty" style="color:#dc3545;">Error: ' + checks.error + '</div>';
+                        '<div class="checks-empty" style="color:#dc3545;">' + escapeHtml(window.t('morning-checks.settings.checks_error', { message: checks.error })) + '</div>';
                     return;
                 }
                 renderChecks();
             } catch (error) {
                 document.getElementById('checksList').innerHTML =
-                    '<div class="checks-empty" style="color:#dc3545;">Error loading checks: ' + error.message + '</div>';
+                    '<div class="checks-empty" style="color:#dc3545;">' + escapeHtml(window.t('morning-checks.settings.checks_error_loading', { message: error.message })) + '</div>';
             }
         }
 
@@ -399,7 +404,7 @@ $path_prefix = '../../';
             const container = document.getElementById('checksList');
 
             if (checks.length === 0) {
-                container.innerHTML = '<div class="checks-empty">No checks defined yet. Click Add to create one.</div>';
+                container.innerHTML = '<div class="checks-empty">' + escapeHtml(window.t('morning-checks.settings.checks_empty')) + '</div>';
                 return;
             }
 
@@ -412,7 +417,7 @@ $path_prefix = '../../';
                      ondragend="onDragEnd(event)"
                      ondragover="onDragOver(event, ${i})"
                      ondrop="onDrop(event, ${i})">
-                    <span class="check-drag" title="Drag to reorder">
+                    <span class="check-drag" title="${escapeHtmlAttr(window.t('morning-checks.settings.drag_to_reorder'))}">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                             <circle cx="8" cy="4" r="2"/><circle cx="16" cy="4" r="2"/>
                             <circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/>
@@ -424,11 +429,11 @@ $path_prefix = '../../';
                         ${check.CheckDescription ? '<span class="check-description">' + escapeHtml(check.CheckDescription) + '</span>' : ''}
                     </div>
                     <span class="badge ${check.IsActive ? 'badge-active' : 'badge-inactive'}">
-                        ${check.IsActive ? 'Active' : 'Inactive'}
+                        ${check.IsActive ? escapeHtml(window.t('morning-checks.settings.check_active')) : escapeHtml(window.t('morning-checks.settings.check_inactive'))}
                     </span>
                     <div class="check-actions">
-                        <button class="action-btn" onclick="openEditModal(${check.CheckID})" title="Edit">${ICON_EDIT}</button>
-                        <button class="action-btn delete" onclick="deleteCheck(${check.CheckID}, '${escapeHtml(check.CheckName).replace(/'/g, "\\'")}')" title="Delete">${ICON_DELETE}</button>
+                        <button class="action-btn" onclick="openEditModal(${check.CheckID})" title="${escapeHtmlAttr(window.t('morning-checks.settings.edit'))}">${ICON_EDIT}</button>
+                        <button class="action-btn delete" onclick="deleteCheck(${check.CheckID}, '${escapeHtml(check.CheckName).replace(/'/g, "\\'")}')" title="${escapeHtmlAttr(window.t('morning-checks.settings.delete'))}">${ICON_DELETE}</button>
                     </div>
                 </div>
             `).join('');
@@ -500,10 +505,10 @@ $path_prefix = '../../';
                 });
                 const data = await response.json();
                 if (!data.success) {
-                    showToast('Error saving order: ' + (data.error || 'Unknown error'), 'error');
+                    showToast(window.t('morning-checks.settings.toast_order_error', { message: data.error || window.t('morning-checks.settings.toast_unknown_error') }), 'error');
                 }
             } catch (error) {
-                showToast('Error saving order: ' + error.message, 'error');
+                showToast(window.t('morning-checks.settings.toast_order_error', { message: error.message }), 'error');
             }
         }
 
@@ -561,14 +566,14 @@ $path_prefix = '../../';
                 const data = await response.json();
 
                 if (data.success) {
-                    showToast('Check added successfully', 'success');
+                    showToast(window.t('morning-checks.settings.toast_check_added'), 'success');
                     closeAddModal();
                     loadChecks();
                 } else {
-                    showToast('Error: ' + (data.error || 'Unknown error'), 'error');
+                    showToast(window.t('morning-checks.settings.toast_add_error', { message: data.error || window.t('morning-checks.settings.toast_unknown_error') }), 'error');
                 }
             } catch (error) {
-                showToast('Error adding check: ' + error.message, 'error');
+                showToast(window.t('morning-checks.settings.toast_add_check_error', { message: error.message }), 'error');
             }
         });
 
@@ -595,21 +600,21 @@ $path_prefix = '../../';
                 const data = await response.json();
 
                 if (data.success) {
-                    showToast('Check updated successfully', 'success');
+                    showToast(window.t('morning-checks.settings.toast_check_updated'), 'success');
                     closeEditModal();
                     loadChecks();
                 } else {
-                    showToast('Error: ' + (data.error || 'Unknown error'), 'error');
+                    showToast(window.t('morning-checks.settings.toast_add_error', { message: data.error || window.t('morning-checks.settings.toast_unknown_error') }), 'error');
                 }
             } catch (error) {
-                showToast('Error updating check: ' + error.message, 'error');
+                showToast(window.t('morning-checks.settings.toast_update_check_error', { message: error.message }), 'error');
             }
         });
 
         // --- Delete ---
 
         async function deleteCheck(checkId, checkName) {
-            if (!(await showConfirm({ title: 'Delete', message: 'Are you sure you want to delete "' + checkName + '"?\n\nThis will also delete all associated results.', okLabel: 'Delete', okClass: 'danger' }))) return;
+            if (!(await showConfirm({ title: window.t('morning-checks.settings.confirm_delete_title'), message: window.t('morning-checks.settings.confirm_delete_check', { name: checkName }), okLabel: window.t('morning-checks.settings.confirm_ok'), okClass: 'danger' }))) return;
 
             try {
                 const response = await fetch(API_BASE + 'delete_check.php', {
@@ -620,13 +625,13 @@ $path_prefix = '../../';
                 const data = await response.json();
 
                 if (data.success) {
-                    showToast('Check deleted successfully', 'success');
+                    showToast(window.t('morning-checks.settings.toast_check_deleted'), 'success');
                     loadChecks();
                 } else {
-                    showToast('Error: ' + (data.error || 'Unknown error'), 'error');
+                    showToast(window.t('morning-checks.settings.toast_add_error', { message: data.error || window.t('morning-checks.settings.toast_unknown_error') }), 'error');
                 }
             } catch (error) {
-                showToast('Error deleting check: ' + error.message, 'error');
+                showToast(window.t('morning-checks.settings.toast_delete_check_error', { message: error.message }), 'error');
             }
         }
 
@@ -660,11 +665,11 @@ $path_prefix = '../../';
                     loadOrphans();
                 } else {
                     document.getElementById('statusesTableBody').innerHTML =
-                        '<tr><td colspan="5" style="padding: 24px; text-align: center; color: #c62828;">Error loading statuses</td></tr>';
+                        '<tr><td colspan="5" style="padding: 24px; text-align: center; color: #c62828;">' + escapeHtml(window.t('morning-checks.settings.statuses_error')) + '</td></tr>';
                 }
             } catch (e) {
                 document.getElementById('statusesTableBody').innerHTML =
-                    '<tr><td colspan="5" style="padding: 24px; text-align: center; color: #c62828;">Error loading statuses</td></tr>';
+                    '<tr><td colspan="5" style="padding: 24px; text-align: center; color: #c62828;">' + escapeHtml(window.t('morning-checks.settings.statuses_error')) + '</td></tr>';
             }
         }
 
@@ -715,7 +720,7 @@ $path_prefix = '../../';
                             </select>
                         </td>
                         <td>
-                            <button type="button" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="normaliseOneOrphan(${idx})">Map</button>
+                            <button type="button" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="normaliseOneOrphan(${idx})">${escapeHtml(window.t('morning-checks.settings.orphan_map'))}</button>
                         </td>
                     </tr>
                 `;
@@ -752,20 +757,20 @@ $path_prefix = '../../';
                 });
                 const data = await res.json();
                 if (data && data.success) {
-                    showToast('Mapped ' + data.updated + ' row' + (data.updated === 1 ? '' : 's'), 'success');
+                    showToast(window.t(data.updated === 1 ? 'morning-checks.settings.orphan_mapped_one' : 'morning-checks.settings.orphan_mapped_other', { n: data.updated }), 'success');
                     loadOrphans();
                 } else {
-                    showToast((data && data.error) || 'Failed to normalise', 'error');
+                    showToast((data && data.error) || window.t('morning-checks.settings.orphan_failed'), 'error');
                 }
             } catch (e) {
-                showToast('Failed to normalise', 'error');
+                showToast(window.t('morning-checks.settings.orphan_failed'), 'error');
             }
         }
 
         function renderStatuses() {
             const tbody = document.getElementById('statusesTableBody');
             if (statuses.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="padding: 24px; text-align: center; color: #999;">No statuses defined. Click <strong>Add</strong> to create one.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="padding: 24px; text-align: center; color: #999;">' + window.t('morning-checks.settings.statuses_empty_html') + '</td></tr>';
                 return;
             }
             tbody.innerHTML = statuses.map(s => `
@@ -775,18 +780,18 @@ $path_prefix = '../../';
                         ${escapeHtml(s.Label)}
                     </td>
                     <td><code style="font-size: 12px; color: #666;">${escapeHtml(s.Colour)}</code></td>
-                    <td>${s.RequiresNotes ? '<span class="badge-yes">Yes</span>' : '<span class="badge-no">No</span>'}</td>
-                    <td><span class="${s.IsActive ? 'badge-active' : 'badge-inactive'}">${s.IsActive ? 'Active' : 'Inactive'}</span></td>
+                    <td>${s.RequiresNotes ? '<span class="badge-yes">' + escapeHtml(window.t('morning-checks.settings.yes')) + '</span>' : '<span class="badge-no">' + escapeHtml(window.t('morning-checks.settings.no')) + '</span>'}</td>
+                    <td><span class="${s.IsActive ? 'badge-active' : 'badge-inactive'}">${s.IsActive ? escapeHtml(window.t('morning-checks.settings.status_active')) : escapeHtml(window.t('morning-checks.settings.status_inactive'))}</span></td>
                     <td>
-                        <button class="action-btn" onclick="openEditStatusModal(${s.StatusID})" title="Edit">${ICON_EDIT_S}</button>
-                        <button class="action-btn delete" onclick="deleteStatus(${s.StatusID}, '${escapeJsString(s.Label)}')" title="Delete">${ICON_DELETE_S}</button>
+                        <button class="action-btn" onclick="openEditStatusModal(${s.StatusID})" title="${escapeHtmlAttr(window.t('morning-checks.settings.edit'))}">${ICON_EDIT_S}</button>
+                        <button class="action-btn delete" onclick="deleteStatus(${s.StatusID}, '${escapeJsString(s.Label)}')" title="${escapeHtmlAttr(window.t('morning-checks.settings.delete'))}">${ICON_DELETE_S}</button>
                     </td>
                 </tr>
             `).join('');
         }
 
         function openAddStatusModal() {
-            document.getElementById('statusModalTitle').textContent = 'Add status';
+            document.getElementById('statusModalTitle').textContent = window.t('morning-checks.settings.modal_add_status');
             document.getElementById('statusId').value = '';
             document.getElementById('statusLabel').value = '';
             document.getElementById('statusColour').value = '#28a745';
@@ -799,7 +804,7 @@ $path_prefix = '../../';
         function openEditStatusModal(statusId) {
             const s = statuses.find(x => x.StatusID === statusId);
             if (!s) return;
-            document.getElementById('statusModalTitle').textContent = 'Edit status';
+            document.getElementById('statusModalTitle').textContent = window.t('morning-checks.settings.modal_edit_status');
             document.getElementById('statusId').value = s.StatusID;
             document.getElementById('statusLabel').value = s.Label;
             document.getElementById('statusColour').value = s.Colour;
@@ -833,17 +838,17 @@ $path_prefix = '../../';
                 if (data.success) {
                     closeStatusModal();
                     loadStatuses();
-                    showToast(id ? 'Status updated' : 'Status added', 'success');
+                    showToast(id ? window.t('morning-checks.settings.toast_status_updated') : window.t('morning-checks.settings.toast_status_added'), 'success');
                 } else {
-                    showToast(data.error || 'Failed to save', 'error');
+                    showToast(data.error || window.t('morning-checks.settings.toast_save_failed'), 'error');
                 }
             } catch (e) {
-                showToast('Failed to save status', 'error');
+                showToast(window.t('morning-checks.settings.toast_save_status_failed'), 'error');
             }
         });
 
         async function deleteStatus(statusId, label) {
-            if (!(await showConfirm({ title: 'Delete', message: 'Delete the "' + label + '" status?\n\nHistorical results that used this status will keep showing the label but will lose its colour mapping.', okLabel: 'Delete', okClass: 'danger' }))) return;
+            if (!(await showConfirm({ title: window.t('morning-checks.settings.confirm_delete_title'), message: window.t('morning-checks.settings.confirm_delete_status', { label: label }), okLabel: window.t('morning-checks.settings.confirm_ok'), okClass: 'danger' }))) return;
             try {
                 const res = await fetch(API_BASE + 'delete_status.php', {
                     method: 'POST',
@@ -853,12 +858,12 @@ $path_prefix = '../../';
                 const data = await res.json();
                 if (data.success) {
                     loadStatuses();
-                    showToast('Status deleted', 'success');
+                    showToast(window.t('morning-checks.settings.toast_status_deleted'), 'success');
                 } else {
-                    showToast(data.error || 'Failed to delete', 'error');
+                    showToast(data.error || window.t('morning-checks.settings.toast_delete_failed'), 'error');
                 }
             } catch (e) {
-                showToast('Failed to delete status', 'error');
+                showToast(window.t('morning-checks.settings.toast_delete_status_failed'), 'error');
             }
         }
 
@@ -907,12 +912,12 @@ $path_prefix = '../../';
                         });
                         const data = await res.json();
                         if (data && data.success) {
-                            showToast('Saved', 'success');
+                            showToast(window.t('morning-checks.settings.toast_saved'), 'success');
                         } else {
-                            showToast((data && data.error) || 'Failed to save', 'error');
+                            showToast((data && data.error) || window.t('morning-checks.settings.toast_save_failed'), 'error');
                         }
                     } catch (e) {
-                        showToast('Failed to save', 'error');
+                        showToast(window.t('morning-checks.settings.toast_save_failed'), 'error');
                     }
                 });
             });

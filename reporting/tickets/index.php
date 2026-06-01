@@ -4,17 +4,22 @@
  */
 session_start();
 require_once '../../config.php';
+require_once '../../includes/i18n.php';
+I18n::initFromSession();
 
 $current_page = 'tickets';
 $path_prefix = '../../';
+$translationNamespaces = ['common', 'reporting'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Ticket Dashboards</title>
+    <title>Service Desk - <?php echo htmlspecialchars(t('reporting.tickets.heading')); ?></title>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../../assets/js/i18n.js"></script>
     <style>
         .coming-soon-container {
             flex: 1;
@@ -62,8 +67,8 @@ $path_prefix = '../../';
                 <line x1="12" y1="20" x2="12" y2="4"></line>
                 <line x1="6" y1="20" x2="6" y2="14"></line>
             </svg>
-            <h2>Ticket Dashboards</h2>
-            <p>KPI dashboards and reporting for ticket performance, resolution times, and team workload will be available here soon.</p>
+            <h2><?php echo htmlspecialchars(t('reporting.tickets.heading')); ?></h2>
+            <p><?php echo htmlspecialchars(t('reporting.tickets.coming_soon')); ?></p>
         </div>
     </div>
 </body>

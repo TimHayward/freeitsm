@@ -4,6 +4,8 @@
  */
 session_start();
 require_once '../../config.php';
+require_once '../../includes/i18n.php';
+I18n::initFromSession();
 
 if (!isset($_SESSION['analyst_id'])) {
     header('Location: ../../login.php');
@@ -13,13 +15,16 @@ if (!isset($_SESSION['analyst_id'])) {
 $analyst_name = $_SESSION['analyst_name'] ?? 'Analyst';
 $current_page = 'settings';
 $path_prefix = '../../';
+$translationNamespaces = ['common', 'forms'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Forms Settings</title>
+    <title><?php echo htmlspecialchars(t('forms.settings.page_title')); ?></title>
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../../assets/js/i18n.js"></script>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
     <style>
         .container {
@@ -242,43 +247,43 @@ $path_prefix = '../../';
 
     <div class="container">
         <div class="tabs">
-            <button class="tab active" data-tab="layout" onclick="switchTab('layout')">Layout</button>
-            <button class="tab" data-tab="ai" onclick="switchTab('ai')">AI</button>
+            <button class="tab active" data-tab="layout" onclick="switchTab('layout')"><?php echo htmlspecialchars(t('forms.settings.tab_layout')); ?></button>
+            <button class="tab" data-tab="ai" onclick="switchTab('ai')"><?php echo htmlspecialchars(t('forms.settings.tab_ai')); ?></button>
         </div>
 
         <!-- Layout Tab -->
         <div class="tab-content active" id="layout-tab">
             <div class="section-header">
-                <h2>Layout Settings</h2>
+                <h2><?php echo htmlspecialchars(t('forms.settings.layout_heading')); ?></h2>
             </div>
-            <p style="color: #666; margin-bottom: 24px;">Configure how forms appear when users fill them in and in the form preview.</p>
+            <p style="color: #666; margin-bottom: 24px;"><?php echo htmlspecialchars(t('forms.settings.layout_intro')); ?></p>
 
             <div class="form-group">
-                <label>Logo Alignment</label>
-                <small>Controls the position of the company logo on forms.</small>
+                <label><?php echo htmlspecialchars(t('forms.settings.logo_alignment')); ?></label>
+                <small><?php echo htmlspecialchars(t('forms.settings.logo_alignment_help')); ?></small>
                 <div class="alignment-options" style="margin-top: 10px;">
                     <div class="alignment-option" data-align="left" onclick="selectAlignment('left')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="17" y1="18" x2="3" y2="18"></line></svg>
-                        <span>Left</span>
+                        <span><?php echo htmlspecialchars(t('forms.settings.align_left')); ?></span>
                     </div>
                     <div class="alignment-option selected" data-align="center" onclick="selectAlignment('center')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="10" x2="6" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="18" y1="18" x2="6" y2="18"></line></svg>
-                        <span>Centre</span>
+                        <span><?php echo htmlspecialchars(t('forms.settings.align_center')); ?></span>
                     </div>
                     <div class="alignment-option" data-align="right" onclick="selectAlignment('right')">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="7" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="7" y2="18"></line></svg>
-                        <span>Right</span>
+                        <span><?php echo htmlspecialchars(t('forms.settings.align_right')); ?></span>
                     </div>
                 </div>
             </div>
 
             <div class="logo-preview">
-                <div class="logo-preview-label">Preview</div>
-                <img id="logoPreview" src="../../assets/images/CompanyLogo.png" alt="Company Logo" class="align-center">
+                <div class="logo-preview-label"><?php echo htmlspecialchars(t('forms.settings.preview')); ?></div>
+                <img id="logoPreview" src="../../assets/images/CompanyLogo.png" alt="<?php echo htmlspecialchars(t('forms.settings.logo_alt')); ?>" class="align-center">
             </div>
 
             <div class="form-actions">
-                <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+                <button class="btn btn-primary" onclick="saveSettings()"><?php echo htmlspecialchars(t('forms.settings.save')); ?></button>
             </div>
         </div>
 
@@ -286,35 +291,32 @@ $path_prefix = '../../';
              connection. Saved settings drive api/forms/ai_generate.php. -->
         <div class="tab-content" id="ai-tab">
             <div class="section-header">
-                <h2>AI</h2>
+                <h2><?php echo htmlspecialchars(t('forms.settings.ai_heading')); ?></h2>
             </div>
             <p style="color: #666; margin-bottom: 24px; max-width: 720px;">
-                Configure the AI provider used by the form builder's AI Assist. These settings are billed against the key you supply here, so the Forms feature's usage stays separate from other modules' AI usage on your provider's dashboard.
+                <?php echo htmlspecialchars(t('forms.settings.ai_intro')); ?>
             </p>
 
             <form id="formsAiForm" class="ai-form" autocomplete="off" onsubmit="event.preventDefault(); FormsAi.save();">
                 <div class="form-group">
-                    <label for="formsProvider">Provider</label>
+                    <label for="formsProvider"><?php echo htmlspecialchars(t('forms.settings.provider')); ?></label>
                     <select id="formsProvider" onchange="FormsAi.onProviderChange()">
-                        <option value="anthropic">Anthropic (Claude)</option>
-                        <option value="openai">OpenAI (GPT)</option>
+                        <option value="anthropic"><?php echo htmlspecialchars(t('forms.settings.provider_anthropic')); ?></option>
+                        <option value="openai"><?php echo htmlspecialchars(t('forms.settings.provider_openai')); ?></option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="formsModel">Model</label>
-                    <input type="text" id="formsModel" list="formsModelOptions" placeholder="e.g. claude-sonnet-4-6" autocomplete="off">
+                    <label for="formsModel"><?php echo htmlspecialchars(t('forms.settings.model')); ?></label>
+                    <input type="text" id="formsModel" list="formsModelOptions" placeholder="<?php echo htmlspecialchars(t('forms.settings.model_ph')); ?>" autocomplete="off">
                     <datalist id="formsModelOptions"></datalist>
-                    <small>You can pick a model from the suggestions or paste any model ID supported by your provider.</small>
+                    <small><?php echo htmlspecialchars(t('forms.settings.model_help')); ?></small>
                 </div>
 
                 <div class="form-group">
-                    <label for="formsApiKey">API key</label>
-                    <input type="text" id="formsApiKey" autocomplete="off" placeholder="Paste your API key">
-                    <small>
-                        Stored encrypted at rest. Anthropic: <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:#00897b;">console.anthropic.com</a>.
-                        OpenAI: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" style="color:#00897b;">platform.openai.com</a>.
-                    </small>
+                    <label for="formsApiKey"><?php echo htmlspecialchars(t('forms.settings.api_key')); ?></label>
+                    <input type="text" id="formsApiKey" autocomplete="off" placeholder="<?php echo htmlspecialchars(t('forms.settings.api_key_ph')); ?>">
+                    <small><?php echo t('forms.settings.api_key_help'); ?></small>
                 </div>
 
                 <div class="form-group">
@@ -323,17 +325,17 @@ $path_prefix = '../../';
                             <input type="checkbox" id="formsVerifySsl" checked onchange="FormsAi.onVerifySslChange()">
                             <span class="toggle-slider"></span>
                         </span>
-                        Verify SSL certificate
+                        <?php echo htmlspecialchars(t('forms.settings.verify_ssl')); ?>
                     </label>
-                    <small>Turn off only if your network's proxy is doing TLS inspection with a self-signed CA.</small>
+                    <small><?php echo htmlspecialchars(t('forms.settings.verify_ssl_help')); ?></small>
                     <div id="formsSslWarning" class="ssl-warning">
-                        <strong>Warning:</strong> SSL verification is off &mdash; outbound traffic to the AI provider isn't being verified. Only use this on a controlled network with a known proxy.
+                        <?php echo t('forms.settings.ssl_warning'); ?>
                     </div>
                 </div>
 
                 <div class="ai-actions">
-                    <button type="submit" class="btn btn-primary">Save</button>
-                    <button type="button" class="btn-test" id="formsTestBtn" onclick="FormsAi.testKey()">Test connection</button>
+                    <button type="submit" class="btn btn-primary"><?php echo htmlspecialchars(t('forms.settings.save')); ?></button>
+                    <button type="button" class="btn-test" id="formsTestBtn" onclick="FormsAi.testKey()"><?php echo htmlspecialchars(t('forms.settings.test_connection')); ?></button>
                     <span id="formsTestStatus" class="test-status"></span>
                 </div>
             </form>
@@ -367,14 +369,14 @@ $path_prefix = '../../';
         // dashboard.
         const FORMS_AI_MODEL_OPTIONS = {
             anthropic: [
-                { id: 'claude-opus-4-7',           label: 'Opus 4.7 — most capable' },
-                { id: 'claude-sonnet-4-6',         label: 'Sonnet 4.6 — recommended (best balance)' },
-                { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5 — fastest and cheapest' },
+                { id: 'claude-opus-4-7',           label: window.t('forms.settings.model_opus') },
+                { id: 'claude-sonnet-4-6',         label: window.t('forms.settings.model_sonnet') },
+                { id: 'claude-haiku-4-5-20251001', label: window.t('forms.settings.model_haiku') },
             ],
             openai: [
-                { id: 'gpt-4.1',     label: 'GPT-4.1 — most capable' },
-                { id: 'gpt-4o',      label: 'GPT-4o — recommended default' },
-                { id: 'gpt-4o-mini', label: 'GPT-4o mini — fastest and cheapest' },
+                { id: 'gpt-4.1',     label: window.t('forms.settings.model_gpt41') },
+                { id: 'gpt-4o',      label: window.t('forms.settings.model_gpt4o') },
+                { id: 'gpt-4o-mini', label: window.t('forms.settings.model_gpt4o_mini') },
             ],
         };
         const FORMS_AI_DEFAULT_MODEL = {
@@ -420,7 +422,7 @@ $path_prefix = '../../';
                 try {
                     const r = await fetch(API_BASE + 'get_ai_settings.php', { credentials: 'same-origin' });
                     const d = await r.json();
-                    if (!d.success) throw new Error(d.error || 'Load failed');
+                    if (!d.success) throw new Error(d.error || window.t('forms.settings.load_failed'));
                     const s = d.settings || {};
                     document.getElementById('formsProvider').value = s.forms_ai_provider || 'anthropic';
                     refreshModelOptions();
@@ -428,12 +430,12 @@ $path_prefix = '../../';
                         s.forms_ai_model || FORMS_AI_DEFAULT_MODEL[document.getElementById('formsProvider').value];
                     document.getElementById('formsApiKey').value = s.forms_ai_api_key || '';
                     document.getElementById('formsApiKey').placeholder = d.has_key
-                        ? 'Key is saved — paste a new one to change it'
-                        : 'Paste your API key';
+                        ? window.t('forms.settings.key_saved_ph')
+                        : window.t('forms.settings.api_key_ph');
                     document.getElementById('formsVerifySsl').checked = (s.forms_ai_verify_ssl !== '0');
                     onVerifySslChange();
                 } catch (e) {
-                    setStatus('Could not load settings: ' + e.message, 'error');
+                    setStatus(window.t('forms.settings.could_not_load', { message: e.message }), 'error');
                 }
             }
 
@@ -452,8 +454,8 @@ $path_prefix = '../../';
                         body: JSON.stringify(payload),
                     });
                     const d = await r.json();
-                    if (!d.success) throw new Error(d.error || 'Save failed');
-                    showToast('AI settings saved', 'success');
+                    if (!d.success) throw new Error(d.error || window.t('forms.settings.save_failed'));
+                    showToast(window.t('forms.toast.ai_settings_saved'), 'success');
                     setStatus('', '');
                     await load();
                 } catch (e) {
@@ -469,9 +471,9 @@ $path_prefix = '../../';
                     api_key:    document.getElementById('formsApiKey').value,
                     verify_ssl: document.getElementById('formsVerifySsl').checked ? '1' : '0',
                 };
-                if (!payload.model) { setStatus('Pick a model first', 'error'); return; }
+                if (!payload.model) { setStatus(window.t('forms.settings.pick_model'), 'error'); return; }
                 btn.disabled = true;
-                setStatus('Testing…', 'busy');
+                setStatus(window.t('forms.settings.testing'), 'busy');
                 try {
                     const r = await fetch(API_BASE + 'test_ai_key.php', {
                         method: 'POST',
@@ -480,12 +482,12 @@ $path_prefix = '../../';
                         body: JSON.stringify(payload),
                     });
                     const d = await r.json();
-                    if (!d.success) throw new Error(d.error || 'Failed');
+                    if (!d.success) throw new Error(d.error || window.t('forms.settings.test_failed'));
                     const tokens = (d.tokens_in != null && d.tokens_out != null)
-                        ? ` — ${d.tokens_in} in / ${d.tokens_out} out tokens` : '';
-                    setStatus(`OK — ${d.provider} · ${d.model} · ${d.latency_ms}ms${tokens}`, 'success');
+                        ? window.t('forms.settings.test_tokens', { in: d.tokens_in, out: d.tokens_out }) : '';
+                    setStatus(window.t('forms.settings.test_ok', { provider: d.provider, model: d.model, latency: d.latency_ms, tokens: tokens }), 'success');
                 } catch (e) {
-                    setStatus('Failed: ' + e.message, 'error');
+                    setStatus(window.t('forms.settings.test_failed_msg', { message: e.message }), 'error');
                 } finally {
                     btn.disabled = false;
                 }
@@ -526,12 +528,12 @@ $path_prefix = '../../';
                 const data = await res.json();
 
                 if (data.success) {
-                    showToast('Settings saved', 'success');
+                    showToast(window.t('forms.toast.settings_saved'), 'success');
                 } else {
-                    showToast('Error: ' + data.error, 'error');
+                    showToast(window.t('forms.toast.error_prefix', { message: data.error }), 'error');
                 }
             } catch (e) {
-                showToast('Failed to save settings', 'error');
+                showToast(window.t('forms.toast.settings_save_failed'), 'error');
             }
         }
     </script>

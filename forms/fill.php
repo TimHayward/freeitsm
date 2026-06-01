@@ -4,16 +4,21 @@
  */
 session_start();
 require_once '../config.php';
+require_once '../includes/i18n.php';
+I18n::initFromSession();
 
 $current_page = 'forms';
 $path_prefix = '../';
+$translationNamespaces = ['common', 'forms'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Fill Form</title>
+    <title><?php echo htmlspecialchars(t('forms.fill.page_title')); ?></title>
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../assets/js/i18n.js"></script>
     <link rel="stylesheet" href="../assets/css/inbox.css">
     <style>
         .fill-container {
@@ -231,7 +236,7 @@ $path_prefix = '../';
     <div class="main-container fill-container">
         <div class="fill-content">
             <div class="fill-card" id="formCard">
-                <p style="color:#888;text-align:center;padding:20px">Loading form...</p>
+                <p style="color:#888;text-align:center;padding:20px"><?php echo htmlspecialchars(t('forms.fill.loading')); ?></p>
             </div>
         </div>
     </div>
@@ -256,7 +261,7 @@ $path_prefix = '../';
             if (id) {
                 loadForm(id);
             } else {
-                document.getElementById('formCard').innerHTML = '<p style="color:#c00;text-align:center">No form ID specified</p>';
+                document.getElementById('formCard').innerHTML = '<p style="color:#c00;text-align:center">' + esc(window.t('forms.fill.no_id')) + '</p>';
             }
         });
 
@@ -279,7 +284,7 @@ $path_prefix = '../';
         function renderForm() {
             const card = document.getElementById('formCard');
             const alignClass = 'align-' + logoAlignment;
-            let html = `<img src="../assets/images/CompanyLogo.png" alt="Company Logo" class="form-logo ${alignClass}">`;
+            let html = `<img src="../assets/images/CompanyLogo.png" alt="${escAttr(window.t('forms.fill.logo_alt'))}" class="form-logo ${alignClass}">`;
             html += `<h1 class="fill-title">${esc(formData.title)}</h1>`;
             if (formData.description) {
                 html += `<p class="fill-desc">${esc(formData.description)}</p>`;
@@ -297,35 +302,35 @@ $path_prefix = '../';
                         html += `<div class="form-field" ${reqAttr}>
                             <label>${esc(f.label)}${reqStar}</label>
                             <input type="text" name="field_${f.id}" data-field-id="${f.id}">
-                            <div class="field-error">This field is required</div>
+                            <div class="field-error">${esc(window.t('forms.fill.err_required'))}</div>
                         </div>`;
                         break;
                     case 'textarea':
                         html += `<div class="form-field" ${reqAttr}>
                             <label>${esc(f.label)}${reqStar}</label>
                             <textarea name="field_${f.id}" data-field-id="${f.id}"></textarea>
-                            <div class="field-error">This field is required</div>
+                            <div class="field-error">${esc(window.t('forms.fill.err_required'))}</div>
                         </div>`;
                         break;
                     case 'email':
                         html += `<div class="form-field" ${reqAttr}>
                             <label>${esc(f.label)}${reqStar}</label>
-                            <input type="email" name="field_${f.id}" data-field-id="${f.id}" placeholder="name@example.com">
-                            <div class="field-error">Please enter a valid email address</div>
+                            <input type="email" name="field_${f.id}" data-field-id="${f.id}" placeholder="${escAttr(window.t('forms.fill.email_ph'))}">
+                            <div class="field-error">${esc(window.t('forms.fill.err_email'))}</div>
                         </div>`;
                         break;
                     case 'number':
                         html += `<div class="form-field" ${reqAttr}>
                             <label>${esc(f.label)}${reqStar}</label>
                             <input type="number" name="field_${f.id}" data-field-id="${f.id}" inputmode="decimal" step="any">
-                            <div class="field-error">Please enter a number</div>
+                            <div class="field-error">${esc(window.t('forms.fill.err_number'))}</div>
                         </div>`;
                         break;
                     case 'checkbox':
                         html += `<div class="form-field checkbox-field" ${reqAttr}>
                             <input type="checkbox" name="field_${f.id}" data-field-id="${f.id}" id="cb_${f.id}">
                             <label for="cb_${f.id}">${esc(f.label)}${reqStar}</label>
-                            <div class="field-error">This field is required</div>
+                            <div class="field-error">${esc(window.t('forms.fill.err_required'))}</div>
                         </div>`;
                         break;
                     case 'dropdown': {
@@ -333,10 +338,10 @@ $path_prefix = '../';
                         html += `<div class="form-field" ${reqAttr}>
                             <label>${esc(f.label)}${reqStar}</label>
                             <select name="field_${f.id}" data-field-id="${f.id}">
-                                <option value="">Select...</option>
+                                <option value="">${esc(window.t('forms.fill.select_ph'))}</option>
                                 ${opts.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('')}
                             </select>
-                            <div class="field-error">This field is required</div>
+                            <div class="field-error">${esc(window.t('forms.fill.err_required'))}</div>
                         </div>`;
                         break;
                     }
@@ -354,7 +359,7 @@ $path_prefix = '../';
                                     <label for="r_${f.id}_${i}">${esc(o)}</label>
                                 </div>
                             `).join('')}
-                            <div class="field-error">This field is required</div>
+                            <div class="field-error">${esc(window.t('forms.fill.err_required'))}</div>
                         </div>`;
                         break;
                     }
@@ -372,7 +377,7 @@ $path_prefix = '../';
                                     <label for="c_${f.id}_${i}">${esc(o)}</label>
                                 </div>
                             `).join('')}
-                            <div class="field-error">Please tick at least one option</div>
+                            <div class="field-error">${esc(window.t('forms.fill.err_checkboxes'))}</div>
                         </div>`;
                         break;
                     }
@@ -380,8 +385,8 @@ $path_prefix = '../';
             });
 
             html += `<div class="form-actions">
-                <button type="submit" class="btn btn-primary">Submit</button>
-                <a href="./" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">${esc(window.t('forms.fill.submit'))}</button>
+                <a href="./" class="btn btn-secondary">${esc(window.t('forms.fill.cancel'))}</a>
             </div>`;
             html += '</form>';
             html += '<div class="submit-message" id="submitMessage"></div>';
@@ -444,7 +449,7 @@ $path_prefix = '../';
             });
 
             if (!valid) {
-                showMsg('Please fill in all required fields', 'error');
+                showMsg(window.t('forms.fill.fill_required'), 'error');
                 return;
             }
 
@@ -460,16 +465,16 @@ $path_prefix = '../';
                     document.getElementById('fillForm').style.display = 'none';
                     const msgEl = document.getElementById('submitMessage');
                     msgEl.className = 'submit-message success';
-                    msgEl.innerHTML = 'Form submitted successfully!' +
+                    msgEl.innerHTML = esc(window.t('forms.fill.success')) +
                         '<div class="success-actions">' +
-                        '<a href="fill.php?id=' + formData.id + '" class="btn btn-primary">Submit Another</a>' +
-                        '<a href="./" class="btn btn-secondary">Back to Forms</a>' +
+                        '<a href="fill.php?id=' + formData.id + '" class="btn btn-primary">' + esc(window.t('forms.fill.submit_another')) + '</a>' +
+                        '<a href="./" class="btn btn-secondary">' + esc(window.t('forms.fill.back_to_forms')) + '</a>' +
                         '</div>';
                 } else {
-                    showMsg('Error: ' + result.error, 'error');
+                    showMsg(window.t('forms.fill.error_prefix', { message: result.error }), 'error');
                 }
             } catch (e) {
-                showMsg('Failed to submit form', 'error');
+                showMsg(window.t('forms.fill.submit_failed'), 'error');
             }
         }
 
@@ -484,6 +489,11 @@ $path_prefix = '../';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+        function escAttr(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
     </script>
 </body>

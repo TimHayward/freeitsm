@@ -4,16 +4,21 @@
  */
 session_start();
 require_once '../../config.php';
+require_once '../../includes/i18n.php';
+I18n::initFromSession();
 
 $current_page = 'licences';
 $path_prefix = '../../';
+$translationNamespaces = ['common', 'software'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Software Licences</title>
+    <title><?php echo htmlspecialchars(t('software.licences.page_title')); ?></title>
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../../assets/js/i18n.js"></script>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
     <style>
         .licence-container {
@@ -409,17 +414,17 @@ $path_prefix = '../../';
 
     <div class="main-container licence-container">
         <div class="licence-toolbar">
-            <h3>Software Licences</h3>
+            <h3><?php echo htmlspecialchars(t('software.licences.heading')); ?></h3>
             <div class="toolbar-right">
                 <input type="text" class="search-box" id="licenceSearch"
-                       placeholder="Search licences..." autocomplete="off"
+                       placeholder="<?php echo htmlspecialchars(t('software.licences.search')); ?>" autocomplete="off"
                        oninput="searchLicences()">
                 <span class="licence-count" id="licenceCount"></span>
                 <button class="btn btn-export" onclick="exportLicencesCSV()">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Export CSV
+                    <?php echo htmlspecialchars(t('software.licences.export_csv')); ?>
                 </button>
-                <button class="btn btn-primary" onclick="openLicenceModal()">+ Add Licence</button>
+                <button class="btn btn-primary" onclick="openLicenceModal()"><?php echo htmlspecialchars(t('software.licences.add')); ?></button>
             </div>
         </div>
         <div class="licence-table-container">
@@ -427,22 +432,22 @@ $path_prefix = '../../';
                 <thead>
                     <tr>
                         <th onclick="sortBy('app_name')" id="thApp">
-                            Application <span class="sort-icon">&#9650;</span>
+                            <?php echo htmlspecialchars(t('software.licences.col_application')); ?> <span class="sort-icon">&#9650;</span>
                         </th>
                         <th onclick="sortBy('licence_type')" id="thType">
-                            Type <span class="sort-icon"></span>
+                            <?php echo htmlspecialchars(t('software.licences.col_type')); ?> <span class="sort-icon"></span>
                         </th>
                         <th onclick="sortBy('quantity')" id="thQty">
-                            Qty <span class="sort-icon"></span>
+                            <?php echo htmlspecialchars(t('software.licences.col_qty')); ?> <span class="sort-icon"></span>
                         </th>
                         <th onclick="sortBy('renewal_date')" id="thRenewal">
-                            Renewal Date <span class="sort-icon"></span>
+                            <?php echo htmlspecialchars(t('software.licences.col_renewal')); ?> <span class="sort-icon"></span>
                         </th>
                         <th onclick="sortBy('status')" id="thStatus">
-                            Status <span class="sort-icon"></span>
+                            <?php echo htmlspecialchars(t('software.licences.col_status')); ?> <span class="sort-icon"></span>
                         </th>
                         <th onclick="sortBy('cost')" id="thCost">
-                            Cost <span class="sort-icon"></span>
+                            <?php echo htmlspecialchars(t('software.licences.col_cost')); ?> <span class="sort-icon"></span>
                         </th>
                     </tr>
                 </thead>
@@ -459,49 +464,49 @@ $path_prefix = '../../';
     <div class="detail-overlay" id="licenceOverlay" onclick="if(event.target===this)closeLicenceModal()">
         <div class="detail-box">
             <div class="detail-header">
-                <h3 id="licenceModalTitle">Add licence</h3>
+                <h3 id="licenceModalTitle"><?php echo htmlspecialchars(t('software.licences.modal_add')); ?></h3>
             </div>
             <div class="detail-body">
                 <input type="hidden" id="licenceId" value="">
 
                 <div class="form-group">
-                    <label class="form-label">Application *</label>
+                    <label class="form-label"><?php echo htmlspecialchars(t('software.licences.field_application')); ?></label>
                     <select class="form-input" id="licenceAppId">
-                        <option value="">-- Select application --</option>
+                        <option value=""><?php echo htmlspecialchars(t('software.licences.select_application')); ?></option>
                     </select>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Licence type *</label>
+                        <label class="form-label"><?php echo htmlspecialchars(t('software.licences.field_type')); ?></label>
                         <select class="form-input" id="licenceType">
-                            <option value="">-- Select type --</option>
-                            <option value="Per User">Per user</option>
-                            <option value="Per Device">Per device</option>
-                            <option value="Site">Site</option>
-                            <option value="Concurrent">Concurrent</option>
-                            <option value="Subscription">Subscription</option>
-                            <option value="Other">Other</option>
+                            <option value=""><?php echo htmlspecialchars(t('software.licences.select_type')); ?></option>
+                            <option value="Per User"><?php echo htmlspecialchars(t('software.licences.type_per_user')); ?></option>
+                            <option value="Per Device"><?php echo htmlspecialchars(t('software.licences.type_per_device')); ?></option>
+                            <option value="Site"><?php echo htmlspecialchars(t('software.licences.type_site')); ?></option>
+                            <option value="Concurrent"><?php echo htmlspecialchars(t('software.licences.type_concurrent')); ?></option>
+                            <option value="Subscription"><?php echo htmlspecialchars(t('software.licences.type_subscription')); ?></option>
+                            <option value="Other"><?php echo htmlspecialchars(t('software.licences.type_other')); ?></option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Quantity</label>
-                        <input type="number" class="form-input" id="licenceQuantity" min="0" placeholder="e.g. 50">
+                        <label class="form-label"><?php echo htmlspecialchars(t('software.licences.field_quantity')); ?></label>
+                        <input type="number" class="form-input" id="licenceQuantity" min="0" placeholder="<?php echo htmlspecialchars(t('software.licences.quantity_placeholder')); ?>">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Licence key</label>
-                    <input type="text" class="form-input" id="licenceKey" placeholder="Licence key or serial number">
+                    <label class="form-label"><?php echo htmlspecialchars(t('software.licences.field_key')); ?></label>
+                    <input type="text" class="form-input" id="licenceKey" placeholder="<?php echo htmlspecialchars(t('software.licences.key_placeholder')); ?>">
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Cost</label>
+                        <label class="form-label"><?php echo htmlspecialchars(t('software.licences.field_cost')); ?></label>
                         <input type="number" class="form-input" id="licenceCost" step="0.01" min="0" placeholder="0.00">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Currency</label>
+                        <label class="form-label"><?php echo htmlspecialchars(t('software.licences.field_currency')); ?></label>
                         <select class="form-input" id="licenceCurrency">
                             <option value="GBP">GBP (£)</option>
                             <option value="USD">USD ($)</option>
@@ -512,50 +517,50 @@ $path_prefix = '../../';
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Purchase date</label>
+                        <label class="form-label"><?php echo htmlspecialchars(t('software.licences.field_purchase_date')); ?></label>
                         <input type="date" class="form-input" id="licencePurchaseDate">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Renewal date</label>
+                        <label class="form-label"><?php echo htmlspecialchars(t('software.licences.field_renewal_date')); ?></label>
                         <input type="date" class="form-input" id="licenceRenewalDate">
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Notice period (days)</label>
-                        <input type="number" class="form-input" id="licenceNoticeDays" min="0" placeholder="e.g. 30">
+                        <label class="form-label"><?php echo htmlspecialchars(t('software.licences.field_notice_days')); ?></label>
+                        <input type="number" class="form-input" id="licenceNoticeDays" min="0" placeholder="<?php echo htmlspecialchars(t('software.licences.notice_placeholder')); ?>">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Status</label>
+                        <label class="form-label"><?php echo htmlspecialchars(t('software.licences.field_status')); ?></label>
                         <select class="form-input" id="licenceStatus">
-                            <option value="Active">Active</option>
-                            <option value="Expired">Expired</option>
-                            <option value="Cancelled">Cancelled</option>
+                            <option value="Active"><?php echo htmlspecialchars(t('software.licences.status_active')); ?></option>
+                            <option value="Expired"><?php echo htmlspecialchars(t('software.licences.status_expired')); ?></option>
+                            <option value="Cancelled"><?php echo htmlspecialchars(t('software.licences.status_cancelled')); ?></option>
                         </select>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Portal URL</label>
+                    <label class="form-label"><?php echo htmlspecialchars(t('software.licences.field_portal_url')); ?></label>
                     <input type="url" class="form-input" id="licencePortalUrl" placeholder="https://...">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Vendor contact</label>
-                    <input type="text" class="form-input" id="licenceVendorContact" placeholder="Contact name, email, or phone">
+                    <label class="form-label"><?php echo htmlspecialchars(t('software.licences.field_vendor')); ?></label>
+                    <input type="text" class="form-input" id="licenceVendorContact" placeholder="<?php echo htmlspecialchars(t('software.licences.vendor_placeholder')); ?>">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Notes</label>
-                    <textarea class="form-textarea" id="licenceNotes" rows="3" placeholder="Additional notes..."></textarea>
+                    <label class="form-label"><?php echo htmlspecialchars(t('software.licences.field_notes')); ?></label>
+                    <textarea class="form-textarea" id="licenceNotes" rows="3" placeholder="<?php echo htmlspecialchars(t('software.licences.notes_placeholder')); ?>"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-danger" id="deleteLicenceBtn" onclick="deleteLicence()" style="display: none;">Delete</button>
+                <button class="btn btn-danger" id="deleteLicenceBtn" onclick="deleteLicence()" style="display: none;"><?php echo htmlspecialchars(t('software.licences.delete')); ?></button>
                 <div class="modal-footer-right">
-                    <button class="btn btn-secondary" onclick="closeLicenceModal()">Cancel</button>
-                    <button class="btn btn-primary" onclick="saveLicence()">Save</button>
+                    <button class="btn btn-secondary" onclick="closeLicenceModal()"><?php echo htmlspecialchars(t('software.licences.cancel')); ?></button>
+                    <button class="btn btn-primary" onclick="saveLicence()"><?php echo htmlspecialchars(t('software.licences.save')); ?></button>
                 </div>
             </div>
         </div>
@@ -597,12 +602,12 @@ $path_prefix = '../../';
                     applySortAndRender();
                 } else {
                     document.getElementById('licenceTableBody').innerHTML =
-                        '<tr><td colspan="6"><div class="empty-state">Error: ' + escapeHtml(data.error) + '</div></td></tr>';
+                        '<tr><td colspan="6"><div class="empty-state">' + window.t('software.licences.load_error', { message: escapeHtml(data.error) }) + '</div></td></tr>';
                 }
             } catch (error) {
                 console.error('Error loading licences:', error);
                 document.getElementById('licenceTableBody').innerHTML =
-                    '<tr><td colspan="6"><div class="empty-state">Failed to load licence data</div></td></tr>';
+                    '<tr><td colspan="6"><div class="empty-state">' + window.t('software.licences.load_failed') + '</div></td></tr>';
             }
         }
 
@@ -658,14 +663,14 @@ $path_prefix = '../../';
             const tbody = document.getElementById('licenceTableBody');
             const countEl = document.getElementById('licenceCount');
 
-            countEl.textContent = filteredLicences.length + ' licence' + (filteredLicences.length !== 1 ? 's' : '');
+            countEl.textContent = window.t(filteredLicences.length !== 1 ? 'software.licences.count_many' : 'software.licences.count_one', { count: filteredLicences.length });
 
             if (filteredLicences.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
                     </svg>
-                    No licences found
+                    ${window.t('software.licences.none')}
                 </div></td></tr>`;
                 return;
             }
@@ -735,7 +740,7 @@ $path_prefix = '../../';
 
             // Populate app dropdown
             const appSelect = document.getElementById('licenceAppId');
-            appSelect.innerHTML = '<option value="">-- Select application --</option>';
+            appSelect.innerHTML = '<option value="">' + window.t('software.licences.select_application') + '</option>';
             allApps.forEach(app => {
                 const opt = document.createElement('option');
                 opt.value = app.id;
@@ -745,7 +750,7 @@ $path_prefix = '../../';
 
             if (licenceId) {
                 // Edit mode
-                document.getElementById('licenceModalTitle').textContent = 'Edit licence';
+                document.getElementById('licenceModalTitle').textContent = window.t('software.licences.modal_edit');
                 const licence = allLicences.find(l => l.id == licenceId);
                 if (licence) {
                     document.getElementById('licenceId').value = licence.id;
@@ -765,7 +770,7 @@ $path_prefix = '../../';
                     document.getElementById('deleteLicenceBtn').style.display = 'inline-flex';
                 }
             } else {
-                document.getElementById('licenceModalTitle').textContent = 'Add Licence';
+                document.getElementById('licenceModalTitle').textContent = window.t('software.licences.modal_add_caps');
             }
 
             document.getElementById('licenceOverlay').classList.add('open');
@@ -780,11 +785,11 @@ $path_prefix = '../../';
             const licenceType = document.getElementById('licenceType').value;
 
             if (!appId) {
-                showToast('Please select an application.', 'error');
+                showToast(window.t('software.licences.select_app_warn'), 'error');
                 return;
             }
             if (!licenceType) {
-                showToast('Please select a licence type.', 'error');
+                showToast(window.t('software.licences.select_type_warn'), 'error');
                 return;
             }
 
@@ -816,18 +821,18 @@ $path_prefix = '../../';
                     closeLicenceModal();
                     loadLicences();
                 } else {
-                    showToast('Error: ' + data.error, 'error');
+                    showToast(window.t('software.licences.save_error', { message: data.error }), 'error');
                 }
             } catch (error) {
                 console.error('Error saving licence:', error);
-                showToast('Failed to save licence.', 'error');
+                showToast(window.t('software.licences.save_failed'), 'error');
             }
         }
 
         async function deleteLicence() {
             const id = document.getElementById('licenceId').value;
             if (!id) return;
-            if (!(await showConfirm({ title: 'Delete', message: 'Are you sure you want to delete this licence?', okLabel: 'Delete', okClass: 'danger' }))) return;
+            if (!(await showConfirm({ title: window.t('software.licences.delete_confirm_title'), message: window.t('software.licences.delete_confirm'), okLabel: window.t('software.licences.delete_ok'), okClass: 'danger' }))) return;
 
             try {
                 const response = await fetch(API_BASE + 'delete_licence.php', {
@@ -840,20 +845,33 @@ $path_prefix = '../../';
                     closeLicenceModal();
                     loadLicences();
                 } else {
-                    showToast('Error: ' + data.error, 'error');
+                    showToast(window.t('software.licences.delete_error', { message: data.error }), 'error');
                 }
             } catch (error) {
                 console.error('Error deleting licence:', error);
-                showToast('Failed to delete licence.', 'error');
+                showToast(window.t('software.licences.delete_failed'), 'error');
             }
         }
 
         function exportLicencesCSV() {
             if (!filteredLicences.length) return;
 
-            const headers = ['Application', 'Publisher', 'Type', 'Quantity', 'Licence Key',
-                'Renewal Date', 'Notice Period (days)', 'Status', 'Cost', 'Currency',
-                'Purchase Date', 'Portal URL', 'Vendor Contact', 'Notes'];
+            const headers = [
+                window.t('software.licences.csv_application'),
+                window.t('software.licences.csv_publisher'),
+                window.t('software.licences.csv_type'),
+                window.t('software.licences.csv_quantity'),
+                window.t('software.licences.csv_key'),
+                window.t('software.licences.csv_renewal'),
+                window.t('software.licences.csv_notice'),
+                window.t('software.licences.csv_status'),
+                window.t('software.licences.csv_cost'),
+                window.t('software.licences.csv_currency'),
+                window.t('software.licences.csv_purchase'),
+                window.t('software.licences.csv_portal'),
+                window.t('software.licences.csv_vendor'),
+                window.t('software.licences.csv_notes')
+            ];
             const rows = [headers.map(h => csvCell(h)).join(',')];
 
             filteredLicences.forEach(l => {
@@ -880,7 +898,7 @@ $path_prefix = '../../';
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'Software Licences.csv';
+            a.download = window.t('software.licences.csv_filename') + '.csv';
             a.click();
             URL.revokeObjectURL(url);
         }

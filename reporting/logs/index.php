@@ -4,17 +4,22 @@
  */
 session_start();
 require_once '../../config.php';
+require_once '../../includes/i18n.php';
+I18n::initFromSession();
 
 $current_page = 'logs';
 $path_prefix = '../../';
+$translationNamespaces = ['common', 'reporting'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - System logs</title>
+    <title>Service Desk - <?php echo htmlspecialchars(t('reporting.logs.heading')); ?></title>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../../assets/js/i18n.js"></script>
     <style>
         .logs-outer {
             flex: 1;
@@ -341,13 +346,13 @@ $path_prefix = '../../';
     <div class="modal-overlay" id="jsonModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Log Details (JSON)</h3>
+                <h3><?php echo htmlspecialchars(t('reporting.logs.modal_title')); ?></h3>
             </div>
             <div class="modal-body">
                 <pre class="json-display" id="jsonContent"></pre>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeJsonModal()">Close</button>
+                <button class="btn btn-secondary" onclick="closeJsonModal()"><?php echo htmlspecialchars(t('reporting.logs.close')); ?></button>
             </div>
         </div>
     </div>
@@ -355,20 +360,20 @@ $path_prefix = '../../';
     <div class="main-container logs-outer">
         <div class="logs-container">
             <div class="logs-header">
-                <h2>System logs</h2>
-                <button class="refresh-btn" onclick="loadLogs()">Refresh</button>
+                <h2><?php echo htmlspecialchars(t('reporting.logs.heading')); ?></h2>
+                <button class="refresh-btn" onclick="loadLogs()"><?php echo htmlspecialchars(t('reporting.logs.refresh')); ?></button>
             </div>
 
             <div class="log-tabs">
-                <button class="log-tab active" onclick="switchLogType('login')">User logins</button>
-                <button class="log-tab" onclick="switchLogType('email_import')">Email imports</button>
+                <button class="log-tab active" onclick="switchLogType('login')"><?php echo htmlspecialchars(t('reporting.logs.tab_login')); ?></button>
+                <button class="log-tab" onclick="switchLogType('email_import')"><?php echo htmlspecialchars(t('reporting.logs.tab_email_import')); ?></button>
             </div>
 
             <div class="logs-content">
                 <div id="logsTableContainer">
                     <div class="loading">
                         <div class="spinner"></div>
-                        <div>Loading logs...</div>
+                        <div><?php echo htmlspecialchars(t('reporting.logs.loading')); ?></div>
                     </div>
                 </div>
             </div>
@@ -411,7 +416,7 @@ $path_prefix = '../../';
 
         async function loadLogs() {
             const container = document.getElementById('logsTableContainer');
-            container.innerHTML = '<div class="loading"><div class="spinner"></div><div>Loading logs...</div></div>';
+            container.innerHTML = `<div class="loading"><div class="spinner"></div><div>${escapeHtml(t('reporting.logs.loading'))}</div></div>`;
             clearPagination();
 
             try {
@@ -423,10 +428,10 @@ $path_prefix = '../../';
                     currentLogs = data.logs;
                     renderLogs(data.logs);
                 } else {
-                    container.innerHTML = `<div class="empty-state">Error loading logs: ${data.error}</div>`;
+                    container.innerHTML = `<div class="empty-state">${escapeHtml(t('reporting.logs.load_error', { error: data.error }))}</div>`;
                 }
             } catch (error) {
-                container.innerHTML = `<div class="empty-state">Error loading logs: ${error.message}</div>`;
+                container.innerHTML = `<div class="empty-state">${escapeHtml(t('reporting.logs.load_error', { error: error.message }))}</div>`;
             }
         }
 
@@ -434,7 +439,7 @@ $path_prefix = '../../';
             const container = document.getElementById('logsTableContainer');
 
             if (logs.length === 0) {
-                container.innerHTML = '<div class="empty-state">No logs found</div>';
+                container.innerHTML = `<div class="empty-state">${escapeHtml(t('reporting.logs.no_logs'))}</div>`;
                 clearPagination();
                 return;
             }
@@ -458,9 +463,9 @@ $path_prefix = '../../';
             if (pager) {
                 pager.innerHTML = `
                     <div class="pagination">
-                        <button onclick="prevPage()" ${currentOffset === 0 ? 'disabled' : ''}>Previous</button>
-                        <span>Page ${currentPage} of ${totalPages} (${totalLogs} total)</span>
-                        <button onclick="nextPage()" ${currentOffset + limit >= totalLogs ? 'disabled' : ''}>Next</button>
+                        <button onclick="prevPage()" ${currentOffset === 0 ? 'disabled' : ''}>${escapeHtml(t('reporting.logs.prev'))}</button>
+                        <span>${escapeHtml(t('reporting.logs.pagination', { current: currentPage, total: totalPages, count: totalLogs }))}</span>
+                        <button onclick="nextPage()" ${currentOffset + limit >= totalLogs ? 'disabled' : ''}>${escapeHtml(t('reporting.logs.next'))}</button>
                     </div>
                 `;
             }
@@ -471,21 +476,21 @@ $path_prefix = '../../';
                 <table class="logs-table">
                     <thead>
                         <tr>
-                            <th>Date/time</th>
-                            <th>Username</th>
-                            <th>Status</th>
-                            <th>IP address</th>
-                            <th>User agent</th>
+                            <th>${escapeHtml(t('reporting.logs.col_datetime'))}</th>
+                            <th>${escapeHtml(t('reporting.logs.col_username'))}</th>
+                            <th>${escapeHtml(t('reporting.logs.col_status'))}</th>
+                            <th>${escapeHtml(t('reporting.logs.col_ip'))}</th>
+                            <th>${escapeHtml(t('reporting.logs.col_user_agent'))}</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${logs.map((log, index) => `
-                            <tr onclick="showLogJson(${index})" title="Click to view JSON details">
+                            <tr onclick="showLogJson(${index})" title="${escapeHtml(t('reporting.logs.row_title'))}">
                                 <td class="log-datetime">${formatDateTime(log.created_datetime)}</td>
-                                <td><strong>${escapeHtml(log.details?.username || 'Unknown')}</strong></td>
+                                <td><strong>${escapeHtml(log.details?.username || t('reporting.logs.unknown'))}</strong></td>
                                 <td>
                                     <span class="log-status ${log.details?.success ? 'success' : 'failed'}">
-                                        ${log.details?.success ? 'Success' : 'Failed'}
+                                        ${log.details?.success ? escapeHtml(t('reporting.logs.status_success')) : escapeHtml(t('reporting.logs.status_failed'))}
                                     </span>
                                 </td>
                                 <td class="log-details"><code>${escapeHtml(log.details?.ip_address || '-')}</code></td>
@@ -502,11 +507,11 @@ $path_prefix = '../../';
                 <table class="logs-table">
                     <thead>
                         <tr>
-                            <th>Date/time</th>
-                            <th>From</th>
-                            <th>Subject</th>
-                            <th>Type</th>
-                            <th>Attachments</th>
+                            <th>${escapeHtml(t('reporting.logs.col_datetime'))}</th>
+                            <th>${escapeHtml(t('reporting.logs.col_from'))}</th>
+                            <th>${escapeHtml(t('reporting.logs.col_subject'))}</th>
+                            <th>${escapeHtml(t('reporting.logs.col_type'))}</th>
+                            <th>${escapeHtml(t('reporting.logs.col_attachments'))}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -516,19 +521,19 @@ $path_prefix = '../../';
                                 ? `<ul class="attachment-list">${attachments.map(a =>
                                     `<li>${escapeHtml(a.name)} (${escapeHtml(a.type)}, ${formatFileSize(a.size)})</li>`
                                   ).join('')}</ul>`
-                                : '<span style="color: #888;">None</span>';
+                                : `<span style="color: #888;">${escapeHtml(t('reporting.logs.none'))}</span>`;
 
                             return `
-                                <tr onclick="showLogJson(${index})" title="Click to view JSON details">
+                                <tr onclick="showLogJson(${index})" title="${escapeHtml(t('reporting.logs.row_title'))}">
                                     <td class="log-datetime">${formatDateTime(log.created_datetime)}</td>
                                     <td>
                                         <strong>${escapeHtml(log.details?.from_name || '')}</strong><br>
                                         <span class="log-details">${escapeHtml(log.details?.from || '')}</span>
                                     </td>
-                                    <td>${escapeHtml(log.details?.subject || '(No Subject)')}</td>
+                                    <td>${escapeHtml(log.details?.subject || t('reporting.logs.no_subject'))}</td>
                                     <td>
                                         <span class="log-status ${log.details?.is_new_ticket ? 'success' : ''}">
-                                            ${log.details?.is_new_ticket ? 'New Ticket' : 'Reply'}
+                                            ${log.details?.is_new_ticket ? escapeHtml(t('reporting.logs.new_ticket')) : escapeHtml(t('reporting.logs.reply'))}
                                         </span>
                                     </td>
                                     <td>${attachmentHtml}</td>

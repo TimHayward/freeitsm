@@ -4,17 +4,22 @@
  */
 session_start();
 require_once '../config.php';
+require_once '../includes/i18n.php';
+I18n::initFromSession();
 
 $current_page = 'reporting';
 $path_prefix = '../';
+$translationNamespaces = ['common', 'reporting'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Reporting</title>
+    <title>Service Desk - <?php echo htmlspecialchars(t('reporting.title')); ?></title>
     <link rel="stylesheet" href="../assets/css/inbox.css">
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../assets/js/i18n.js"></script>
     <style>
         .reporting-landing {
             flex: 1;
@@ -89,8 +94,8 @@ $path_prefix = '../';
 
     <div class="main-container reporting-landing">
         <div class="landing-content">
-            <h2>Reporting</h2>
-            <p class="subtitle">Choose a reporting area to get started</p>
+            <h2><?php echo htmlspecialchars(t('reporting.landing.heading')); ?></h2>
+            <p class="subtitle"><?php echo htmlspecialchars(t('reporting.landing.subtitle')); ?></p>
 
             <div class="report-cards">
                 <a href="logs/" class="report-card">
@@ -101,8 +106,8 @@ $path_prefix = '../';
                         <line x1="16" y1="17" x2="8" y2="17"></line>
                         <polyline points="10 9 9 9 8 9"></polyline>
                     </svg>
-                    <h3>System Logs</h3>
-                    <p>View login attempts, email imports, and other system activity logs.</p>
+                    <h3><?php echo htmlspecialchars(t('reporting.landing.logs_title')); ?></h3>
+                    <p><?php echo htmlspecialchars(t('reporting.landing.logs_desc')); ?></p>
                 </a>
 
                 <a href="tickets/" class="report-card">
@@ -111,8 +116,8 @@ $path_prefix = '../';
                         <line x1="12" y1="20" x2="12" y2="4"></line>
                         <line x1="6" y1="20" x2="6" y2="14"></line>
                     </svg>
-                    <h3>Ticket Dashboards</h3>
-                    <p>KPI dashboards for ticket performance, resolution times, and team workload.</p>
+                    <h3><?php echo htmlspecialchars(t('reporting.landing.tickets_title')); ?></h3>
+                    <p><?php echo htmlspecialchars(t('reporting.landing.tickets_desc')); ?></p>
                 </a>
 
                 <a href="intune/" class="report-card">
@@ -121,8 +126,8 @@ $path_prefix = '../';
                         <line x1="8" y1="21" x2="16" y2="21"></line>
                         <line x1="12" y1="17" x2="12" y2="21"></line>
                     </svg>
-                    <h3>Intune Dashboard</h3>
-                    <p>Compliance, encryption, OS distribution, enrolment trend, and last-sync health across every managed device.</p>
+                    <h3><?php echo htmlspecialchars(t('reporting.landing.intune_title')); ?></h3>
+                    <p><?php echo htmlspecialchars(t('reporting.landing.intune_desc')); ?></p>
                 </a>
             </div>
         </div>

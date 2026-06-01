@@ -5,6 +5,8 @@
 session_start();
 require_once '../config.php';
 require_once '../includes/functions.php';
+require_once '../includes/i18n.php';
+I18n::initFromSession();
 
 // Check if user is logged in
 if (!isset($_SESSION['analyst_id'])) {
@@ -68,15 +70,18 @@ try {
 // reconcile to the exact pixel value once the DOM is ready, so any
 // sub-pixel mismatch here is invisible.
 $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100) . ')';
+$translationNamespaces = ['common', 'morning-checks'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Morning Checks</title>
+    <title>Service Desk - <?php echo htmlspecialchars(t('morning-checks.title')); ?></title>
     <link rel="stylesheet" href="../assets/css/inbox.css">
     <link rel="stylesheet" href="style.css">
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../assets/js/i18n.js"></script>
     <style>
         /* Layout: body is the outer flex column so .container fills
            exactly the viewport minus the global header — no manual
@@ -237,12 +242,12 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
 
     <div class="container">
         <div class="date-display">
-            <h2 id="dateDisplayText">Today's checks - <?php echo date('l, F j, Y'); ?></h2>
+            <h2 id="dateDisplayText"><?php echo htmlspecialchars(t('morning-checks.dashboard.todays_checks', ['date' => date('l, F j, Y')])); ?></h2>
             <div class="date-selector-container">
-                <label for="checkDate">Select date:</label>
+                <label for="checkDate"><?php echo htmlspecialchars(t('morning-checks.dashboard.select_date')); ?></label>
                 <input type="date" id="checkDate" value="<?php echo date('Y-m-d'); ?>" onchange="dateChanged()">
-                <button onclick="setToday()" class="btn-today">Today</button>
-                <button onclick="saveToPDF()" class="btn-pdf">Save to PDF</button>
+                <button onclick="setToday()" class="btn-today"><?php echo htmlspecialchars(t('morning-checks.dashboard.today')); ?></button>
+                <button onclick="saveToPDF()" class="btn-pdf"><?php echo htmlspecialchars(t('morning-checks.dashboard.save_to_pdf')); ?></button>
             </div>
         </div>
 
@@ -251,24 +256,24 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
              a deleted status). Links to the Settings → Statuses
              normalisation tool. Hidden by default. -->
         <div id="orphanBanner" class="orphan-banner" style="display: none;">
-            <strong>⚠ Unmapped check statuses found.</strong>
+            <strong>⚠ <?php echo htmlspecialchars(t('morning-checks.orphan.banner_title')); ?></strong>
             <span id="orphanBannerCount"></span>
-            Go to <a href="settings/#statuses-tab">Settings → Statuses</a> to map them.
+            <?php echo htmlspecialchars(t('morning-checks.orphan.banner_goto')); ?> <a href="settings/#statuses-tab"><?php echo htmlspecialchars(t('morning-checks.orphan.banner_link')); ?></a> <?php echo htmlspecialchars(t('morning-checks.orphan.banner_suffix')); ?>
         </div>
 
         <div class="checks-section">
             <table id="checksTable">
                 <thead>
                     <tr>
-                        <th>Check name</th>
-                        <th>Description</th>
-                        <th>Status</th>
-                        <th>Notes</th>
+                        <th><?php echo htmlspecialchars(t('morning-checks.dashboard.col_check_name')); ?></th>
+                        <th><?php echo htmlspecialchars(t('morning-checks.dashboard.col_description')); ?></th>
+                        <th><?php echo htmlspecialchars(t('morning-checks.dashboard.col_status')); ?></th>
+                        <th><?php echo htmlspecialchars(t('morning-checks.dashboard.col_notes')); ?></th>
                     </tr>
                 </thead>
                 <tbody id="checksTableBody">
                     <tr>
-                        <td colspan="4" class="loading">Loading checks...</td>
+                        <td colspan="4" class="loading"><?php echo htmlspecialchars(t('morning-checks.dashboard.loading_checks')); ?></td>
                     </tr>
                 </tbody>
             </table>
@@ -277,7 +282,7 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
         <!-- Drag-handle between the checks list and the chart. The chart's
              height is a per-analyst preference (mc_chart_height_pct) so the
              split each user prefers persists across reloads. -->
-        <div class="mc-divider" id="mcDivider" title="Drag to resize chart"></div>
+        <div class="mc-divider" id="mcDivider" title="<?php echo htmlspecialchars(t('morning-checks.dashboard.drag_resize')); ?>"></div>
 
         <!-- Chart sits in the flex column at the bottom of .container.
              No grey header bar anymore — the collapse chevron is
@@ -290,7 +295,7 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
              their chosen split (no snap from the CSS default of 280px
              to the saved value once JS finished its preference fetch). -->
         <div class="chart-footer">
-            <button id="chartToggle" class="chart-toggle-btn" onclick="toggleChart()" aria-label="Collapse chart">▼</button>
+            <button id="chartToggle" class="chart-toggle-btn" onclick="toggleChart()" aria-label="<?php echo htmlspecialchars(t('morning-checks.dashboard.collapse_chart')); ?>">▼</button>
             <div id="chartContainer" class="chart-container-inner" style="height: <?php echo $chart_initial_height_calc; ?>;">
                 <canvas id="statusChart"></canvas>
             </div>
@@ -300,20 +305,25 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
     <!-- Notes Modal -->
     <div id="notesModal" class="modal">
         <div class="modal-content">
-            <h2>Add notes</h2>
-            <p>Please provide details about this <span id="modalStatus"></span> status.</p>
+            <h2><?php echo htmlspecialchars(t('morning-checks.notes_modal.title')); ?></h2>
+            <p><?php
+                // Split the interpolated string around {status} so the live
+                // status label can sit in its own span (set by JS).
+                $parts = explode('{status}', t('morning-checks.notes_modal.intro'), 2);
+                echo htmlspecialchars($parts[0]);
+            ?><span id="modalStatus"></span><?php echo htmlspecialchars($parts[1] ?? ''); ?></p>
             <form id="notesForm">
                 <input type="hidden" id="modalCheckId">
                 <!-- Holds the StatusID picked from a button. modalStatus
                      (the span above) shows the human label. -->
                 <input type="hidden" id="modalStatusId">
                 <div class="form-group">
-                    <label for="modalNotes">Notes *</label>
+                    <label for="modalNotes"><?php echo htmlspecialchars(t('morning-checks.notes_modal.label')); ?></label>
                     <textarea id="modalNotes" name="modalNotes" rows="5" required></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeNotesModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeNotesModal()"><?php echo htmlspecialchars(t('morning-checks.notes_modal.cancel')); ?></button>
+                    <button type="submit" class="btn btn-primary"><?php echo htmlspecialchars(t('morning-checks.notes_modal.save')); ?></button>
                 </div>
             </form>
         </div>
@@ -322,48 +332,48 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
     <!-- Raise Ticket Modal -->
     <div id="raiseTicketModal" class="modal">
         <div class="modal-content" style="max-width: 640px;">
-            <h2>Raise a ticket</h2>
-            <p>Create a ticket linked to this morning check. The check name, status and notes are pre-filled below.</p>
+            <h2><?php echo htmlspecialchars(t('morning-checks.raise_modal.title')); ?></h2>
+            <p><?php echo htmlspecialchars(t('morning-checks.raise_modal.intro')); ?></p>
             <form id="raiseTicketForm">
                 <div class="form-group">
-                    <label for="rtSubject">Subject *</label>
+                    <label for="rtSubject"><?php echo htmlspecialchars(t('morning-checks.raise_modal.subject')); ?></label>
                     <input type="text" id="rtSubject" required>
                 </div>
                 <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
                     <div class="form-group">
-                        <label for="rtPriority">Priority</label>
+                        <label for="rtPriority"><?php echo htmlspecialchars(t('morning-checks.raise_modal.priority')); ?></label>
                         <select id="rtPriority">
-                            <option value="Low">Low</option>
-                            <option value="Normal">Normal</option>
-                            <option value="High">High</option>
+                            <option value="Low"><?php echo htmlspecialchars(t('morning-checks.raise_modal.priority_low')); ?></option>
+                            <option value="Normal"><?php echo htmlspecialchars(t('morning-checks.raise_modal.priority_normal')); ?></option>
+                            <option value="High"><?php echo htmlspecialchars(t('morning-checks.raise_modal.priority_high')); ?></option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="rtDepartment">Department</label>
+                        <label for="rtDepartment"><?php echo htmlspecialchars(t('morning-checks.raise_modal.department')); ?></label>
                         <select id="rtDepartment">
-                            <option value="">-- Select --</option>
+                            <option value=""><?php echo htmlspecialchars(t('morning-checks.raise_modal.select')); ?></option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="rtTicketType">Type</label>
+                        <label for="rtTicketType"><?php echo htmlspecialchars(t('morning-checks.raise_modal.type')); ?></label>
                         <select id="rtTicketType">
-                            <option value="">-- Select --</option>
+                            <option value=""><?php echo htmlspecialchars(t('morning-checks.raise_modal.select')); ?></option>
                         </select>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="rtAssignee">Assign to</label>
+                    <label for="rtAssignee"><?php echo htmlspecialchars(t('morning-checks.raise_modal.assign_to')); ?></label>
                     <select id="rtAssignee">
-                        <option value="">Unassigned</option>
+                        <option value=""><?php echo htmlspecialchars(t('morning-checks.raise_modal.unassigned')); ?></option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="rtBody">Description</label>
+                    <label for="rtBody"><?php echo htmlspecialchars(t('morning-checks.raise_modal.description')); ?></label>
                     <textarea id="rtBody" rows="6"></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeRaiseTicketModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="rtSubmitBtn">Create ticket</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeRaiseTicketModal()"><?php echo htmlspecialchars(t('morning-checks.raise_modal.cancel')); ?></button>
+                    <button type="submit" class="btn btn-primary" id="rtSubmitBtn"><?php echo htmlspecialchars(t('morning-checks.raise_modal.create')); ?></button>
                 </div>
             </form>
         </div>
@@ -403,14 +413,14 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
 
                 if (data.error) {
                     document.getElementById('checksTableBody').innerHTML =
-                        `<tr><td colspan="4" class="error">Error: ${data.error}</td></tr>`;
+                        `<tr><td colspan="4" class="error">${escapeHtml(window.t('morning-checks.checklist.error', { message: data.error }))}</td></tr>`;
                     return;
                 }
 
                 displayChecks(data);
             } catch (error) {
                 document.getElementById('checksTableBody').innerHTML =
-                    `<tr><td colspan="4" class="error">Error loading checks: ${error.message}</td></tr>`;
+                    `<tr><td colspan="4" class="error">${escapeHtml(window.t('morning-checks.checklist.error_loading', { message: error.message }))}</td></tr>`;
             }
         }
 
@@ -422,9 +432,9 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
 
             let displayText = '';
             if (dateObj.getTime() === today.getTime()) {
-                displayText = "Today's checks - " + formatDate(dateObj);
+                displayText = window.t('morning-checks.dashboard.todays_checks', { date: formatDate(dateObj) });
             } else {
-                displayText = "Checks for " + formatDate(dateObj);
+                displayText = window.t('morning-checks.dashboard.checks_for', { date: formatDate(dateObj) });
             }
             document.getElementById('dateDisplayText').textContent = displayText;
 
@@ -462,11 +472,11 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
             const tbody = document.getElementById('checksTableBody');
 
             if (checks.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="no-data">No checks defined. <a href="settings/">Add some checks</a> to get started.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="no-data">' + window.t('morning-checks.checklist.no_checks_html') + '</td></tr>';
                 return;
             }
             if (MC_ACTIVE_STATUSES.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="no-data">No statuses defined. <a href="settings/">Add statuses</a> to get started.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="no-data">' + window.t('morning-checks.checklist.no_statuses_html') + '</td></tr>';
                 return;
             }
 
@@ -476,7 +486,7 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
                 // proxy). For orphans we can't tell — show nothing.
                 const showRaise = check.StatusRequiresNotes === true;
                 const raiseBtn = showRaise
-                    ? `<button class="raise-ticket-btn" onclick="openRaiseTicketModal(${check.CheckID}, '${escapeJsString(check.CheckName)}', '${escapeJsString(check.CheckDescription || '')}', '${escapeJsString(check.Status || '')}', '${escapeJsString(check.Notes || '')}')">+ Raise ticket</button>`
+                    ? `<button class="raise-ticket-btn" onclick="openRaiseTicketModal(${check.CheckID}, '${escapeJsString(check.CheckName)}', '${escapeJsString(check.CheckDescription || '')}', '${escapeJsString(check.Status || '')}', '${escapeJsString(check.Notes || '')}')">${escapeHtml(window.t('morning-checks.checklist.raise_ticket'))}</button>`
                     : '';
 
                 // Buttons — one per active status. The active button is
@@ -497,7 +507,7 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
                 // doesn't match any current StatusID (e.g. their status
                 // was deleted). Settings → Statuses has the remap tool.
                 const orphanBadge = check.IsOrphan
-                    ? `<span class="status-orphan-badge" title="Unmapped status — fix in Settings → Statuses">⚠ unmapped: ${escapeHtml(check.Status)}</span>`
+                    ? `<span class="status-orphan-badge" title="${escapeHtmlAttr(window.t('morning-checks.orphan.row_badge_title'))}">⚠ ${escapeHtml(window.t('morning-checks.orphan.row_badge', { label: check.Status }))}</span>`
                     : '';
 
                 // Row's status-{slug} class — keeps existing CSS hooks
@@ -513,7 +523,7 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
                         ${orphanBadge}
                         ${raiseBtn}
                     </td>
-                    <td class="notes-display">${check.Notes ? escapeHtml(check.Notes) : '-'}</td>
+                    <td class="notes-display">${check.Notes ? escapeHtml(check.Notes) : window.t('morning-checks.checklist.no_notes')}</td>
                 </tr>
                 `;
             }).join('');
@@ -524,6 +534,10 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function escapeHtmlAttr(text) {
+            return String(text == null ? '' : text).replace(/"/g, '&quot;');
         }
 
         // Escape string for use inside JavaScript single-quoted strings in onclick handlers
@@ -567,15 +581,15 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
                 const data = await response.json();
 
                 if (data.success) {
-                    showToast('Check saved successfully', 'success');
+                    showToast(window.t('morning-checks.toast.check_saved'), 'success');
                     loadChecks();
                     loadChart();
                     checkForOrphans();   // recount in case this save resolved orphans for the same check on the same date
                 } else {
-                    showToast('Error: ' + data.error, 'error');
+                    showToast(window.t('morning-checks.toast.save_error', { message: data.error }), 'error');
                 }
             } catch (error) {
-                showToast('Error saving check: ' + error.message, 'error');
+                showToast(window.t('morning-checks.toast.save_check_error', { message: error.message }), 'error');
             }
         }
 
@@ -592,7 +606,7 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
             const notes    = document.getElementById('modalNotes').value.trim();
 
             if (!notes) {
-                showToast('Notes are required for ' + label + ' status', 'error');
+                showToast(window.t('morning-checks.notes_modal.required', { status: label }), 'error');
                 return;
             }
 
@@ -631,15 +645,15 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
                     if (d.success) rtTicketTypeOptions = (d.ticket_types || []).filter(x => x.is_active);
                 }
             } catch (e) {
-                showToast('Failed to load lookup lists: ' + e.message, 'error');
+                showToast(window.t('morning-checks.toast.lookup_failed', { message: e.message }), 'error');
                 return;
             }
 
             const checkDate = document.getElementById('checkDate').value;
-            const subject = `[Morning Check] ${checkName} (${status})`;
-            let body = `Morning check '${checkName}' was set to ${status} on ${checkDate}.`;
-            if (checkDesc) body += `\n\nCheck description: ${checkDesc}`;
-            if (notes)     body += `\n\nNotes: ${notes}`;
+            const subject = window.t('morning-checks.raise_modal.subject_prefill', { name: checkName, status: status });
+            let body = window.t('morning-checks.raise_modal.body_prefill', { name: checkName, status: status, date: checkDate });
+            if (checkDesc) body += `\n\n` + window.t('morning-checks.raise_modal.body_description', { description: checkDesc });
+            if (notes)     body += `\n\n` + window.t('morning-checks.raise_modal.body_notes', { notes: notes });
 
             document.getElementById('rtSubject').value = subject;
             document.getElementById('rtBody').value = body;
@@ -655,17 +669,17 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
 
             // Populate selects
             const assigneeSel = document.getElementById('rtAssignee');
-            assigneeSel.innerHTML = '<option value="">Unassigned</option>' +
+            assigneeSel.innerHTML = '<option value="">' + escapeHtml(window.t('morning-checks.raise_modal.unassigned')) + '</option>' +
                 rtAnalystOptions.map(a =>
                     `<option value="${a.id}" ${a.id === SESSION_ANALYST.id ? 'selected' : ''}>${escapeHtml(a.full_name)}</option>`
                 ).join('');
 
             const deptSel = document.getElementById('rtDepartment');
-            deptSel.innerHTML = '<option value="">-- Select --</option>' +
+            deptSel.innerHTML = '<option value="">' + escapeHtml(window.t('morning-checks.raise_modal.select')) + '</option>' +
                 rtDepartmentOptions.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
 
             const typeSel = document.getElementById('rtTicketType');
-            typeSel.innerHTML = '<option value="">-- Select --</option>' +
+            typeSel.innerHTML = '<option value="">' + escapeHtml(window.t('morning-checks.raise_modal.select')) + '</option>' +
                 rtTicketTypeOptions.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
 
             // Stash check id for reference (currently not persisted; included in description above)
@@ -683,11 +697,11 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
             const btn = document.getElementById('rtSubmitBtn');
             const subject = document.getElementById('rtSubject').value.trim();
             if (!subject) {
-                showToast('Subject is required', 'error');
+                showToast(window.t('morning-checks.toast.subject_required'), 'error');
                 return;
             }
             if (!SESSION_ANALYST.email) {
-                showToast('Your analyst account has no email — set one before raising tickets', 'error');
+                showToast(window.t('morning-checks.toast.no_email'), 'error');
                 return;
             }
             btn.disabled = true;
@@ -708,13 +722,13 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
                 });
                 const data = await resp.json();
                 if (data.success) {
-                    showToast('Ticket ' + data.ticket_number + ' created', 'success');
+                    showToast(window.t('morning-checks.toast.ticket_created', { number: data.ticket_number }), 'success');
                     closeRaiseTicketModal();
                 } else {
-                    showToast('Error: ' + (data.error || 'Failed to create ticket'), 'error');
+                    showToast(window.t('morning-checks.toast.save_error', { message: data.error || window.t('morning-checks.toast.ticket_failed') }), 'error');
                 }
             } catch (err) {
-                showToast('Error creating ticket: ' + err.message, 'error');
+                showToast(window.t('morning-checks.toast.ticket_error', { message: err.message }), 'error');
             } finally {
                 btn.disabled = false;
             }
@@ -731,14 +745,14 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
                 const data = await response.json();
 
                 if (data.error) {
-                    showToast('Error loading chart: ' + data.error, 'error');
+                    showToast(window.t('morning-checks.toast.chart_error', { message: data.error }), 'error');
                     return;
                 }
 
                 chartRawDates = data.rawDates || [];
                 displayChart(data);
             } catch (error) {
-                showToast('Error loading chart: ' + error.message, 'error');
+                showToast(window.t('morning-checks.toast.chart_error', { message: error.message }), 'error');
             }
         }
 
@@ -758,8 +772,8 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
             // bar is still informative.
             const monthTitle = monthRangeText(chartRawDates);
             const axisTitle = monthTitle
-                ? ('Last 30 days overview · ' + monthTitle)
-                : 'Last 30 days overview';
+                ? window.t('morning-checks.chart.axis_title_month', { month: monthTitle })
+                : window.t('morning-checks.chart.axis_title');
 
             // Background colour resolver — returns the solid colour when
             // CHART_FILL_STYLE is 'plain', or a function that produces a
@@ -1039,8 +1053,8 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
                     const name = row.cells[0].textContent.trim();
                     const desc = row.cells[1].textContent.trim();
                     const activeBtn = row.cells[2]?.querySelector('.status-btn.active');
-                    const status = activeBtn ? activeBtn.textContent : 'Not set';
-                    const notes = row.cells[3]?.textContent.trim() || '-';
+                    const status = activeBtn ? activeBtn.textContent : window.t('morning-checks.checklist.not_set');
+                    const notes = row.cells[3]?.textContent.trim() || window.t('morning-checks.checklist.no_notes');
                     body.push([name, desc, status, notes]);
                 }
             });
@@ -1048,7 +1062,12 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
             // Generate table
             doc.autoTable({
                 startY: startY,
-                head: [['Check name', 'Description', 'Status', 'Notes']],
+                head: [[
+                    window.t('morning-checks.pdf.col_check_name'),
+                    window.t('morning-checks.pdf.col_description'),
+                    window.t('morning-checks.pdf.col_status'),
+                    window.t('morning-checks.pdf.col_notes')
+                ]],
                 body: body,
                 styles: { fontSize: 9, cellPadding: 3 },
                 headStyles: { fillColor: [248, 249, 250], textColor: [0, 0, 0], fontStyle: 'bold' },
@@ -1078,8 +1097,8 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
                 }
             });
 
-            doc.save(`morning-checks-${selectedDate}.pdf`);
-            showToast('PDF saved successfully', 'success');
+            doc.save(window.t('morning-checks.pdf.filename', { date: selectedDate }));
+            showToast(window.t('morning-checks.toast.pdf_saved'), 'success');
         }
 
         // Check the orphan-results count (rows whose StatusID is NULL
@@ -1093,8 +1112,10 @@ $chart_initial_height_calc = 'calc((100vh - 60px) * ' . ($chart_height_pct / 100
                 const count  = document.getElementById('orphanBannerCount');
                 if (data && data.success && data.totalOrphans > 0) {
                     const n = data.totalOrphans;
-                    count.textContent = n + ' result' + (n === 1 ? '' : 's') + ' across ' +
-                                        data.labels.length + ' label' + (data.labels.length === 1 ? '' : 's') + '.';
+                    const labelCount = data.labels.length;
+                    const resultsText = window.t(n === 1 ? 'morning-checks.orphan.banner_results_one' : 'morning-checks.orphan.banner_results_other', { n: n });
+                    const labelsText = window.t(labelCount === 1 ? 'morning-checks.orphan.banner_labels_one' : 'morning-checks.orphan.banner_labels_other', { n: labelCount });
+                    count.textContent = window.t('morning-checks.orphan.banner_count', { results: resultsText, labels: labelsText });
                     banner.style.display = '';
                 } else {
                     banner.style.display = 'none';

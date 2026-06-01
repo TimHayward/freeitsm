@@ -1,0 +1,269 @@
+<?php
+/**
+ * English (en) — Reporting module strings.
+ *
+ * Source-of-truth locale. Every other lang/<code>/reporting.php may omit keys;
+ * missing keys fall back to the value here (see includes/i18n.php).
+ *
+ * Covers the landing page, the system logs viewer, the ticket dashboards
+ * placeholder, the Intune dashboard (KPI strip, widgets, drill-down modal)
+ * and the help guide. Only chrome is translated — log rows, ticket subjects
+ * and Intune device data stay as-is (they are data, not UI).
+ */
+return [
+    'title' => 'Reporting',
+
+    'nav' => [
+        'logs'    => 'Logs',
+        'tickets' => 'Tickets',
+        'intune'  => 'Intune',
+        'help'    => 'Help',
+
+        'logs_title'    => 'System Logs',
+        'tickets_title' => 'Ticket Dashboards',
+        'intune_title'  => 'Intune Dashboard',
+        'help_title'    => 'Help',
+    ],
+
+    'landing' => [
+        'heading'  => 'Reporting',
+        'subtitle' => 'Choose a reporting area to get started',
+
+        'logs_title'    => 'System Logs',
+        'logs_desc'     => 'View login attempts, email imports, and other system activity logs.',
+        'tickets_title' => 'Ticket Dashboards',
+        'tickets_desc'  => 'KPI dashboards for ticket performance, resolution times, and team workload.',
+        'intune_title'  => 'Intune Dashboard',
+        'intune_desc'   => 'Compliance, encryption, OS distribution, enrolment trend, and last-sync health across every managed device.',
+    ],
+
+    'logs' => [
+        'heading'  => 'System logs',
+        'refresh'  => 'Refresh',
+        'tab_login'        => 'User logins',
+        'tab_email_import' => 'Email imports',
+
+        'loading'        => 'Loading logs...',
+        'no_logs'        => 'No logs found',
+        'load_error'     => 'Error loading logs: {error}',
+
+        'col_datetime'    => 'Date/time',
+        'col_username'    => 'Username',
+        'col_status'      => 'Status',
+        'col_ip'          => 'IP address',
+        'col_user_agent'  => 'User agent',
+        'col_from'        => 'From',
+        'col_subject'     => 'Subject',
+        'col_type'        => 'Type',
+        'col_attachments' => 'Attachments',
+
+        'status_success' => 'Success',
+        'status_failed'  => 'Failed',
+        'unknown'        => 'Unknown',
+        'no_subject'     => '(No Subject)',
+        'new_ticket'     => 'New Ticket',
+        'reply'          => 'Reply',
+        'none'           => 'None',
+
+        'row_title'  => 'Click to view JSON details',
+
+        'pagination' => 'Page {current} of {total} ({count} total)',
+        'prev'       => 'Previous',
+        'next'       => 'Next',
+
+        'modal_title' => 'Log Details (JSON)',
+        'close'       => 'Close',
+    ],
+
+    'tickets' => [
+        'heading' => 'Ticket Dashboards',
+        'coming_soon' => 'KPI dashboards and reporting for ticket performance, resolution times, and team workload will be available here soon.',
+    ],
+
+    'intune' => [
+        'heading'      => 'Intune Dashboard',
+        'loading_meta' => 'Loading…',
+        'refresh'      => 'Refresh',
+        'refresh_title'=> 'Refresh data',
+        'loading_data' => 'Loading Intune data…',
+
+        'last_sync'    => 'Last sync: {when}',
+        'error'        => 'Error: {error}',
+        'load_failed'  => 'Failed to load dashboard: {error}',
+        'no_devices_title' => 'No Intune devices found.',
+        'no_devices_body'  => 'Run an Intune sync from the Assets module to import devices, then come back here.',
+        'no_data'      => 'No data',
+        'unknown'      => 'Unknown',
+
+        // KPI strip
+        'kpi_total'            => 'Total Devices',
+        'kpi_total_sub'        => 'All managed devices',
+        'kpi_compliant'        => 'Compliant',
+        'kpi_compliant_sub'    => '{count} of {total}',
+        'kpi_encrypted'        => 'Encrypted',
+        'kpi_encrypted_sub'    => '{count} of {total}',
+        'kpi_stale'            => 'Stale (30+ days)',
+        'kpi_stale_sub'        => 'No sync in last 30 days',
+        'kpi_enrolled'         => 'Enrolled (30 days)',
+        'kpi_enrolled_sub'     => 'New in last 30 days',
+
+        'kpi_compliant_drill'  => 'Compliant devices',
+        'kpi_encrypted_drill'  => 'Encrypted devices',
+        'kpi_stale_drill'      => 'Stale (30+ days)',
+        'kpi_enrolled_drill'   => 'Enrolled in last 30 days',
+
+        // Widgets
+        'w_compliance_title'   => 'Compliance Breakdown',
+        'w_compliance_desc'    => 'Devices by compliance state',
+        'w_os_title'           => 'Operating System',
+        'w_os_desc'            => 'Devices grouped by OS',
+        'w_owner_title'        => 'Owner Type',
+        'w_owner_desc'         => 'Corporate vs personal devices',
+        'w_manufacturers_title'=> 'Top Manufacturers',
+        'w_manufacturers_desc' => 'Devices by manufacturer (top 10)',
+        'w_os_versions_title'  => 'Top OS Versions',
+        'w_os_versions_desc'   => 'Most common OS + version combinations',
+        'w_last_sync_title'    => 'Last Sync Window',
+        'w_last_sync_desc'     => 'How recently devices checked in',
+        'w_enrolment_title'    => 'Enrolments (last 90 days)',
+        'w_enrolment_desc'     => 'New devices enrolled per day',
+        'w_encryption_title'   => 'Encryption by OS',
+        'w_encryption_desc'    => 'Encrypted vs unencrypted, per OS',
+
+        // Chart tooltips / labels
+        'tooltip_enrolled'     => '{count} enrolled (click to drill down)',
+        'drill_enrolled_on'    => 'Enrolled on {date}',
+
+        // Drill-down modal
+        'drill_devices'        => 'Devices',
+        'drill_loading'        => 'Loading…',
+        'drill_count'          => '{count} device',
+        'drill_count_plural'   => '{count} devices',
+        'drill_no_match'       => 'No devices match this filter.',
+        'drill_error'          => 'Error: {error}',
+        'drill_load_failed'    => 'Failed to load: {error}',
+        'drill_page_info'      => 'Page {current} of {total}',
+        'drill_prev'           => '‹ Prev',
+        'drill_next'           => 'Next ›',
+        'drill_export'         => 'Export CSV',
+        'drill_close'          => 'Close',
+
+        'drill_col_device'     => 'Device',
+        'drill_col_user'       => 'User',
+        'drill_col_os'         => 'OS',
+        'drill_col_compliance' => 'Compliance',
+        'drill_col_encrypted'  => 'Encrypted',
+        'drill_col_last_sync'  => 'Last Sync',
+
+        'never'                => 'Never',
+        'yes'                  => 'Yes',
+        'no'                   => 'No',
+    ],
+
+    'help' => [
+        'page_title' => 'Reporting Guide',
+        'guide'      => 'Guide',
+
+        'hero_heading' => 'Reporting guide',
+        'hero_sub'     => 'Turn your service desk data into actionable insights with logs, analytics, and dashboards.',
+
+        'nav_overview'           => 'Overview',
+        'nav_ticket_reports'     => 'Ticket reports',
+        'nav_system_logs'        => 'System logs',
+        'nav_understanding_data' => 'Understanding the data',
+        'nav_settings_filters'   => 'Settings & filters',
+        'nav_tips'               => 'Quick tips',
+
+        // Section 1: Overview
+        's1_heading' => 'Overview',
+        's1_intro'   => 'The Reporting module brings together everything happening across your service desk into one place. Track ticket performance, monitor system activity, review login attempts, and audit email imports — all from a single module designed to help you spot trends and make data-driven decisions.',
+        's1_card1_title' => 'Ticket analytics',
+        's1_card1_body'  => 'Visualise ticket volume, resolution times, SLA compliance, and team workload through interactive dashboards that update in real time.',
+        's1_card2_title' => 'System logs',
+        's1_card2_body'  => 'Review every login attempt, email import, and system event in a searchable, filterable table with timestamps and status indicators.',
+        's1_card3_title' => 'Activity tracking',
+        's1_card3_body'  => 'Monitor analyst activity across the platform — who is logging in, what tickets are being worked, and where time is being spent.',
+        's1_card4_title' => 'Audit trail',
+        's1_card4_body'  => 'Every action is recorded with who did it, when, and what changed. Essential for compliance, security reviews, and troubleshooting.',
+
+        // Section 2: Ticket reports
+        's2_heading' => 'Ticket reports',
+        's2_intro'   => 'The Tickets area of reporting provides KPI dashboards that give you a clear picture of how your service desk is performing. These dashboards pull data directly from your ticket records and present it through charts and summary cards.',
+        's2_card1_title' => 'Ticket volume',
+        's2_card1_body'  => 'See how many tickets are created, resolved, and still open over any time period. Identify busy days and seasonal patterns.',
+        's2_card2_title' => 'SLA compliance',
+        's2_card2_body'  => 'Track what percentage of tickets meet their response and resolution targets. Drill down by priority or category to find problem areas.',
+        's2_card3_title' => 'Resolution times',
+        's2_card3_body'  => 'Measure average and median time to resolve tickets. Compare across teams, categories, or priority levels to spot bottlenecks.',
+        's2_card4_title' => 'Team workload',
+        's2_card4_body'  => 'See how tickets are distributed across analysts. Identify who is overloaded and who has capacity to take on more work.',
+        's2_card5_title' => 'Category breakdown',
+        's2_card5_body'  => 'Understand which types of issues generate the most tickets. Use this to target training, documentation, or self-service improvements.',
+        's2_card6_title' => 'Trend analysis',
+        's2_card6_body'  => 'View ticket data over weeks, months, or quarters to spot long-term trends and measure the impact of process improvements.',
+        's2_tip'         => 'Ticket dashboards are accessed via the Tickets tab in the header navigation. Use date range filters to compare different periods side by side.',
+
+        // Section 3: System logs
+        's3_heading' => 'System logs',
+        's3_intro'   => 'The Logs area captures everything happening behind the scenes in your FreeITSM instance. Every login attempt, email import, and system event is recorded with a timestamp and status so you always have a complete picture of platform activity.',
+        's3_badge_login'  => 'LOGIN',
+        's3_badge_email'  => 'EMAIL',
+        's3_badge_system' => 'SYSTEM',
+        's3_badge_audit'  => 'AUDIT',
+        's3_login_title'  => 'Login attempts',
+        's3_login_body'   => 'Every successful and failed login is recorded with the analyst name, IP address, and timestamp. Failed attempts are flagged in red so you can quickly spot unauthorised access attempts or locked-out users.',
+        's3_email_title'  => 'Email imports',
+        's3_email_body'   => 'When the system processes incoming emails into tickets, each import is logged with the sender address, subject line, and whether it was successfully converted. Failed imports show the reason so you can investigate bounced or malformed messages.',
+        's3_system_title' => 'System events',
+        's3_system_body'  => 'Background processes, scheduled tasks, configuration changes, and API activity are all captured here. Use these logs to verify that automated jobs are running correctly and to diagnose issues.',
+        's3_audit_title'  => 'Audit entries',
+        's3_audit_body'   => 'Field-level change tracking across the platform. See exactly who changed what, when, and what the previous value was. Invaluable for compliance requirements and resolving disputes.',
+        's3_step1_title' => 'Open the Logs tab',
+        's3_step1_body'  => 'click Logs in the header navigation to access the system log viewer.',
+        's3_step2_title' => 'Switch between log types',
+        's3_step2_body'  => 'use the tab bar at the top to filter by login attempts, email imports, or system events.',
+        's3_step3_title' => 'Review the details',
+        's3_step3_body'  => 'each row shows a timestamp, status badge (success or failed), and contextual details like IP addresses, email subjects, or event descriptions.',
+        's3_tip'         => 'Check login logs regularly for repeated failed attempts from unfamiliar IP addresses. This can indicate brute-force attacks or compromised credentials that need immediate attention.',
+
+        // Section 4: Understanding the data
+        's4_heading' => 'Understanding the data',
+        's4_intro'   => 'Raw data only becomes useful when you know what to look for. Here are the key metrics to watch and how to interpret them to drive real improvements in your service desk operations.',
+        's4_metric1_title' => 'First response time',
+        's4_metric1_body'  => 'How long users wait before an analyst acknowledges their ticket. A rising trend here means your team may be understaffed or tickets are not being routed effectively. Target: under your SLA threshold.',
+        's4_metric2_title' => 'Resolution rate',
+        's4_metric2_body'  => 'The percentage of tickets resolved within a given period versus those created. If more tickets come in than go out, your backlog is growing and you need to investigate the cause.',
+        's4_metric3_title' => 'Repeat contacts',
+        's4_metric3_body'  => 'Tickets reopened or users raising the same issue multiple times. High repeat contact rates suggest the root cause is not being addressed, or that solutions are not clearly communicated.',
+        's4_metric4_title' => 'Category hotspots',
+        's4_metric4_body'  => 'Which categories generate the most tickets over time. A spike in a particular category can signal a failing system, a bad software update, or a gap in user training that needs addressing.',
+        's4_combine'     => 'Use these metrics together rather than in isolation. For example, a high resolution rate combined with a high repeat contact rate may indicate that tickets are being closed too quickly without solving the underlying problem.',
+        's4_tip'         => 'Schedule a weekly review of your key metrics with the team. Patterns that are invisible day-to-day often become obvious when viewed on a weekly or monthly cadence.',
+
+        // Section 5: Settings & filters
+        's5_heading' => 'Settings & filters',
+        's5_intro'   => 'Both the log viewer and ticket dashboards support a range of filters to help you narrow down exactly the data you need. Effective use of filters turns a wall of data into targeted, actionable information.',
+        's5_step1_title' => 'Date ranges',
+        's5_step1_body'  => 'filter logs and reports to a specific time window. Use preset ranges (today, this week, this month) or set custom start and end dates for precise control.',
+        's5_step2_title' => 'Status filters',
+        's5_step2_body'  => 'in the log viewer, filter by success or failure status to quickly isolate problems. In ticket reports, filter by open, resolved, or closed status.',
+        's5_step3_title' => 'Search',
+        's5_step3_body'  => 'use the search box to find specific entries by keyword. In logs, this searches across analyst names, IP addresses, email subjects, and event descriptions.',
+        's5_step4_title' => 'Time grouping',
+        's5_step4_body'  => 'in ticket dashboards, group data by day, week, or month to change the granularity of your charts. Daily views show short-term spikes; monthly views reveal long-term trends.',
+        's5_step5_title' => 'Department filters',
+        's5_step5_body'  => 'narrow dashboard results to a specific department to compare performance across different parts of the organisation.',
+        's5_tip'         => "Combine multiple filters for targeted analysis. For example, filter by a specific department and a date range to see how a recent process change affected that team's ticket volume.",
+
+        // Section 6: Quick tips
+        's6_heading' => 'Quick tips',
+        's6_tip1_title' => 'Review regularly',
+        's6_tip1_body'  => 'Reports are most valuable when reviewed consistently. Set a cadence — weekly for operational metrics, monthly for trend analysis — and stick to it.',
+        's6_tip2_title' => 'Investigate anomalies',
+        's6_tip2_body'  => 'A sudden spike or drop in any metric is a signal worth investigating. Check the logs for context — was there a system outage, a software rollout, or a staffing change?',
+        's6_tip3_title' => 'Compare periods',
+        's6_tip3_body'  => 'Use date filters to compare this week against last week, or this month against the same month last year. Relative comparisons reveal improvement or regression more clearly than raw numbers.',
+        's6_tip4_title' => 'Monitor security',
+        's6_tip4_body'  => 'Keep an eye on failed login attempts in the system logs. Repeated failures from the same IP address or against the same account may indicate a security concern that needs escalation.',
+    ],
+];

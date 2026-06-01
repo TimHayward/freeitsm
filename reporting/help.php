@@ -4,6 +4,8 @@
  */
 session_start();
 require_once '../config.php';
+require_once '../includes/i18n.php';
+I18n::initFromSession();
 
 if (!isset($_SESSION['analyst_id'])) {
     header('Location: ../login.php');
@@ -12,14 +14,17 @@ if (!isset($_SESSION['analyst_id'])) {
 
 $current_page = 'help';
 $path_prefix = '../';
+$translationNamespaces = ['common', 'reporting'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Reporting Guide</title>
+    <title>Service Desk - <?php echo htmlspecialchars(t('reporting.help.page_title')); ?></title>
     <link rel="stylesheet" href="../assets/css/inbox.css">
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../assets/js/i18n.js"></script>
     <style>
         .rp-help-container {
             display: flex;
@@ -453,30 +458,30 @@ $path_prefix = '../';
     <div class="rp-help-container">
         <!-- Left pane navigation -->
         <div class="rp-help-sidebar">
-            <h3>Guide</h3>
+            <h3><?php echo htmlspecialchars(t('reporting.help.guide')); ?></h3>
             <a href="#overview" class="rp-help-nav-link active" data-section="overview">
                 <span class="rp-help-nav-num">1</span>
-                Overview
+                <?php echo htmlspecialchars(t('reporting.help.nav_overview')); ?>
             </a>
             <a href="#ticket-reports" class="rp-help-nav-link" data-section="ticket-reports">
                 <span class="rp-help-nav-num">2</span>
-                Ticket reports
+                <?php echo htmlspecialchars(t('reporting.help.nav_ticket_reports')); ?>
             </a>
             <a href="#system-logs" class="rp-help-nav-link" data-section="system-logs">
                 <span class="rp-help-nav-num">3</span>
-                System logs
+                <?php echo htmlspecialchars(t('reporting.help.nav_system_logs')); ?>
             </a>
             <a href="#understanding-data" class="rp-help-nav-link" data-section="understanding-data">
                 <span class="rp-help-nav-num">4</span>
-                Understanding the data
+                <?php echo htmlspecialchars(t('reporting.help.nav_understanding_data')); ?>
             </a>
             <a href="#settings-filters" class="rp-help-nav-link" data-section="settings-filters">
                 <span class="rp-help-nav-num">5</span>
-                Settings &amp; filters
+                <?php echo htmlspecialchars(t('reporting.help.nav_settings_filters')); ?>
             </a>
             <a href="#tips" class="rp-help-nav-link" data-section="tips">
                 <span class="rp-help-nav-num">6</span>
-                Quick tips
+                <?php echo htmlspecialchars(t('reporting.help.nav_tips')); ?>
             </a>
         </div>
 
@@ -484,8 +489,8 @@ $path_prefix = '../';
         <div class="rp-help-main" id="helpMain">
             <!-- Hero banner -->
             <div class="rp-help-hero">
-                <h2>Reporting guide</h2>
-                <p>Turn your service desk data into actionable insights with logs, analytics, and dashboards.</p>
+                <h2><?php echo htmlspecialchars(t('reporting.help.hero_heading')); ?></h2>
+                <p><?php echo htmlspecialchars(t('reporting.help.hero_sub')); ?></p>
             </div>
 
             <div class="rp-help-content">
@@ -495,8 +500,8 @@ $path_prefix = '../';
                     <div class="rp-help-section-header">
                         <span class="rp-help-section-num">1</span>
                         <div>
-                            <h3>Overview</h3>
-                            <p>The Reporting module brings together everything happening across your service desk into one place. Track ticket performance, monitor system activity, review login attempts, and audit email imports &mdash; all from a single module designed to help you spot trends and make data-driven decisions.</p>
+                            <h3><?php echo htmlspecialchars(t('reporting.help.s1_heading')); ?></h3>
+                            <p><?php echo htmlspecialchars(t('reporting.help.s1_intro')); ?></p>
                         </div>
                     </div>
                     <div class="rp-help-features-grid">
@@ -504,29 +509,29 @@ $path_prefix = '../';
                             <div class="rp-help-feature-icon rust">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                             </div>
-                            <h4>Ticket analytics</h4>
-                            <p>Visualise ticket volume, resolution times, SLA compliance, and team workload through interactive dashboards that update in real time.</p>
+                            <h4><?php echo htmlspecialchars(t('reporting.help.s1_card1_title')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('reporting.help.s1_card1_body')); ?></p>
                         </div>
                         <div class="rp-help-feature-card">
                             <div class="rp-help-feature-icon blue">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                             </div>
-                            <h4>System logs</h4>
-                            <p>Review every login attempt, email import, and system event in a searchable, filterable table with timestamps and status indicators.</p>
+                            <h4><?php echo htmlspecialchars(t('reporting.help.s1_card2_title')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('reporting.help.s1_card2_body')); ?></p>
                         </div>
                         <div class="rp-help-feature-card">
                             <div class="rp-help-feature-icon green">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
                             </div>
-                            <h4>Activity tracking</h4>
-                            <p>Monitor analyst activity across the platform &mdash; who is logging in, what tickets are being worked, and where time is being spent.</p>
+                            <h4><?php echo htmlspecialchars(t('reporting.help.s1_card3_title')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('reporting.help.s1_card3_body')); ?></p>
                         </div>
                         <div class="rp-help-feature-card">
                             <div class="rp-help-feature-icon purple">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                             </div>
-                            <h4>Audit trail</h4>
-                            <p>Every action is recorded with who did it, when, and what changed. Essential for compliance, security reviews, and troubleshooting.</p>
+                            <h4><?php echo htmlspecialchars(t('reporting.help.s1_card4_title')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('reporting.help.s1_card4_body')); ?></p>
                         </div>
                     </div>
                 </div>
@@ -535,71 +540,71 @@ $path_prefix = '../';
                 <div class="rp-help-section" id="ticket-reports">
                     <div class="rp-help-section-header">
                         <span class="rp-help-section-num">2</span>
-                        <h3>Ticket reports</h3>
+                        <h3><?php echo htmlspecialchars(t('reporting.help.s2_heading')); ?></h3>
                     </div>
-                    <p>The Tickets area of reporting provides KPI dashboards that give you a clear picture of how your service desk is performing. These dashboards pull data directly from your ticket records and present it through charts and summary cards.</p>
+                    <p><?php echo htmlspecialchars(t('reporting.help.s2_intro')); ?></p>
 
                     <div class="rp-help-data-grid">
                         <div class="rp-help-data-card">
-                            <strong>Ticket volume</strong>
-                            <span>See how many tickets are created, resolved, and still open over any time period. Identify busy days and seasonal patterns.</span>
+                            <strong><?php echo htmlspecialchars(t('reporting.help.s2_card1_title')); ?></strong>
+                            <span><?php echo htmlspecialchars(t('reporting.help.s2_card1_body')); ?></span>
                         </div>
                         <div class="rp-help-data-card">
-                            <strong>SLA compliance</strong>
-                            <span>Track what percentage of tickets meet their response and resolution targets. Drill down by priority or category to find problem areas.</span>
+                            <strong><?php echo htmlspecialchars(t('reporting.help.s2_card2_title')); ?></strong>
+                            <span><?php echo htmlspecialchars(t('reporting.help.s2_card2_body')); ?></span>
                         </div>
                         <div class="rp-help-data-card">
-                            <strong>Resolution times</strong>
-                            <span>Measure average and median time to resolve tickets. Compare across teams, categories, or priority levels to spot bottlenecks.</span>
+                            <strong><?php echo htmlspecialchars(t('reporting.help.s2_card3_title')); ?></strong>
+                            <span><?php echo htmlspecialchars(t('reporting.help.s2_card3_body')); ?></span>
                         </div>
                         <div class="rp-help-data-card">
-                            <strong>Team workload</strong>
-                            <span>See how tickets are distributed across analysts. Identify who is overloaded and who has capacity to take on more work.</span>
+                            <strong><?php echo htmlspecialchars(t('reporting.help.s2_card4_title')); ?></strong>
+                            <span><?php echo htmlspecialchars(t('reporting.help.s2_card4_body')); ?></span>
                         </div>
                         <div class="rp-help-data-card">
-                            <strong>Category breakdown</strong>
-                            <span>Understand which types of issues generate the most tickets. Use this to target training, documentation, or self-service improvements.</span>
+                            <strong><?php echo htmlspecialchars(t('reporting.help.s2_card5_title')); ?></strong>
+                            <span><?php echo htmlspecialchars(t('reporting.help.s2_card5_body')); ?></span>
                         </div>
                         <div class="rp-help-data-card">
-                            <strong>Trend analysis</strong>
-                            <span>View ticket data over weeks, months, or quarters to spot long-term trends and measure the impact of process improvements.</span>
+                            <strong><?php echo htmlspecialchars(t('reporting.help.s2_card6_title')); ?></strong>
+                            <span><?php echo htmlspecialchars(t('reporting.help.s2_card6_body')); ?></span>
                         </div>
                     </div>
 
-                    <p class="rp-help-tip">Ticket dashboards are accessed via the Tickets tab in the header navigation. Use date range filters to compare different periods side by side.</p>
+                    <p class="rp-help-tip"><?php echo htmlspecialchars(t('reporting.help.s2_tip')); ?></p>
                 </div>
 
                 <!-- Section 3: System Logs -->
                 <div class="rp-help-section" id="system-logs">
                     <div class="rp-help-section-header">
                         <span class="rp-help-section-num">3</span>
-                        <h3>System logs</h3>
+                        <h3><?php echo htmlspecialchars(t('reporting.help.s3_heading')); ?></h3>
                     </div>
-                    <p>The Logs area captures everything happening behind the scenes in your FreeITSM instance. Every login attempt, email import, and system event is recorded with a timestamp and status so you always have a complete picture of platform activity.</p>
+                    <p><?php echo htmlspecialchars(t('reporting.help.s3_intro')); ?></p>
 
                     <div class="rp-help-log-types">
                         <div class="rp-help-log-type">
-                            <span class="rp-help-log-badge login">LOGIN</span>
+                            <span class="rp-help-log-badge login"><?php echo htmlspecialchars(t('reporting.help.s3_badge_login')); ?></span>
                             <div>
-                                <strong>Login attempts</strong> &mdash; Every successful and failed login is recorded with the analyst name, IP address, and timestamp. Failed attempts are flagged in red so you can quickly spot unauthorised access attempts or locked-out users.
+                                <strong><?php echo htmlspecialchars(t('reporting.help.s3_login_title')); ?></strong> &mdash; <?php echo htmlspecialchars(t('reporting.help.s3_login_body')); ?>
                             </div>
                         </div>
                         <div class="rp-help-log-type">
-                            <span class="rp-help-log-badge email">EMAIL</span>
+                            <span class="rp-help-log-badge email"><?php echo htmlspecialchars(t('reporting.help.s3_badge_email')); ?></span>
                             <div>
-                                <strong>Email imports</strong> &mdash; When the system processes incoming emails into tickets, each import is logged with the sender address, subject line, and whether it was successfully converted. Failed imports show the reason so you can investigate bounced or malformed messages.
+                                <strong><?php echo htmlspecialchars(t('reporting.help.s3_email_title')); ?></strong> &mdash; <?php echo htmlspecialchars(t('reporting.help.s3_email_body')); ?>
                             </div>
                         </div>
                         <div class="rp-help-log-type">
-                            <span class="rp-help-log-badge system">SYSTEM</span>
+                            <span class="rp-help-log-badge system"><?php echo htmlspecialchars(t('reporting.help.s3_badge_system')); ?></span>
                             <div>
-                                <strong>System events</strong> &mdash; Background processes, scheduled tasks, configuration changes, and API activity are all captured here. Use these logs to verify that automated jobs are running correctly and to diagnose issues.
+                                <strong><?php echo htmlspecialchars(t('reporting.help.s3_system_title')); ?></strong> &mdash; <?php echo htmlspecialchars(t('reporting.help.s3_system_body')); ?>
                             </div>
                         </div>
                         <div class="rp-help-log-type">
-                            <span class="rp-help-log-badge audit">AUDIT</span>
+                            <span class="rp-help-log-badge audit"><?php echo htmlspecialchars(t('reporting.help.s3_badge_audit')); ?></span>
                             <div>
-                                <strong>Audit entries</strong> &mdash; Field-level change tracking across the platform. See exactly who changed what, when, and what the previous value was. Invaluable for compliance requirements and resolving disputes.
+                                <strong><?php echo htmlspecialchars(t('reporting.help.s3_audit_title')); ?></strong> &mdash; <?php echo htmlspecialchars(t('reporting.help.s3_audit_body')); ?>
                             </div>
                         </div>
                     </div>
@@ -608,124 +613,124 @@ $path_prefix = '../';
                         <div class="rp-help-step-item">
                             <div class="rp-help-step-num">1</div>
                             <div>
-                                <strong>Open the Logs tab</strong> &mdash; click Logs in the header navigation to access the system log viewer.
+                                <strong><?php echo htmlspecialchars(t('reporting.help.s3_step1_title')); ?></strong> &mdash; <?php echo htmlspecialchars(t('reporting.help.s3_step1_body')); ?>
                             </div>
                         </div>
                         <div class="rp-help-step-item">
                             <div class="rp-help-step-num">2</div>
                             <div>
-                                <strong>Switch between log types</strong> &mdash; use the tab bar at the top to filter by login attempts, email imports, or system events.
+                                <strong><?php echo htmlspecialchars(t('reporting.help.s3_step2_title')); ?></strong> &mdash; <?php echo htmlspecialchars(t('reporting.help.s3_step2_body')); ?>
                             </div>
                         </div>
                         <div class="rp-help-step-item">
                             <div class="rp-help-step-num">3</div>
                             <div>
-                                <strong>Review the details</strong> &mdash; each row shows a timestamp, status badge (success or failed), and contextual details like IP addresses, email subjects, or event descriptions.
+                                <strong><?php echo htmlspecialchars(t('reporting.help.s3_step3_title')); ?></strong> &mdash; <?php echo htmlspecialchars(t('reporting.help.s3_step3_body')); ?>
                             </div>
                         </div>
                     </div>
 
-                    <p class="rp-help-tip">Check login logs regularly for repeated failed attempts from unfamiliar IP addresses. This can indicate brute-force attacks or compromised credentials that need immediate attention.</p>
+                    <p class="rp-help-tip"><?php echo htmlspecialchars(t('reporting.help.s3_tip')); ?></p>
                 </div>
 
                 <!-- Section 4: Understanding the Data (highlighted) -->
                 <div class="rp-help-section rp-help-section-highlight" id="understanding-data">
                     <div class="rp-help-section-header">
                         <span class="rp-help-section-num highlight">4</span>
-                        <h3>Understanding the data</h3>
+                        <h3><?php echo htmlspecialchars(t('reporting.help.s4_heading')); ?></h3>
                     </div>
-                    <p class="rp-help-intro">Raw data only becomes useful when you know what to look for. Here are the key metrics to watch and how to interpret them to drive real improvements in your service desk operations.</p>
+                    <p class="rp-help-intro"><?php echo htmlspecialchars(t('reporting.help.s4_intro')); ?></p>
 
                     <div class="rp-help-metric-grid">
                         <div class="rp-help-metric-card">
-                            <h4>First response time</h4>
-                            <p>How long users wait before an analyst acknowledges their ticket. A rising trend here means your team may be understaffed or tickets are not being routed effectively. Target: under your SLA threshold.</p>
+                            <h4><?php echo htmlspecialchars(t('reporting.help.s4_metric1_title')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('reporting.help.s4_metric1_body')); ?></p>
                         </div>
                         <div class="rp-help-metric-card">
-                            <h4>Resolution rate</h4>
-                            <p>The percentage of tickets resolved within a given period versus those created. If more tickets come in than go out, your backlog is growing and you need to investigate the cause.</p>
+                            <h4><?php echo htmlspecialchars(t('reporting.help.s4_metric2_title')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('reporting.help.s4_metric2_body')); ?></p>
                         </div>
                         <div class="rp-help-metric-card">
-                            <h4>Repeat contacts</h4>
-                            <p>Tickets reopened or users raising the same issue multiple times. High repeat contact rates suggest the root cause is not being addressed, or that solutions are not clearly communicated.</p>
+                            <h4><?php echo htmlspecialchars(t('reporting.help.s4_metric3_title')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('reporting.help.s4_metric3_body')); ?></p>
                         </div>
                         <div class="rp-help-metric-card">
-                            <h4>Category hotspots</h4>
-                            <p>Which categories generate the most tickets over time. A spike in a particular category can signal a failing system, a bad software update, or a gap in user training that needs addressing.</p>
+                            <h4><?php echo htmlspecialchars(t('reporting.help.s4_metric4_title')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('reporting.help.s4_metric4_body')); ?></p>
                         </div>
                     </div>
 
-                    <p>Use these metrics together rather than in isolation. For example, a high resolution rate combined with a high repeat contact rate may indicate that tickets are being closed too quickly without solving the underlying problem.</p>
+                    <p><?php echo htmlspecialchars(t('reporting.help.s4_combine')); ?></p>
 
-                    <p class="rp-help-tip">Schedule a weekly review of your key metrics with the team. Patterns that are invisible day-to-day often become obvious when viewed on a weekly or monthly cadence.</p>
+                    <p class="rp-help-tip"><?php echo htmlspecialchars(t('reporting.help.s4_tip')); ?></p>
                 </div>
 
                 <!-- Section 5: Settings & Filters -->
                 <div class="rp-help-section" id="settings-filters">
                     <div class="rp-help-section-header">
                         <span class="rp-help-section-num">5</span>
-                        <h3>Settings &amp; filters</h3>
+                        <h3><?php echo htmlspecialchars(t('reporting.help.s5_heading')); ?></h3>
                     </div>
-                    <p>Both the log viewer and ticket dashboards support a range of filters to help you narrow down exactly the data you need. Effective use of filters turns a wall of data into targeted, actionable information.</p>
+                    <p><?php echo htmlspecialchars(t('reporting.help.s5_intro')); ?></p>
 
                     <div class="rp-help-steps">
                         <div class="rp-help-step-item">
                             <div class="rp-help-step-num">1</div>
                             <div>
-                                <strong>Date ranges</strong> &mdash; filter logs and reports to a specific time window. Use preset ranges (today, this week, this month) or set custom start and end dates for precise control.
+                                <strong><?php echo htmlspecialchars(t('reporting.help.s5_step1_title')); ?></strong> &mdash; <?php echo htmlspecialchars(t('reporting.help.s5_step1_body')); ?>
                             </div>
                         </div>
                         <div class="rp-help-step-item">
                             <div class="rp-help-step-num">2</div>
                             <div>
-                                <strong>Status filters</strong> &mdash; in the log viewer, filter by success or failure status to quickly isolate problems. In ticket reports, filter by open, resolved, or closed status.
+                                <strong><?php echo htmlspecialchars(t('reporting.help.s5_step2_title')); ?></strong> &mdash; <?php echo htmlspecialchars(t('reporting.help.s5_step2_body')); ?>
                             </div>
                         </div>
                         <div class="rp-help-step-item">
                             <div class="rp-help-step-num">3</div>
                             <div>
-                                <strong>Search</strong> &mdash; use the search box to find specific entries by keyword. In logs, this searches across analyst names, IP addresses, email subjects, and event descriptions.
+                                <strong><?php echo htmlspecialchars(t('reporting.help.s5_step3_title')); ?></strong> &mdash; <?php echo htmlspecialchars(t('reporting.help.s5_step3_body')); ?>
                             </div>
                         </div>
                         <div class="rp-help-step-item">
                             <div class="rp-help-step-num">4</div>
                             <div>
-                                <strong>Time grouping</strong> &mdash; in ticket dashboards, group data by day, week, or month to change the granularity of your charts. Daily views show short-term spikes; monthly views reveal long-term trends.
+                                <strong><?php echo htmlspecialchars(t('reporting.help.s5_step4_title')); ?></strong> &mdash; <?php echo htmlspecialchars(t('reporting.help.s5_step4_body')); ?>
                             </div>
                         </div>
                         <div class="rp-help-step-item">
                             <div class="rp-help-step-num">5</div>
                             <div>
-                                <strong>Department filters</strong> &mdash; narrow dashboard results to a specific department to compare performance across different parts of the organisation.
+                                <strong><?php echo htmlspecialchars(t('reporting.help.s5_step5_title')); ?></strong> &mdash; <?php echo htmlspecialchars(t('reporting.help.s5_step5_body')); ?>
                             </div>
                         </div>
                     </div>
 
-                    <p class="rp-help-tip">Combine multiple filters for targeted analysis. For example, filter by a specific department and a date range to see how a recent process change affected that team's ticket volume.</p>
+                    <p class="rp-help-tip"><?php echo htmlspecialchars(t('reporting.help.s5_tip')); ?></p>
                 </div>
 
                 <!-- Section 6: Quick Tips -->
                 <div class="rp-help-section" id="tips">
                     <div class="rp-help-section-header">
                         <span class="rp-help-section-num">6</span>
-                        <h3>Quick tips</h3>
+                        <h3><?php echo htmlspecialchars(t('reporting.help.s6_heading')); ?></h3>
                     </div>
                     <div class="rp-help-tips-grid">
                         <div class="rp-help-tip-card">
                             <div class="rp-help-tip-icon">&#128202;</div>
-                            <div><strong>Review regularly</strong><br>Reports are most valuable when reviewed consistently. Set a cadence &mdash; weekly for operational metrics, monthly for trend analysis &mdash; and stick to it.</div>
+                            <div><strong><?php echo htmlspecialchars(t('reporting.help.s6_tip1_title')); ?></strong><br><?php echo htmlspecialchars(t('reporting.help.s6_tip1_body')); ?></div>
                         </div>
                         <div class="rp-help-tip-card">
                             <div class="rp-help-tip-icon">&#128269;</div>
-                            <div><strong>Investigate anomalies</strong><br>A sudden spike or drop in any metric is a signal worth investigating. Check the logs for context &mdash; was there a system outage, a software rollout, or a staffing change?</div>
+                            <div><strong><?php echo htmlspecialchars(t('reporting.help.s6_tip2_title')); ?></strong><br><?php echo htmlspecialchars(t('reporting.help.s6_tip2_body')); ?></div>
                         </div>
                         <div class="rp-help-tip-card">
                             <div class="rp-help-tip-icon">&#128200;</div>
-                            <div><strong>Compare periods</strong><br>Use date filters to compare this week against last week, or this month against the same month last year. Relative comparisons reveal improvement or regression more clearly than raw numbers.</div>
+                            <div><strong><?php echo htmlspecialchars(t('reporting.help.s6_tip3_title')); ?></strong><br><?php echo htmlspecialchars(t('reporting.help.s6_tip3_body')); ?></div>
                         </div>
                         <div class="rp-help-tip-card">
                             <div class="rp-help-tip-icon">&#128274;</div>
-                            <div><strong>Monitor security</strong><br>Keep an eye on failed login attempts in the system logs. Repeated failures from the same IP address or against the same account may indicate a security concern that needs escalation.</div>
+                            <div><strong><?php echo htmlspecialchars(t('reporting.help.s6_tip4_title')); ?></strong><br><?php echo htmlspecialchars(t('reporting.help.s6_tip4_body')); ?></div>
                         </div>
                     </div>
                 </div>

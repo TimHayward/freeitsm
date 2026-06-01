@@ -6,16 +6,21 @@
  */
 session_start();
 require_once '../../config.php';
+require_once '../../includes/i18n.php';
+I18n::initFromSession();
 
 $current_page = 'dashboard';
 $path_prefix = '../../';
+$translationNamespaces = ['common', 'software'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Software Dashboard</title>
+    <title><?php echo htmlspecialchars(t('software.dashboard.page_title')); ?></title>
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../../assets/js/i18n.js"></script>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
     <style>
         .dashboard-page {
@@ -311,11 +316,11 @@ $path_prefix = '../../';
     <div class="dashboard-page">
 
     <div class="dashboard-toolbar">
-        <h2>Dashboard</h2>
+        <h2><?php echo htmlspecialchars(t('software.dashboard.heading')); ?></h2>
         <div class="dashboard-toolbar-actions">
             <button class="btn btn-primary" onclick="window.location.href='library.php'">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                Add
+                <?php echo htmlspecialchars(t('software.dashboard.add')); ?>
             </button>
         </div>
     </div>
@@ -328,8 +333,8 @@ $path_prefix = '../../';
             <line x1="3" y1="9" x2="21" y2="9"></line>
             <line x1="9" y1="21" x2="9" y2="9"></line>
         </svg>
-        <h3>No widgets yet</h3>
-        <p>Use the <strong>Add</strong> button in the top right to pick widgets from the library.</p>
+        <h3><?php echo htmlspecialchars(t('software.dashboard.empty_heading')); ?></h3>
+        <p><?php echo t('software.dashboard.empty_body', ['add' => '<strong>' . htmlspecialchars(t('software.dashboard.add')) . '</strong>']); ?></p>
     </div>
 
     </div><!-- /.dashboard-page -->
@@ -337,49 +342,49 @@ $path_prefix = '../../';
     <!-- Widget edit modal -->
     <div class="modal" id="widgetEditModal">
         <div class="modal-content" style="max-width:600px;">
-            <div class="modal-header">Edit Widget</div>
+            <div class="modal-header"><?php echo htmlspecialchars(t('software.dashboard.edit_title')); ?></div>
             <div class="modal-body">
                 <div class="edit-form-grid">
                     <input type="hidden" id="editId">
                     <div>
-                        <label>Title</label>
+                        <label><?php echo htmlspecialchars(t('software.dashboard.field_title')); ?></label>
                         <input type="text" id="editTitle" maxlength="100">
                     </div>
                     <div>
-                        <label>Chart Type</label>
+                        <label><?php echo htmlspecialchars(t('software.dashboard.field_chart_type')); ?></label>
                         <select id="editChartType">
-                            <option value="bar">Bar</option>
-                            <option value="doughnut">Doughnut</option>
-                            <option value="pie">Pie</option>
+                            <option value="bar"><?php echo htmlspecialchars(t('software.dashboard.chart_bar')); ?></option>
+                            <option value="doughnut"><?php echo htmlspecialchars(t('software.dashboard.chart_doughnut')); ?></option>
+                            <option value="pie"><?php echo htmlspecialchars(t('software.dashboard.chart_pie')); ?></option>
                         </select>
                     </div>
                     <div class="full-width">
-                        <label>Description</label>
+                        <label><?php echo htmlspecialchars(t('software.dashboard.field_description')); ?></label>
                         <textarea id="editDescription" maxlength="255"></textarea>
                     </div>
                     <div>
-                        <label>Type</label>
+                        <label><?php echo htmlspecialchars(t('software.dashboard.field_type')); ?></label>
                         <select id="editAggProperty" onchange="onEditAggChange()">
-                            <option value="version_distribution">Version Distribution</option>
-                            <option value="top_installed">Top Installed</option>
-                            <option value="publisher_distribution">Publisher Distribution</option>
+                            <option value="version_distribution"><?php echo htmlspecialchars(t('software.dashboard.agg_version')); ?></option>
+                            <option value="top_installed"><?php echo htmlspecialchars(t('software.dashboard.agg_top')); ?></option>
+                            <option value="publisher_distribution"><?php echo htmlspecialchars(t('software.dashboard.agg_publisher')); ?></option>
                         </select>
                     </div>
                     <div id="editAppGroup">
-                        <label>Application</label>
+                        <label><?php echo htmlspecialchars(t('software.dashboard.field_application')); ?></label>
                         <select id="editAppId">
-                            <option value="">-- Select --</option>
+                            <option value=""><?php echo htmlspecialchars(t('software.dashboard.select')); ?></option>
                         </select>
                     </div>
                     <div id="editExcludeGroup" class="checkbox-row" style="display:none;">
                         <input type="checkbox" id="editExcludeComponents" checked>
-                        <label for="editExcludeComponents">Exclude system components</label>
+                        <label for="editExcludeComponents"><?php echo htmlspecialchars(t('software.dashboard.exclude_components')); ?></label>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-primary" onclick="handleWidgetSave()">Save</button>
-                <button class="btn" onclick="closeWidgetEditModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="handleWidgetSave()"><?php echo htmlspecialchars(t('common.save')); ?></button>
+                <button class="btn" onclick="closeWidgetEditModal()"><?php echo htmlspecialchars(t('common.cancel')); ?></button>
             </div>
         </div>
     </div>
@@ -387,17 +392,17 @@ $path_prefix = '../../';
     <!-- Drill-down modal -->
     <div class="modal" id="drilldownModal">
         <div class="modal-content" style="max-width:800px;">
-            <div class="modal-header" id="drilldownTitle">Details</div>
+            <div class="modal-header" id="drilldownTitle"><?php echo htmlspecialchars(t('software.dashboard.drilldown_title')); ?></div>
             <div class="modal-body">
                 <div class="drilldown-toolbar" id="drilldownToolbar" style="display:none;">
                     <span class="drilldown-count" id="drilldownCount"></span>
                     <button class="btn" onclick="exportDrilldownCSV()">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        Export
+                        <?php echo htmlspecialchars(t('software.dashboard.export')); ?>
                     </button>
                 </div>
                 <div id="drilldownBody">
-                    <div class="drilldown-loading">Loading...</div>
+                    <div class="drilldown-loading"><?php echo htmlspecialchars(t('software.dashboard.loading')); ?></div>
                 </div>
             </div>
         </div>
@@ -423,9 +428,9 @@ $path_prefix = '../../';
         ];
 
         const AGG_LABELS = {
-            version_distribution: 'Version Distribution',
-            top_installed: 'Top Installed',
-            publisher_distribution: 'Publisher Distribution'
+            version_distribution: window.t('software.dashboard.agg_version'),
+            top_installed: window.t('software.dashboard.agg_top'),
+            publisher_distribution: window.t('software.dashboard.agg_publisher')
         };
 
         async function init() {
@@ -452,7 +457,7 @@ $path_prefix = '../../';
 
         function populateAppDropdown() {
             const sel = document.getElementById('editAppId');
-            sel.innerHTML = '<option value="">-- Select --</option>';
+            sel.innerHTML = '<option value="">' + window.t('software.dashboard.select') + '</option>';
             allApps.forEach(a => {
                 const opt = document.createElement('option');
                 opt.value = a.id;
@@ -490,10 +495,10 @@ $path_prefix = '../../';
                             <p>${escapeHtml(desc)}</p>
                         </div>
                         <div class="widget-actions">
-                            <button class="widget-action-btn" onclick="openWidgetEditModal(${w.widget_id})" title="Edit">
+                            <button class="widget-action-btn" onclick="openWidgetEditModal(${w.widget_id})" title="${window.t('software.dashboard.edit_aria')}">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                             </button>
-                            <button class="widget-action-btn" onclick="removeWidget(${w.widget_id})" title="Remove">
+                            <button class="widget-action-btn" onclick="removeWidget(${w.widget_id})" title="${window.t('software.dashboard.remove_aria')}">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                             </button>
                         </div>
@@ -522,7 +527,7 @@ $path_prefix = '../../';
 
                 if (!data.success || !data.labels || data.labels.length === 0) {
                     const chartDiv = document.querySelector(`#chart-${widgetId}`)?.parentElement;
-                    if (chartDiv) chartDiv.innerHTML = '<span class="widget-no-data">No data available</span>';
+                    if (chartDiv) chartDiv.innerHTML = '<span class="widget-no-data">' + window.t('software.dashboard.no_data') + '</span>';
                     return;
                 }
 
@@ -623,7 +628,7 @@ $path_prefix = '../../';
                 title = label;
             } else if (aggProp === 'publisher_distribution') {
                 url += '&publisher=' + encodeURIComponent(label);
-                title = 'Publisher: ' + label;
+                title = window.t('software.dashboard.publisher_prefix', { name: label });
             }
 
             openDrilldownModal(title);
@@ -634,17 +639,17 @@ $path_prefix = '../../';
                     drilldownTitle = title;
                     renderDrilldownData(res);
                 } else {
-                    document.getElementById('drilldownBody').innerHTML = '<p style="color:#999;">No data found</p>';
+                    document.getElementById('drilldownBody').innerHTML = '<p style="color:#999;">' + window.t('software.dashboard.no_data_found') + '</p>';
                 }
             } catch (err) {
-                document.getElementById('drilldownBody').innerHTML = '<p style="color:#c00;">Failed to load data</p>';
+                document.getElementById('drilldownBody').innerHTML = '<p style="color:#c00;">' + window.t('software.dashboard.load_data_failed') + '</p>';
             }
         }
 
         function openDrilldownModal(title) {
             document.getElementById('drilldownTitle').textContent = title;
             document.getElementById('drilldownToolbar').style.display = 'none';
-            document.getElementById('drilldownBody').innerHTML = '<div class="drilldown-loading">Loading...</div>';
+            document.getElementById('drilldownBody').innerHTML = '<div class="drilldown-loading">' + window.t('software.dashboard.loading') + '</div>';
             document.getElementById('drilldownModal').classList.add('active');
         }
 
@@ -658,7 +663,7 @@ $path_prefix = '../../';
             drilldownRows = res.rows || [];
 
             if (drilldownRows.length === 0) {
-                body.innerHTML = '<p style="color:#999;">No records found</p>';
+                body.innerHTML = '<p style="color:#999;">' + window.t('software.dashboard.no_records') + '</p>';
                 toolbar.style.display = 'none';
                 return;
             }
@@ -666,16 +671,16 @@ $path_prefix = '../../';
             toolbar.style.display = 'flex';
 
             if (res.type === 'publisher') {
-                document.getElementById('drilldownCount').textContent = drilldownRows.length + ' application' + (drilldownRows.length !== 1 ? 's' : '');
-                let html = '<table class="drilldown-table"><thead><tr><th>Application</th><th>Install Count</th></tr></thead><tbody>';
+                document.getElementById('drilldownCount').textContent = window.t(drilldownRows.length !== 1 ? 'software.dashboard.count_applications' : 'software.dashboard.count_application', { count: drilldownRows.length });
+                let html = '<table class="drilldown-table"><thead><tr><th>' + window.t('software.dashboard.col_application') + '</th><th>' + window.t('software.dashboard.col_install_count') + '</th></tr></thead><tbody>';
                 drilldownRows.forEach(r => {
                     html += `<tr><td>${escapeHtml(r.app_name)}</td><td>${r.install_count}</td></tr>`;
                 });
                 html += '</tbody></table>';
                 body.innerHTML = html;
             } else {
-                document.getElementById('drilldownCount').textContent = drilldownRows.length + ' machine' + (drilldownRows.length !== 1 ? 's' : '');
-                let html = '<table class="drilldown-table"><thead><tr><th>Hostname</th><th>Version</th><th>Install Date</th><th>Last Seen</th></tr></thead><tbody>';
+                document.getElementById('drilldownCount').textContent = window.t(drilldownRows.length !== 1 ? 'software.dashboard.count_machines' : 'software.dashboard.count_machine', { count: drilldownRows.length });
+                let html = '<table class="drilldown-table"><thead><tr><th>' + window.t('software.dashboard.col_hostname') + '</th><th>' + window.t('software.dashboard.col_version') + '</th><th>' + window.t('software.dashboard.col_install_date') + '</th><th>' + window.t('software.dashboard.col_last_seen') + '</th></tr></thead><tbody>';
                 drilldownRows.forEach(r => {
                     html += `<tr><td>${escapeHtml(r.hostname)}</td><td>${escapeHtml(r.display_version || '')}</td><td>${escapeHtml(r.install_date || '')}</td><td>${escapeHtml(r.last_seen || '')}</td></tr>`;
                 });
@@ -690,10 +695,15 @@ $path_prefix = '../../';
             let csv;
 
             if (drilldownRows[0].app_name !== undefined) {
-                csv = 'Application,Install Count\n';
+                csv = csvCell(window.t('software.dashboard.col_application')) + ',' + csvCell(window.t('software.dashboard.col_install_count')) + '\n';
                 drilldownRows.forEach(r => { csv += csvCell(r.app_name) + ',' + r.install_count + '\n'; });
             } else {
-                csv = 'Hostname,Version,Install Date,Last Seen\n';
+                csv = [
+                    window.t('software.dashboard.col_hostname'),
+                    window.t('software.dashboard.col_version'),
+                    window.t('software.dashboard.col_install_date'),
+                    window.t('software.dashboard.col_last_seen')
+                ].map(csvCell).join(',') + '\n';
                 drilldownRows.forEach(r => { csv += csvCell(r.hostname) + ',' + csvCell(r.display_version) + ',' + csvCell(r.install_date) + ',' + csvCell(r.last_seen) + '\n'; });
             }
 
@@ -735,13 +745,13 @@ $path_prefix = '../../';
 
         async function handleWidgetSave() {
             const title = document.getElementById('editTitle').value.trim();
-            if (!title) { showToast('Title is required', 'error'); return; }
+            if (!title) { showToast(window.t('software.dashboard.title_required'), 'error'); return; }
 
             const aggProp = document.getElementById('editAggProperty').value;
             const appId = document.getElementById('editAppId').value;
 
             if (aggProp === 'version_distribution' && !appId) {
-                showToast('Application is required', 'error');
+                showToast(window.t('software.dashboard.app_required'), 'error');
                 return;
             }
 
@@ -764,7 +774,7 @@ $path_prefix = '../../';
                 const data = await res.json();
 
                 if (!data.success) {
-                    showToast(data.error || 'Save failed', 'error');
+                    showToast(data.error || window.t('software.dashboard.save_failed'), 'error');
                     return;
                 }
 
@@ -781,9 +791,9 @@ $path_prefix = '../../';
 
                 closeWidgetEditModal();
                 renderDashboard();
-                showToast('Widget updated', 'success');
+                showToast(window.t('software.dashboard.widget_updated'), 'success');
             } catch (err) {
-                showToast('Save failed', 'error');
+                showToast(window.t('software.dashboard.save_failed'), 'error');
             }
         }
 
@@ -797,7 +807,7 @@ $path_prefix = '../../';
                 const data = await res.json();
 
                 if (!data.success) {
-                    showToast(data.error || 'Failed to remove widget', 'error');
+                    showToast(data.error || window.t('software.dashboard.remove_failed'), 'error');
                     return;
                 }
 
@@ -808,9 +818,9 @@ $path_prefix = '../../';
 
                 dashboardWidgets = dashboardWidgets.filter(w => w.widget_id != widgetId);
                 renderDashboard();
-                showToast('Widget removed', 'success');
+                showToast(window.t('software.dashboard.widget_removed'), 'success');
             } catch (err) {
-                showToast('Failed to remove widget', 'error');
+                showToast(window.t('software.dashboard.remove_failed'), 'error');
             }
         }
 

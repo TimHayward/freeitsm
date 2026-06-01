@@ -4,6 +4,8 @@
  */
 session_start();
 require_once '../config.php';
+require_once '../includes/i18n.php';
+I18n::initFromSession();
 
 if (!isset($_SESSION['analyst_id'])) {
     header('Location: ../login.php');
@@ -12,13 +14,16 @@ if (!isset($_SESSION['analyst_id'])) {
 
 $current_page = 'help';
 $path_prefix = '../';
+$translationNamespaces = ['common', 'software'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Software Guide</title>
+    <title><?php echo htmlspecialchars(t('software.help.page_title')); ?></title>
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="../assets/js/i18n.js"></script>
     <link rel="stylesheet" href="../assets/css/inbox.css">
     <style>
         .sw-help-container {
@@ -414,34 +419,34 @@ $path_prefix = '../';
     <div class="sw-help-container">
         <!-- Left pane navigation -->
         <div class="sw-help-sidebar">
-            <h3>Guide</h3>
+            <h3><?php echo htmlspecialchars(t('software.help.guide')); ?></h3>
             <a href="#overview" class="sw-help-nav-link active" data-section="overview">
                 <span class="sw-help-nav-num">1</span>
-                Overview
+                <?php echo htmlspecialchars(t('software.help.nav_overview')); ?>
             </a>
             <a href="#inventory" class="sw-help-nav-link" data-section="inventory">
                 <span class="sw-help-nav-num">2</span>
-                Software inventory
+                <?php echo htmlspecialchars(t('software.help.nav_inventory')); ?>
             </a>
             <a href="#dashboard" class="sw-help-nav-link" data-section="dashboard">
                 <span class="sw-help-nav-num">3</span>
-                Dashboard
+                <?php echo htmlspecialchars(t('software.help.nav_dashboard')); ?>
             </a>
             <a href="#licences" class="sw-help-nav-link" data-section="licences">
                 <span class="sw-help-nav-num">4</span>
-                Licence management
+                <?php echo htmlspecialchars(t('software.help.nav_licences')); ?>
             </a>
             <a href="#data-collection" class="sw-help-nav-link" data-section="data-collection">
                 <span class="sw-help-nav-num">5</span>
-                How data gets collected
+                <?php echo htmlspecialchars(t('software.help.nav_collection')); ?>
             </a>
             <a href="#settings" class="sw-help-nav-link" data-section="settings">
                 <span class="sw-help-nav-num">6</span>
-                Settings
+                <?php echo htmlspecialchars(t('software.help.nav_settings')); ?>
             </a>
             <a href="#tips" class="sw-help-nav-link" data-section="tips">
                 <span class="sw-help-nav-num">7</span>
-                Quick tips
+                <?php echo htmlspecialchars(t('software.help.nav_tips')); ?>
             </a>
         </div>
 
@@ -449,8 +454,8 @@ $path_prefix = '../';
         <div class="sw-help-main" id="helpMain">
             <!-- Hero banner -->
             <div class="sw-help-hero">
-                <h2>Software management guide</h2>
-                <p>Track every application across your estate &mdash; from inventory and version control to licence compliance.</p>
+                <h2><?php echo htmlspecialchars(t('software.help.hero_heading')); ?></h2>
+                <p><?php echo htmlspecialchars(t('software.help.hero_sub')); ?></p>
             </div>
 
             <div class="sw-help-content">
@@ -460,8 +465,8 @@ $path_prefix = '../';
                     <div class="sw-help-section-header">
                         <span class="sw-help-section-num">1</span>
                         <div>
-                            <h3>Overview</h3>
-                            <p>The Software module gives you a centralised view of every application installed across all managed machines. Software data is collected automatically by the Asset Management PowerShell script, then aggregated here so you can search, analyse, and track licence compliance from a single screen. Whether you need to find every machine running an outdated version or verify you have enough licences for a critical application, this is where you start.</p>
+                            <h3><?php echo htmlspecialchars(t('software.help.overview_heading')); ?></h3>
+                            <p><?php echo htmlspecialchars(t('software.help.overview_intro')); ?></p>
                         </div>
                     </div>
                     <div class="sw-help-features-grid">
@@ -469,29 +474,29 @@ $path_prefix = '../';
                             <div class="sw-help-feature-icon indigo">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
                             </div>
-                            <h4>Inventory</h4>
-                            <p>A complete list of every application discovered across your managed estate. See install counts, publishers, and version numbers at a glance, grouped by software name.</p>
+                            <h4><?php echo htmlspecialchars(t('software.help.card_inventory_h')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('software.help.card_inventory_p')); ?></p>
                         </div>
                         <div class="sw-help-feature-card">
                             <div class="sw-help-feature-icon blue">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
                             </div>
-                            <h4>Dashboard</h4>
-                            <p>Build customisable Chart.js widgets to visualise your software landscape &mdash; version distribution, top installed applications, publisher breakdowns, and more.</p>
+                            <h4><?php echo htmlspecialchars(t('software.help.card_dashboard_h')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('software.help.card_dashboard_p')); ?></p>
                         </div>
                         <div class="sw-help-feature-card">
                             <div class="sw-help-feature-icon green">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
                             </div>
-                            <h4>Licences</h4>
-                            <p>Record licence entitlements against software titles and monitor compliance. Compare purchased licence counts with actual installs to spot over- or under-licensing.</p>
+                            <h4><?php echo htmlspecialchars(t('software.help.card_licences_h')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('software.help.card_licences_p')); ?></p>
                         </div>
                         <div class="sw-help-feature-card">
                             <div class="sw-help-feature-icon orange">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </div>
-                            <h4>Search</h4>
-                            <p>Instantly filter the software list by name, publisher, or version. Click any row to expand and see exactly which machines have that application installed.</p>
+                            <h4><?php echo htmlspecialchars(t('software.help.card_search_h')); ?></h4>
+                            <p><?php echo htmlspecialchars(t('software.help.card_search_p')); ?></p>
                         </div>
                     </div>
                 </div>
@@ -500,245 +505,245 @@ $path_prefix = '../';
                 <div class="sw-help-section" id="inventory">
                     <div class="sw-help-section-header">
                         <span class="sw-help-section-num">2</span>
-                        <h3>Software inventory</h3>
+                        <h3><?php echo htmlspecialchars(t('software.help.inventory_heading')); ?></h3>
                     </div>
-                    <p>The main Software page presents every discovered application in a sortable, searchable table. Each row represents a unique software title, showing the publisher, the most common version, and the number of machines where it was found.</p>
+                    <p><?php echo htmlspecialchars(t('software.help.inventory_intro')); ?></p>
 
                     <div class="sw-help-steps">
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">1</div>
                             <div>
-                                <strong>Browse the list</strong> &mdash; the table loads all discovered software, sorted alphabetically by name. Use the column headers to sort by publisher, version, or install count instead.
+                                <strong><?php echo htmlspecialchars(t('software.help.inventory_s1_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.inventory_s1_t')); ?>
                             </div>
                         </div>
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">2</div>
                             <div>
-                                <strong>Search and filter</strong> &mdash; type in the search box at the top to instantly filter by software name or publisher. The results update as you type, making it easy to locate a specific application across hundreds of titles.
+                                <strong><?php echo htmlspecialchars(t('software.help.inventory_s2_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.inventory_s2_t')); ?>
                             </div>
                         </div>
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">3</div>
                             <div>
-                                <strong>Use the view tabs</strong> &mdash; switch between Applications (user-facing software visible in Add/Remove Programs) and Components (system-level entries) to reduce noise and focus on what matters.
+                                <strong><?php echo htmlspecialchars(t('software.help.inventory_s3_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.inventory_s3_t')); ?>
                             </div>
                         </div>
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">4</div>
                             <div>
-                                <strong>Expand for detail</strong> &mdash; click any software row to expand it and see a per-machine breakdown. You will see every machine that has the application installed, along with the specific version on each device and when it was last reported.
+                                <strong><?php echo htmlspecialchars(t('software.help.inventory_s4_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.inventory_s4_t')); ?>
                             </div>
                         </div>
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">5</div>
                             <div>
-                                <strong>Spot version sprawl</strong> &mdash; the expanded view makes it easy to identify machines running outdated versions. If ten machines have version 5.2 but two are still on 4.8, you can see that immediately and take action.
+                                <strong><?php echo htmlspecialchars(t('software.help.inventory_s5_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.inventory_s5_t')); ?>
                             </div>
                         </div>
                     </div>
 
-                    <p class="sw-help-tip">The install count reflects how many unique machines currently have the software installed. When a machine reports in without a previously seen application, the old record is automatically cleaned up.</p>
+                    <p class="sw-help-tip"><?php echo htmlspecialchars(t('software.help.inventory_tip')); ?></p>
                 </div>
 
                 <!-- Section 3: Dashboard -->
                 <div class="sw-help-section" id="dashboard">
                     <div class="sw-help-section-header">
                         <span class="sw-help-section-num">3</span>
-                        <h3>Dashboard</h3>
+                        <h3><?php echo htmlspecialchars(t('software.help.dashboard_heading')); ?></h3>
                     </div>
-                    <p>The Software Dashboard lets you visualise your software landscape using customisable Chart.js widgets. Each analyst has their own dashboard layout, so you can focus on the charts and data points that matter most to your role.</p>
+                    <p><?php echo htmlspecialchars(t('software.help.dashboard_intro')); ?></p>
 
                     <div class="sw-help-steps">
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">1</div>
                             <div>
-                                <strong>Open the Library</strong> &mdash; click Edit Dashboard, then browse the widget library. You can search existing widgets or create new ones from scratch. Each widget has a chart type, an aggregate property, and optional filters.
+                                <strong><?php echo htmlspecialchars(t('software.help.dashboard_s1_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.dashboard_s1_t')); ?>
                             </div>
                         </div>
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">2</div>
                             <div>
-                                <strong>Add widgets</strong> &mdash; click the + button on any widget in the library to add it to your dashboard. It appears immediately and starts rendering data.
+                                <strong><?php echo htmlspecialchars(t('software.help.dashboard_s2_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.dashboard_s2_t')); ?>
                             </div>
                         </div>
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">3</div>
                             <div>
-                                <strong>Customise</strong> &mdash; drag widgets to reorder them. Click the cog icon on any widget to change its title, chart type, date range, department filter, or time grouping. Changes save automatically.
+                                <strong><?php echo htmlspecialchars(t('software.help.dashboard_s3_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.dashboard_s3_t')); ?>
                             </div>
                         </div>
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">4</div>
                             <div>
-                                <strong>Click to drill down</strong> &mdash; click any segment of a chart (a bar, a pie slice, a doughnut section) to drill into the underlying data. This lets you go from a high-level view to the specific machines behind the numbers.
+                                <strong><?php echo htmlspecialchars(t('software.help.dashboard_s4_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.dashboard_s4_t')); ?>
                             </div>
                         </div>
                     </div>
 
-                    <p>Common widget types for the Software module include:</p>
+                    <p><?php echo htmlspecialchars(t('software.help.dashboard_types_intro')); ?></p>
                     <div class="sw-help-data-grid">
                         <div class="sw-help-data-card">
-                            <strong>Version distribution</strong>
-                            <span>See which versions of a given application are deployed across your estate, useful for patch compliance</span>
+                            <strong><?php echo htmlspecialchars(t('software.help.dashboard_type1_h')); ?></strong>
+                            <span><?php echo htmlspecialchars(t('software.help.dashboard_type1_p')); ?></span>
                         </div>
                         <div class="sw-help-data-card">
-                            <strong>Top installed</strong>
-                            <span>A ranked list of the most commonly installed applications by machine count</span>
+                            <strong><?php echo htmlspecialchars(t('software.help.dashboard_type2_h')); ?></strong>
+                            <span><?php echo htmlspecialchars(t('software.help.dashboard_type2_p')); ?></span>
                         </div>
                         <div class="sw-help-data-card">
-                            <strong>Publisher breakdown</strong>
-                            <span>Group all software by publisher to see which vendors have the largest footprint in your environment</span>
+                            <strong><?php echo htmlspecialchars(t('software.help.dashboard_type3_h')); ?></strong>
+                            <span><?php echo htmlspecialchars(t('software.help.dashboard_type3_p')); ?></span>
                         </div>
                     </div>
 
-                    <p class="sw-help-tip">Widgets you create in the library are shared across the team. Any analyst can add them to their own dashboard, but each person's layout and selection is private.</p>
+                    <p class="sw-help-tip"><?php echo htmlspecialchars(t('software.help.dashboard_tip')); ?></p>
                 </div>
 
                 <!-- Section 4: Licence Management -->
                 <div class="sw-help-section" id="licences">
                     <div class="sw-help-section-header">
                         <span class="sw-help-section-num">4</span>
-                        <h3>Licence management</h3>
+                        <h3><?php echo htmlspecialchars(t('software.help.licences_heading')); ?></h3>
                     </div>
-                    <p>The Licences page lets you record and track your software licence entitlements alongside the live inventory data. By comparing how many licences you own with how many installs exist, you get an instant view of compliance across your estate.</p>
+                    <p><?php echo htmlspecialchars(t('software.help.licences_intro')); ?></p>
 
                     <div class="sw-help-steps">
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">1</div>
                             <div>
-                                <strong>Add a licence record</strong> &mdash; click Add and enter the software name, publisher, licence type (per-device, per-user, site, subscription), the number of licences purchased, and any relevant dates such as expiry or renewal.
+                                <strong><?php echo htmlspecialchars(t('software.help.licences_s1_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.licences_s1_t')); ?>
                             </div>
                         </div>
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">2</div>
                             <div>
-                                <strong>Monitor compliance</strong> &mdash; the licence list shows each title alongside its purchased count and the actual number of installs detected across your estate. A colour-coded status indicator highlights where you are compliant, approaching the limit, or over-licensed.
+                                <strong><?php echo htmlspecialchars(t('software.help.licences_s2_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.licences_s2_t')); ?>
                             </div>
                         </div>
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">3</div>
                             <div>
-                                <strong>Track key dates</strong> &mdash; licence records can include purchase dates, expiry dates, and renewal dates. This gives you early warning when a licence agreement is approaching renewal so you can plan procurement in advance.
+                                <strong><?php echo htmlspecialchars(t('software.help.licences_s3_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.licences_s3_t')); ?>
                             </div>
                         </div>
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">4</div>
                             <div>
-                                <strong>Search and filter</strong> &mdash; use the search box to quickly find a specific licence record by software name or publisher. The list is sortable by any column.
+                                <strong><?php echo htmlspecialchars(t('software.help.licences_s4_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.licences_s4_t')); ?>
                             </div>
                         </div>
                     </div>
 
                     <div class="sw-help-fields">
-                        <div><strong>Compliant</strong> &mdash; the number of installs is at or below the purchased licence count. No action needed.</div>
-                        <div><strong>Approaching limit</strong> &mdash; installs are within 90% of the licence count. Consider purchasing additional licences soon.</div>
-                        <div><strong>Over-licensed</strong> &mdash; more installs detected than licences purchased. This is a compliance risk that should be addressed promptly.</div>
+                        <div><strong><?php echo htmlspecialchars(t('software.help.licences_field_compliant_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.licences_field_compliant_t')); ?></div>
+                        <div><strong><?php echo htmlspecialchars(t('software.help.licences_field_approaching_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.licences_field_approaching_t')); ?></div>
+                        <div><strong><?php echo htmlspecialchars(t('software.help.licences_field_over_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.licences_field_over_t')); ?></div>
                     </div>
 
-                    <p class="sw-help-tip">Licence compliance is calculated in real time against the live software inventory. As machines report in and software changes, the compliance status updates automatically.</p>
+                    <p class="sw-help-tip"><?php echo htmlspecialchars(t('software.help.licences_tip')); ?></p>
                 </div>
 
                 <!-- Section 5: How Data Gets Collected (highlighted) -->
                 <div class="sw-help-section sw-help-section-highlight" id="data-collection">
                     <div class="sw-help-section-header">
                         <span class="sw-help-section-num highlight">5</span>
-                        <h3>How data gets collected</h3>
+                        <h3><?php echo htmlspecialchars(t('software.help.collection_heading')); ?></h3>
                     </div>
-                    <p class="sw-help-intro">The Software module does not collect data on its own. Instead, it relies on the Asset Management PowerShell script (<strong>Invoke-AssetInventory.ps1</strong>) which runs on each managed Windows machine and reports installed software as part of the broader hardware and software inventory.</p>
+                    <p class="sw-help-intro"><?php echo t('software.help.collection_intro', ['script' => '<strong>Invoke-AssetInventory.ps1</strong>']); ?></p>
 
-                    <p>When the PowerShell script runs on a machine, it reads the Add/Remove Programs registry entries and collects every installed application and system component. This data is posted to the FreeITSM API, where it is stored against the asset record. The Software module then aggregates this data across all machines to give you the estate-wide view.</p>
+                    <p><?php echo htmlspecialchars(t('software.help.collection_p2')); ?></p>
 
                     <div class="sw-help-flow">
-                        <div class="sw-help-flow-step script">PowerShell script</div>
+                        <div class="sw-help-flow-step script"><?php echo htmlspecialchars(t('software.help.flow_script')); ?></div>
                         <div class="sw-help-flow-arrow">&rarr;</div>
-                        <div class="sw-help-flow-step api">system-info API</div>
+                        <div class="sw-help-flow-step api"><?php echo htmlspecialchars(t('software.help.flow_api')); ?></div>
                         <div class="sw-help-flow-arrow">&rarr;</div>
-                        <div class="sw-help-flow-step db">Database</div>
+                        <div class="sw-help-flow-step db"><?php echo htmlspecialchars(t('software.help.flow_db')); ?></div>
                         <div class="sw-help-flow-arrow">&rarr;</div>
-                        <div class="sw-help-flow-step ui">Software module</div>
+                        <div class="sw-help-flow-step ui"><?php echo htmlspecialchars(t('software.help.flow_ui')); ?></div>
                     </div>
 
-                    <p>For each application, the script collects:</p>
+                    <p><?php echo htmlspecialchars(t('software.help.collection_fields_intro')); ?></p>
                     <div class="sw-help-data-grid">
                         <div class="sw-help-data-card">
-                            <strong>Name</strong>
-                            <span>The display name of the application as shown in Add/Remove Programs</span>
+                            <strong><?php echo htmlspecialchars(t('software.help.collection_field1_h')); ?></strong>
+                            <span><?php echo htmlspecialchars(t('software.help.collection_field1_p')); ?></span>
                         </div>
                         <div class="sw-help-data-card">
-                            <strong>Publisher</strong>
-                            <span>The software vendor or developer, read from the registry entry</span>
+                            <strong><?php echo htmlspecialchars(t('software.help.collection_field2_h')); ?></strong>
+                            <span><?php echo htmlspecialchars(t('software.help.collection_field2_p')); ?></span>
                         </div>
                         <div class="sw-help-data-card">
-                            <strong>Version</strong>
-                            <span>The installed version string, essential for tracking patch levels and updates</span>
+                            <strong><?php echo htmlspecialchars(t('software.help.collection_field3_h')); ?></strong>
+                            <span><?php echo htmlspecialchars(t('software.help.collection_field3_p')); ?></span>
                         </div>
                     </div>
 
-                    <p class="sw-help-tip">To deploy the inventory script across your estate, see the <a href="../asset-management/help.php" style="color: #283593; font-weight: 600;">Asset Management guide</a> for full deployment instructions including Group Policy scheduling, API key setup, and running at scale.</p>
+                    <p class="sw-help-tip"><?php echo htmlspecialchars(t('software.help.collection_tip_before')); ?><a href="../asset-management/help.php" style="color: #283593; font-weight: 600;"><?php echo htmlspecialchars(t('software.help.collection_tip_link')); ?></a><?php echo htmlspecialchars(t('software.help.collection_tip_after')); ?></p>
                 </div>
 
                 <!-- Section 6: Settings -->
                 <div class="sw-help-section" id="settings">
                     <div class="sw-help-section-header">
                         <span class="sw-help-section-num">6</span>
-                        <h3>Settings</h3>
+                        <h3><?php echo htmlspecialchars(t('software.help.settings_heading')); ?></h3>
                     </div>
-                    <p>The Settings page lets you configure how the Software module behaves. From here you can manage API keys that authenticate the inventory script and control which software entries appear in the main list.</p>
+                    <p><?php echo htmlspecialchars(t('software.help.settings_intro')); ?></p>
 
                     <div class="sw-help-steps">
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">1</div>
                             <div>
-                                <strong>API key management</strong> &mdash; generate and manage API keys that authenticate the PowerShell inventory script against your FreeITSM instance. You can create multiple keys, deactivate them without deleting, and track when each key was last used.
+                                <strong><?php echo htmlspecialchars(t('software.help.settings_s1_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.settings_s1_t')); ?>
                             </div>
                         </div>
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">2</div>
                             <div>
-                                <strong>Ignored software</strong> &mdash; some system components or unwanted entries clutter the software list. Use the ignore feature to hide specific titles from the inventory view. Ignored items are still collected and stored, but they are hidden from the main list and dashboard calculations.
+                                <strong><?php echo htmlspecialchars(t('software.help.settings_s2_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.settings_s2_t')); ?>
                             </div>
                         </div>
                         <div class="sw-help-step-item">
                             <div class="sw-help-step-num">3</div>
                             <div>
-                                <strong>Software categories</strong> &mdash; organise your software titles into categories (e.g. Productivity, Security, Development) to make browsing and reporting easier. Categories can be assigned to software titles and used as filters throughout the module.
+                                <strong><?php echo htmlspecialchars(t('software.help.settings_s3_b')); ?></strong> &mdash; <?php echo htmlspecialchars(t('software.help.settings_s3_t')); ?>
                             </div>
                         </div>
                     </div>
 
-                    <p class="sw-help-tip">When you ignore a software title, it applies globally. All analysts will see the same filtered view. You can always un-ignore a title later if you change your mind.</p>
+                    <p class="sw-help-tip"><?php echo htmlspecialchars(t('software.help.settings_tip')); ?></p>
                 </div>
 
                 <!-- Section 7: Quick Tips -->
                 <div class="sw-help-section" id="tips">
                     <div class="sw-help-section-header">
                         <span class="sw-help-section-num">7</span>
-                        <h3>Quick tips</h3>
+                        <h3><?php echo htmlspecialchars(t('software.help.tips_heading')); ?></h3>
                     </div>
                     <div class="sw-help-tips-grid">
                         <div class="sw-help-tip-card">
                             <div class="sw-help-tip-icon">&#128269;</div>
-                            <div><strong>Search smart</strong><br>The search box filters across both software name and publisher simultaneously. If you are looking for all Microsoft products, just type "Microsoft" to see every title from that publisher.</div>
+                            <div><strong><?php echo htmlspecialchars(t('software.help.tip1_b')); ?></strong><br><?php echo htmlspecialchars(t('software.help.tip1_t')); ?></div>
                         </div>
                         <div class="sw-help-tip-card">
                             <div class="sw-help-tip-icon">&#128200;</div>
-                            <div><strong>Version sprawl</strong><br>Expand any software row to see per-machine version details. If you spot machines on older versions, you can target them for updates rather than rolling out patches blindly across the estate.</div>
+                            <div><strong><?php echo htmlspecialchars(t('software.help.tip2_b')); ?></strong><br><?php echo htmlspecialchars(t('software.help.tip2_t')); ?></div>
                         </div>
                         <div class="sw-help-tip-card">
                             <div class="sw-help-tip-icon">&#128274;</div>
-                            <div><strong>Licence vigilance</strong><br>Set up licence records for your most critical commercial software early. The compliance indicators will warn you before you exceed your entitlement, helping you avoid audit surprises.</div>
+                            <div><strong><?php echo htmlspecialchars(t('software.help.tip3_b')); ?></strong><br><?php echo htmlspecialchars(t('software.help.tip3_t')); ?></div>
                         </div>
                         <div class="sw-help-tip-card">
                             <div class="sw-help-tip-icon">&#128203;</div>
-                            <div><strong>Clean up clutter</strong><br>Windows machines report hundreds of system components that you probably do not care about. Use the Applications tab to focus on user-facing software, or use Settings to ignore noisy entries entirely.</div>
+                            <div><strong><?php echo htmlspecialchars(t('software.help.tip4_b')); ?></strong><br><?php echo htmlspecialchars(t('software.help.tip4_t')); ?></div>
                         </div>
                         <div class="sw-help-tip-card">
                             <div class="sw-help-tip-icon">&#128187;</div>
-                            <div><strong>Dashboard drill-down</strong><br>Do not just look at charts &mdash; click into them. Every chart segment is interactive. Clicking a bar or pie slice takes you to the machines behind that data point, so you can investigate further.</div>
+                            <div><strong><?php echo htmlspecialchars(t('software.help.tip5_b')); ?></strong><br><?php echo htmlspecialchars(t('software.help.tip5_t')); ?></div>
                         </div>
                         <div class="sw-help-tip-card">
                             <div class="sw-help-tip-icon">&#9889;</div>
-                            <div><strong>Automatic updates</strong><br>Software data refreshes every time the PowerShell script runs on a machine. Set the scheduled task to run daily and your inventory will always reflect the current state of your estate.</div>
+                            <div><strong><?php echo htmlspecialchars(t('software.help.tip6_b')); ?></strong><br><?php echo htmlspecialchars(t('software.help.tip6_t')); ?></div>
                         </div>
                     </div>
                 </div>

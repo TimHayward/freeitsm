@@ -1,0 +1,318 @@
+<?php
+/**
+ * English (en) — LMS module strings.
+ *
+ * Source-of-truth locale. Every other lang/<code>/lms.php may omit keys;
+ * missing keys fall back to the value here (see includes/i18n.php).
+ *
+ * Covers the dashboard chrome (tabs, tables, modals), the SCORM player
+ * toolbar, toasts/confirms raised by assets/js/lms.js, and the help guide.
+ *
+ * Does NOT cover uploaded course content or SCORM package data — those are
+ * admin-supplied/external and stay verbatim.
+ */
+return [
+    'title' => 'LMS',
+
+    'nav' => [
+        'dashboard' => 'Dashboard',
+        'help'      => 'Help',
+    ],
+
+    'tabs' => [
+        'courses'     => 'Courses',
+        'groups'      => 'Groups',
+        'assignments' => 'Assignments',
+        'progress'    => 'Progress',
+    ],
+
+    'courses' => [
+        'heading'        => 'Courses',
+        'upload'         => 'Upload',
+        'col_title'      => 'Title',
+        'col_version'    => 'SCORM Version',
+        'col_uploaded'   => 'Uploaded',
+        'col_status'     => 'Status',
+        'col_actions'    => 'Actions',
+        'loading'        => 'Loading...',
+        'empty'          => 'No courses uploaded yet',
+        'version_unknown'=> 'Unknown',
+        'active'         => 'Active',
+        'inactive'       => 'Inactive',
+        'launch'         => 'Launch',
+        'delete'         => 'Delete',
+    ],
+
+    'groups' => [
+        'heading'      => 'Learning Groups',
+        'new'          => 'New',
+        'col_name'     => 'Name',
+        'col_description' => 'Description',
+        'col_members'  => 'Members',
+        'col_actions'  => 'Actions',
+        'loading'      => 'Loading...',
+        'empty'        => 'No learning groups created yet',
+        'no_members'   => 'No members',
+        'edit'         => 'Edit',
+        'delete'       => 'Delete',
+    ],
+
+    'assignments' => [
+        'heading'        => 'Assignments',
+        'assign'         => 'Assign',
+        'col_course'     => 'Course',
+        'col_group'      => 'Group',
+        'col_deadline'   => 'Deadline',
+        'col_assigned_by'=> 'Assigned By',
+        'col_actions'    => 'Actions',
+        'loading'        => 'Loading...',
+        'empty'          => 'No courses assigned yet',
+        'no_deadline'    => 'None',
+        'delete'         => 'Delete',
+    ],
+
+    'progress' => [
+        'heading'        => 'Progress',
+        'all_courses'    => 'All courses',
+        'all_groups'     => 'All groups',
+        'all_statuses'   => 'All statuses',
+        'col_analyst'    => 'Analyst',
+        'col_course'     => 'Course',
+        'col_group'      => 'Group',
+        'col_status'     => 'Status',
+        'col_score'      => 'Score',
+        'col_deadline'   => 'Deadline',
+        'col_last_access'=> 'Last Access',
+        'loading'        => 'Loading...',
+        'empty'          => 'No progress data found',
+        'view'           => 'View',
+    ],
+
+    'status' => [
+        'not_started' => 'Not Started',
+        'incomplete'  => 'Incomplete',
+        'completed'   => 'Completed',
+        'passed'      => 'Passed',
+        'failed'      => 'Failed',
+        'overdue'     => 'Overdue',
+    ],
+
+    'upload_modal' => [
+        'title'          => 'Upload SCORM Course',
+        'field_title'    => 'Title *',
+        'field_description' => 'Description',
+        'field_package'  => 'SCORM Package (ZIP) *',
+        'package_hint'   => 'Upload a SCORM 1.1, 1.2, or 2004 ZIP package',
+        'uploading'      => 'Uploading...',
+        'cancel'         => 'Cancel',
+        'submit'         => 'Upload',
+        'percent_uploaded' => '{pct}% uploaded',
+        'done'           => 'Done! SCORM {version} detected.',
+    ],
+
+    'group_modal' => [
+        'title_new'  => 'New Group',
+        'title_edit' => 'Edit Group',
+        'field_name' => 'Name *',
+        'field_description' => 'Description',
+        'field_members' => 'Members',
+        'cancel'     => 'Cancel',
+        'save'       => 'Save',
+    ],
+
+    'assign_modal' => [
+        'title'          => 'Assign Course',
+        'field_course'   => 'Course *',
+        'field_group'    => 'Group *',
+        'field_deadline' => 'Deadline',
+        'deadline_hint'  => 'Leave blank for no deadline',
+        'select_course'  => 'Select course...',
+        'select_group'   => 'Select group...',
+        'cancel'         => 'Cancel',
+        'submit'         => 'Assign',
+    ],
+
+    'learner_modal' => [
+        'title'             => 'Learner Data',
+        'loading'           => 'Loading...',
+        'stat_status'       => 'Status',
+        'stat_score'        => 'Score',
+        'stat_attempts'     => 'Attempts',
+        'stat_time_spent'   => 'Time Spent',
+        'stat_first_access' => 'First Access',
+        'stat_last_access'  => 'Last Access',
+        'responses'         => 'Responses',
+        'objectives'        => 'Objectives',
+        'suspend_data'      => 'Learner Data (suspend_data)',
+        'all_elements'      => 'All Data Elements',
+        'field_question'    => 'Question',
+        'field_type'        => 'Type',
+        'field_response'    => 'Response',
+        'field_correct'     => 'Correct Answer',
+        'field_weight'      => 'Weight',
+        'field_time_taken'  => 'Time Taken',
+        'field_description' => 'Description',
+        'field_score'       => 'Score',
+        'question_n'        => 'Question {n}',
+        'objective'         => 'Objective',
+        'suspend_truncated' => '{shown}... ({total} chars total)',
+        'no_data'           => 'No detailed data recorded by this course yet.',
+        'load_failed'       => 'Failed to load learner data.',
+    ],
+
+    'player' => [
+        'scorm_version' => 'SCORM {version}',
+        'back'          => 'Back',
+    ],
+
+    'confirm' => [
+        'delete_title'        => 'Delete',
+        'delete_course'       => 'Delete this course?',
+        'delete_group'        => 'Delete this group?',
+        'remove_assignment'   => 'Remove this assignment?',
+        'ok_delete'           => 'Delete',
+    ],
+
+    'toast' => [
+        'course_uploaded' => 'Course uploaded',
+        'upload_failed'   => 'Upload failed',
+        'deleted'         => 'Deleted',
+        'saved'           => 'Saved',
+        'assigned'        => 'Assigned',
+        'removed'         => 'Removed',
+        'save_failed'     => 'Failed to save',
+        'delete_failed'   => 'Failed to delete',
+        'failed'          => 'Failed',
+    ],
+
+    'help' => [
+        'page_title' => 'FreeITSM — LMS Guide',
+        'nav_label'  => 'Guide',
+
+        'nav_overview'     => 'Overview',
+        'nav_uploading'    => 'Uploading a course',
+        'nav_groups'       => 'Learning groups',
+        'nav_assigning'    => 'Assigning courses',
+        'nav_launching'    => 'Launching a course',
+        'nav_progress'     => 'Tracking progress',
+        'nav_learner_data' => 'Learner data drill-down',
+        'nav_scorm'        => 'SCORM support',
+        'nav_tips'         => 'Quick tips',
+
+        'hero_title' => 'LMS guide',
+        'hero_sub'   => 'Upload SCORM packages, group your analysts, assign training, and track every learner\'s progress — right alongside the rest of the service desk.',
+
+        // 1. Overview
+        'overview_heading' => 'Overview',
+        'overview_intro'   => 'The LMS module is a full SCORM player and tracker built into the service desk. Drop in any SCORM 1.1, 1.2, or 2004 package, organise your analysts into learning groups, assign courses with optional deadlines, and watch progress roll in as people work through the content. No external LMS, no paid integration, no separate login.',
+        'flow_upload'      => 'Upload SCORM',
+        'flow_groups'      => 'Create groups',
+        'flow_assign'      => 'Assign',
+        'flow_track'       => 'Track progress',
+        'overview_card1_title' => 'SCORM 1.1 / 1.2 / 2004',
+        'overview_card1_body'  => 'Version auto-detected from the manifest. Both runtime APIs (LMS-prefixed for 1.x, IEEE 1484.11 for 2004) supported on the same player.',
+        'overview_card2_title' => 'Learning groups',
+        'overview_card2_body'  => 'Group analysts by team, role, or topic; assign training to a group with one click.',
+        'overview_card3_title' => 'Bookmarks &amp; resume',
+        'overview_card3_body'  => 'SCORM <code>lesson_location</code> and <code>suspend_data</code> persist between sessions — learners pick up where they left off.',
+        'overview_card4_title' => 'Granular tracking',
+        'overview_card4_body'  => 'Status, score, attempts, total time, every interaction and objective — visible per learner in the drill-down view.',
+
+        // 2. Uploading
+        'uploading_heading' => 'Uploading a course',
+        'uploading_intro'   => 'From the <strong>Courses</strong> tab, hit <strong>Upload</strong>. Give the course a title (the manifest title isn\'t always learner-friendly, so this is your chance to rename it for the catalogue) and an optional description. Pick the SCORM ZIP and submit.',
+        'uploading_step1'   => 'Click <strong>Upload</strong> on the Courses tab.',
+        'uploading_step2'   => 'Enter a title (required) and a description (optional).',
+        'uploading_step3'   => 'Pick the <code>.zip</code> file — upload the package as-is, don\'t extract it first.',
+        'uploading_step4'   => 'Submit. The server unzips, parses <code>imsmanifest.xml</code>, detects the SCORM version, and stores the launch URL.',
+        'uploading_tip1'    => '<strong>Manifest location:</strong> the upload handler looks for <code>imsmanifest.xml</code> at the root of the ZIP first, then falls back to checking inside a single top-level subfolder. Both layouts work.',
+        'uploading_tip2'    => '<strong>Launch URL detection:</strong> the first <code>&lt;resource&gt;</code> with <code>scormType="sco"</code> wins. If no SCO is flagged, the first resource with an <code>href</code> is used as a fallback.',
+        'uploading_warn'    => '<strong>Upload size limits:</strong> SCORM ZIPs can be large (hundreds of MB if they contain video). If a big package fails to upload, check your PHP <code>upload_max_filesize</code> and <code>post_max_size</code> in <code>php.ini</code> — the LMS doesn\'t impose its own cap, but the web server might.',
+
+        // 3. Groups
+        'groups_heading' => 'Learning groups',
+        'groups_intro'   => 'Groups are the unit of assignment. Rather than assigning every course to every analyst individually, you group analysts — by team (Service Desk Tier 1), by role (New Starter), by topic (Compliance 2026) — and assign courses to the group. Anyone added to a group later automatically inherits its assignments.',
+        'groups_step1'   => 'Switch to the <strong>Groups</strong> tab and hit <strong>New</strong>.',
+        'groups_step2'   => 'Give the group a name (e.g. <em>New Starters</em>) and an optional description.',
+        'groups_step3'   => 'Tick the analysts who should be members — you can change membership any time.',
+        'groups_step4'   => 'Save. The group is now available in the Assignments tab.',
+        'groups_tip'     => '<strong>An analyst can be in many groups:</strong> overlapping memberships are fine. If Jane is in both <em>Tier 1</em> and <em>New Starters</em>, she just sees both groups\' assignments in her progress view.',
+
+        // 4. Assigning
+        'assigning_heading' => 'Assigning courses',
+        'assigning_intro'   => 'The <strong>Assignments</strong> tab pairs a course with a group, optionally with a deadline. As soon as the assignment is saved, every member of the group gets a progress record for that course (status <span class="lh-pill not-started">Not Started</span>) and the course becomes playable for them.',
+        'assigning_step1'   => 'Click <strong>Assign</strong> on the Assignments tab.',
+        'assigning_step2'   => 'Pick a course and a group from the dropdowns.',
+        'assigning_step3'   => 'Set a deadline (optional). Leave blank for open-ended training.',
+        'assigning_step4'   => 'Save. Progress records appear immediately in the Progress tab.',
+        'assigning_tip'     => '<strong>Deadlines drive the Overdue filter:</strong> any progress record where the deadline has passed and the status isn\'t <span class="lh-pill completed">Completed</span> or <span class="lh-pill passed">Passed</span> shows up under the <span class="lh-pill overdue">Overdue</span> filter on the Progress tab.',
+        'assigning_warn'    => '<strong>One assignment per course/group pair:</strong> a duplicate combination is rejected (you\'ll see a friendly error). Want to re-assign with a new deadline? Delete the old assignment first, then create a new one.',
+
+        // 5. Launching
+        'launching_heading' => 'Launching a course',
+        'launching_intro'   => 'Click the play icon next to a course in the Courses tab (or open it from the Progress tab) and the SCORM player loads in an iframe. The SCORM API bridge runs on the parent window, so the course\'s runtime calls (<code>LMSInitialize</code>, <code>LMSGetValue</code>, <code>LMSSetValue</code>, <code>LMSCommit</code>, <code>LMSFinish</code> for 1.x, or <code>Initialize</code> / <code>GetValue</code> / <code>SetValue</code> / <code>Commit</code> / <code>Terminate</code> for 2004) are intercepted and persisted to the database.',
+        'launching_card1_title' => 'Resume from bookmark',
+        'launching_card1_body'  => '<code>cmi.core.lesson_location</code> (1.2) or <code>cmi.location</code> (2004) is restored on launch — courses that track which slide you\'re on will jump straight there.',
+        'launching_card2_title' => 'Suspend data preserved',
+        'launching_card2_body'  => '<code>cmi.suspend_data</code> survives between sessions, so quiz state, branching choices, and progress within a SCO all carry over.',
+        'launching_card3_title' => 'Auto-commit on close',
+        'launching_card3_body'  => 'The <code>beforeunload</code> handler fires <code>Commit</code> + <code>Finish</code> / <code>Terminate</code> automatically, so closing the tab without clicking the course\'s exit button still saves progress.',
+        'launching_card4_title' => 'Status flows through',
+        'launching_card4_body'  => '<code>lesson_status</code> / <code>completion_status</code> / <code>success_status</code> are mapped into the normalised LMS status (Incomplete &rarr; Completed &rarr; Passed/Failed) and denormalised onto the progress row.',
+        'launching_attempts'    => 'Each launch increments the <strong>attempt count</strong> on the progress record. The first access timestamp is set on the very first launch; the last access timestamp updates on every launch and every commit.',
+        'launching_tip'         => '<strong>Player sandbox:</strong> the iframe runs with <code>sandbox="allow-scripts allow-same-origin allow-forms allow-popups"</code> — tight enough to limit what a hostile package could do, loose enough that legitimate SCORM content works.',
+
+        // 6. Progress
+        'progress_heading' => 'Tracking progress',
+        'progress_intro'   => 'The <strong>Progress</strong> tab is the dashboard for every analyst &times; course pair. Each row shows the analyst, the course, the group it came through, the current status, the score (if scored), the deadline, and the last access time. Three filters let you slice the view: by course, by group, and by status.',
+        'progress_status_intro' => 'Status values, in roughly the order learners progress through them:',
+        'progress_card1_title' => 'Not Started',
+        'progress_card1_body'  => 'Course is assigned but the learner hasn\'t launched it yet.',
+        'progress_card2_title' => 'Incomplete',
+        'progress_card2_body'  => 'Learner has started but the course hasn\'t reported completion yet.',
+        'progress_card3_title' => 'Completed',
+        'progress_card3_body'  => 'Course reported completion (no pass/fail concept, or not yet judged).',
+        'progress_card4_title_passed' => 'Passed',
+        'progress_card4_title_failed' => 'Failed',
+        'progress_card4_body'  => 'Course reported success or failure (scored courses). Outranks plain Completed.',
+        'progress_tip'         => '<strong>Overdue is computed live:</strong> there\'s no "Overdue" status stored on the row — the filter checks the deadline against today and excludes anything already Completed or Passed. So a deadline you change later, or a course that gets completed on the deadline day, behaves the way you\'d expect.',
+
+        // 7. Learner data
+        'learner_heading' => 'Learner data drill-down',
+        'learner_intro'   => 'Click the eye icon at the end of any progress row and the Learner Data modal opens. This is the full SCORM CMI dump for that analyst\'s attempt at that course — useful for audits, troubleshooting "I thought I passed" disputes, and just understanding what a course is actually tracking.',
+        'learner_groups_into' => 'The modal groups the data into:',
+        'learner_card1_title' => 'Summary',
+        'learner_card1_body'  => 'Status, score (raw / min / max), total time spent, attempt count, first &amp; last access, completion date, bookmark.',
+        'learner_card2_title' => 'Interactions',
+        'learner_card2_body'  => 'Every quiz question, answer given, correct answer, score, and result — one row per <code>cmi.interactions.N</code>.',
+        'learner_card3_title' => 'Objectives',
+        'learner_card3_body'  => 'SCORM 2004 learning objectives with per-objective status and score (when the course tracks them).',
+        'learner_card4_title' => 'Suspend data + raw CMI',
+        'learner_card4_body'  => 'The opaque <code>cmi.suspend_data</code> blob (decoded if it\'s JSON) plus every other CMI element written by the course.',
+        'learner_tip'         => '<strong>Audit-friendly:</strong> the Interactions table is the closest thing to a tamper-evident answer log most LMS systems offer — useful evidence if you ever need to prove someone completed mandatory training honestly.',
+
+        // 8. SCORM support
+        'scorm_heading' => 'SCORM support',
+        'scorm_intro'   => 'The LMS speaks all three mainstream SCORM versions and detects which one a course expects automatically.',
+        'scorm_card1_title' => 'SCORM 1.1',
+        'scorm_card1_body'  => 'Legacy AICC-style API. Detected when <code>schemaversion</code> reads "1.1". Same runtime contract as 1.2 in practice.',
+        'scorm_card2_title' => 'SCORM 1.2',
+        'scorm_card2_body'  => 'The classic. <code>API</code> object exposed on the parent window with the <code>LMS</code>-prefixed methods. Default fallback if version detection is ambiguous.',
+        'scorm_card3_title' => 'SCORM 2004 (2nd, 3rd, 4th Edition)',
+        'scorm_card3_body'  => '<code>API_1484_11</code> object with IEEE 1484.11 unprefixed methods. Detected from the <code>2004</code> schema version or the <code>adlcp v1p3</code> namespace.',
+        'scorm_card4_title' => 'Manifest requirements',
+        'scorm_card4_body'  => '<code>imsmanifest.xml</code> at the ZIP root (or one level deep); at least one <code>&lt;resource&gt;</code> with an <code>href</code>; a <code>scormType="sco"</code> resource preferred but not required.',
+        'scorm_tip'         => '<strong>Testing:</strong> the Rustici Software "Golf Explained" sample packages (scorm.com/scorm-explained/technical-scorm/golf-examples) are the gold-standard SCORM conformance tests and all play cleanly in the LMS module — useful as a smoke test if you ever wonder whether a problem is in the player or the package.',
+
+        // 9. Quick tips
+        'tips_heading' => 'Quick tips',
+        'tip1' => 'Upload the SCORM ZIP <strong>as-is</strong> — the server extracts it for you.',
+        'tip2' => 'Group memberships are <strong>live</strong> — add an analyst to a group and they pick up that group\'s existing assignments.',
+        'tip3' => '<strong>One assignment per course+group</strong>. The UI blocks duplicates with a friendly error.',
+        'tip4' => 'Deadline is optional — leave it blank for open-ended training.',
+        'tip5' => 'Use the <strong>Title</strong> field to rename a course on upload — the manifest title isn\'t always learner-friendly.',
+        'tip6' => 'The <strong>eye icon</strong> on each progress row opens the full CMI dump for that learner\'s attempt.',
+        'tip7' => 'Closing the player tab still saves — the <code>beforeunload</code> handler fires Commit + Finish automatically.',
+        'tip8' => 'The Rustici <em>Golf Explained</em> samples are a free, well-formed SCORM smoke test — useful if you\'re not sure whether a problem is the player or the package.',
+    ],
+];

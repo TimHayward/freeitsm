@@ -18,16 +18,21 @@
  */
 session_start();
 require_once '../../config.php';
+require_once '../../includes/i18n.php';
+I18n::initFromSession();
 
 $current_page = 'forms';
 $path_prefix = '../../';
+$translationNamespaces = ['common', 'forms'];
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Desk - Edit form</title>
+    <title><?php echo htmlspecialchars(t('forms.editor.page_title')); ?></title>
+    <script>window.translations = <?php echo json_encode(I18n::exportForJs($translationNamespaces), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE); ?>;</script>
+    <script src="<?php echo BASE_URL; ?>assets/js/i18n.js"></script>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/inbox.css">
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/forms.css?v=<?= time() ?>">
     <style>
@@ -399,27 +404,27 @@ $path_prefix = '../../';
                  naturally lands after finishing the form. -->
             <div class="editor-toolbar">
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <h2 id="editorTitle">New form</h2>
+                    <h2 id="editorTitle"><?php echo htmlspecialchars(t('forms.editor.title_new')); ?></h2>
                     <!-- v-pill from #434 — quick at-a-glance version
                          indicator next to the title. Click to open the
                          full properties drawer. -->
-                    <span id="versionPill" class="form-meta-version" style="display:none; cursor:pointer;" onclick="togglePropertiesDrawer()" title="Open properties"></span>
+                    <span id="versionPill" class="form-meta-version" style="display:none; cursor:pointer;" onclick="togglePropertiesDrawer()" title="<?php echo htmlspecialchars(t('forms.editor.open_properties')); ?>"></span>
                     <div class="unsaved-indicator" id="unsavedIndicator">
                         <span class="unsaved-dot"></span>
-                        Unsaved changes
+                        <?php echo htmlspecialchars(t('forms.editor.unsaved')); ?>
                     </div>
                 </div>
                 <div class="editor-toolbar-actions">
-                    <button class="btn btn-ai-assist" onclick="openAiModal()" title="Describe your form and let AI build it">
+                    <button class="btn btn-ai-assist" onclick="openAiModal()" title="<?php echo htmlspecialchars(t('forms.editor.ai_assist_title')); ?>">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.9 5.8L20 10l-5.8 1.9L12 18l-1.9-5.8L4 10l6.1-2.2z"></path><path d="M19 14l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"></path><path d="M5 16l.6 1.8L7.5 18l-1.9.6L5 20l-.6-1.4L2.5 18l2-.2z"></path></svg>
-                        AI Assist
+                        <?php echo htmlspecialchars(t('forms.editor.ai_assist')); ?>
                     </button>
                     <!-- Versions dropdown — hidden for brand-new forms,
                          populated on first open via list_versions.php. -->
                     <div class="versions-wrap" id="versionsWrap" style="display:none;">
-                        <button class="btn btn-secondary" id="versionsBtn" onclick="toggleVersionsDropdown(event)" title="Browse the version history of this form">
+                        <button class="btn btn-secondary" id="versionsBtn" onclick="toggleVersionsDropdown(event)" title="<?php echo htmlspecialchars(t('forms.editor.versions_title')); ?>">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="10"></circle></svg>
-                            Versions <span id="versionsBtnCount" style="opacity:0.7;"></span>
+                            <?php echo htmlspecialchars(t('forms.editor.versions')); ?> <span id="versionsBtnCount" style="opacity:0.7;"></span>
                         </button>
                         <div class="versions-dropdown" id="versionsDropdown" style="display:none;"></div>
                     </div>
@@ -427,13 +432,13 @@ $path_prefix = '../../';
                          (current) version; hidden for frozen snapshots
                          (the read-only banner explains how to fork from
                          the current version instead). -->
-                    <button class="btn btn-secondary" id="newVersionBtn" onclick="createNewVersion()" style="display:none;" title="Snapshot the current form as a new version. The current version becomes a frozen historical record.">
+                    <button class="btn btn-secondary" id="newVersionBtn" onclick="createNewVersion()" style="display:none;" title="<?php echo htmlspecialchars(t('forms.editor.new_version_title')); ?>">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
-                        Save as new version
+                        <?php echo htmlspecialchars(t('forms.editor.new_version')); ?>
                     </button>
-                    <button class="btn btn-secondary" id="propertiesBtn" onclick="togglePropertiesDrawer()" title="Show form properties + version history">
+                    <button class="btn btn-secondary" id="propertiesBtn" onclick="togglePropertiesDrawer()" title="<?php echo htmlspecialchars(t('forms.editor.properties_title')); ?>">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                        Properties
+                        <?php echo htmlspecialchars(t('forms.editor.properties')); ?>
                     </button>
                 </div>
             </div>
@@ -443,7 +448,7 @@ $path_prefix = '../../';
                  version or fork from it into a new one. -->
             <div class="readonly-banner" id="readonlyBanner" style="display:none;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                <span><strong>Read-only version.</strong> This is a historical snapshot. To make changes, open the <a href="#" onclick="jumpToCurrentVersion(event)">current version</a> or click Save as new version from there to fork forward.</span>
+                <span><?php echo t('forms.editor.readonly_banner'); ?></span>
             </div>
 
             <!-- Title & description. Versioning metadata moved to the
@@ -451,51 +456,51 @@ $path_prefix = '../../';
                  toolbar button) so the main editor stays uncluttered. -->
             <div class="form-settings-card">
                 <div class="field-group">
-                    <label>Form title</label>
-                    <input type="text" id="formTitle" placeholder="Enter form title...">
+                    <label><?php echo htmlspecialchars(t('forms.editor.form_title_label')); ?></label>
+                    <input type="text" id="formTitle" placeholder="<?php echo htmlspecialchars(t('forms.editor.form_title_ph')); ?>">
                 </div>
                 <div class="field-group">
-                    <label>Description</label>
-                    <textarea id="formDesc" rows="2" placeholder="Optional description..."></textarea>
+                    <label><?php echo htmlspecialchars(t('forms.editor.description_label')); ?></label>
+                    <textarea id="formDesc" rows="2" placeholder="<?php echo htmlspecialchars(t('forms.editor.description_ph')); ?>"></textarea>
                 </div>
             </div>
 
             <!-- Tabs: Fields | Preview -->
             <div class="form-tabs">
-                <button class="form-tab active" onclick="switchFormTab('fields')" id="tabFields">Fields</button>
-                <button class="form-tab" onclick="switchFormTab('preview')" id="tabPreview">Preview</button>
+                <button class="form-tab active" onclick="switchFormTab('fields')" id="tabFields"><?php echo htmlspecialchars(t('forms.editor.tab_fields')); ?></button>
+                <button class="form-tab" onclick="switchFormTab('preview')" id="tabPreview"><?php echo htmlspecialchars(t('forms.editor.tab_preview')); ?></button>
             </div>
 
             <!-- Fields tab -->
             <div class="form-tab-content active" id="tabContentFields">
                 <div class="fields-header">
-                    <h3>Form fields</h3>
+                    <h3><?php echo htmlspecialchars(t('forms.editor.fields_heading')); ?></h3>
                     <div class="add-field-btn">
                         <button class="btn btn-secondary" onclick="toggleAddMenu()" id="addFieldBtn">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            Add
+                            <?php echo htmlspecialchars(t('forms.editor.add')); ?>
                         </button>
                         <div class="add-field-menu" id="addFieldMenu">
-                            <button onclick="addField('text')"><span class="field-type-badge text">Abc</span> Text input</button>
-                            <button onclick="addField('textarea')"><span class="field-type-badge textarea">Txt</span> Text area</button>
-                            <button onclick="addField('email')"><span class="field-type-badge email">@</span> Email</button>
-                            <button onclick="addField('number')"><span class="field-type-badge number">123</span> Number</button>
-                            <button onclick="addField('dropdown')"><span class="field-type-badge dropdown">Sel</span> Dropdown (one of)</button>
-                            <button onclick="addField('radio')"><span class="field-type-badge radio">&#9673;</span> Radio buttons (one of)</button>
-                            <button onclick="addField('checkbox')"><span class="field-type-badge checkbox">Chk</span> Checkbox (yes/no)</button>
-                            <button onclick="addField('checkboxes')"><span class="field-type-badge checkboxes">&#9745;</span> Checkboxes (many of)</button>
+                            <button onclick="addField('text')"><span class="field-type-badge text">Abc</span> <?php echo htmlspecialchars(t('forms.fieldtypes.text')); ?></button>
+                            <button onclick="addField('textarea')"><span class="field-type-badge textarea">Txt</span> <?php echo htmlspecialchars(t('forms.fieldtypes.textarea')); ?></button>
+                            <button onclick="addField('email')"><span class="field-type-badge email">@</span> <?php echo htmlspecialchars(t('forms.fieldtypes.email')); ?></button>
+                            <button onclick="addField('number')"><span class="field-type-badge number">123</span> <?php echo htmlspecialchars(t('forms.fieldtypes.number')); ?></button>
+                            <button onclick="addField('dropdown')"><span class="field-type-badge dropdown">Sel</span> <?php echo htmlspecialchars(t('forms.fieldtypes.dropdown')); ?></button>
+                            <button onclick="addField('radio')"><span class="field-type-badge radio">&#9673;</span> <?php echo htmlspecialchars(t('forms.fieldtypes.radio')); ?></button>
+                            <button onclick="addField('checkbox')"><span class="field-type-badge checkbox">Chk</span> <?php echo htmlspecialchars(t('forms.fieldtypes.checkbox')); ?></button>
+                            <button onclick="addField('checkboxes')"><span class="field-type-badge checkboxes">&#9745;</span> <?php echo htmlspecialchars(t('forms.fieldtypes.checkboxes')); ?></button>
                         </div>
                     </div>
                 </div>
                 <ul class="field-list" id="fieldList">
-                    <li class="no-fields">No fields added yet. Click "Add" to start building your form.</li>
+                    <li class="no-fields"><?php echo htmlspecialchars(t('forms.editor.no_fields')); ?></li>
                 </ul>
             </div>
 
             <!-- Preview tab -->
             <div class="form-tab-content" id="tabContentPreview">
                 <div id="previewContent">
-                    <p class="preview-empty">Add fields to see a preview</p>
+                    <p class="preview-empty"><?php echo htmlspecialchars(t('forms.editor.preview_empty')); ?></p>
                 </div>
             </div>
         </div>
@@ -504,10 +509,10 @@ $path_prefix = '../../';
              is a flex column so this pins at the bottom; the scrollbar in
              .forms-main stops at the footer's top edge. -->
         <div class="editor-footer">
-            <button class="btn btn-secondary" onclick="cancelEdit()">Cancel</button>
+            <button class="btn btn-secondary" onclick="cancelEdit()"><?php echo htmlspecialchars(t('forms.editor.cancel')); ?></button>
             <button class="btn btn-primary save-btn" id="saveBtn" onclick="saveForm()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                Save
+                <?php echo htmlspecialchars(t('forms.editor.save')); ?>
             </button>
         </div>
     </div>
@@ -518,26 +523,26 @@ $path_prefix = '../../';
     <div class="properties-backdrop" id="propertiesBackdrop" onclick="closePropertiesDrawer()"></div>
     <aside class="properties-drawer" id="propertiesDrawer" aria-hidden="true">
         <div class="properties-drawer-header">
-            <h3>Properties</h3>
-            <button class="properties-close" onclick="closePropertiesDrawer()" title="Close" aria-label="Close">&times;</button>
+            <h3><?php echo htmlspecialchars(t('forms.editor.properties_heading')); ?></h3>
+            <button class="properties-close" onclick="closePropertiesDrawer()" title="<?php echo htmlspecialchars(t('forms.editor.close')); ?>" aria-label="<?php echo htmlspecialchars(t('forms.editor.close')); ?>">&times;</button>
         </div>
         <div class="properties-drawer-body">
             <!-- Populated by renderFormMeta() on load + after every save.
                  Shows a placeholder message until the form has been saved
                  at least once (and therefore has a version + author). -->
             <div id="propertiesEmpty" class="properties-empty">
-                <p>This form hasn't been saved yet &mdash; properties will appear here once you create it.</p>
+                <p><?php echo htmlspecialchars(t('forms.editor.properties_unsaved')); ?></p>
             </div>
             <dl class="form-meta" id="formMeta" style="display:none;">
-                <dt>Version</dt>
+                <dt><?php echo htmlspecialchars(t('forms.editor.meta_version')); ?></dt>
                 <dd><span class="form-meta-version" id="formMetaVersion">v1</span></dd>
-                <dt>Author</dt>
+                <dt><?php echo htmlspecialchars(t('forms.editor.meta_author')); ?></dt>
                 <dd id="formMetaAuthor">&mdash;</dd>
-                <dt>Created</dt>
+                <dt><?php echo htmlspecialchars(t('forms.editor.meta_created')); ?></dt>
                 <dd id="formMetaCreated">&mdash;</dd>
-                <dt>Last modified</dt>
+                <dt><?php echo htmlspecialchars(t('forms.editor.meta_modified')); ?></dt>
                 <dd id="formMetaModified">&mdash;</dd>
-                <dt>Modified by</dt>
+                <dt><?php echo htmlspecialchars(t('forms.editor.meta_modified_by')); ?></dt>
                 <dd id="formMetaModifiedBy">&mdash;</dd>
             </dl>
         </div>
@@ -571,10 +576,10 @@ $path_prefix = '../../';
             loadSettings();
 
             if (currentFormId) {
-                document.getElementById('editorTitle').textContent = 'Edit form';
+                document.getElementById('editorTitle').textContent = window.t('forms.editor.title_edit');
                 loadFormForEdit(currentFormId);
             } else {
-                document.getElementById('editorTitle').textContent = 'New form';
+                document.getElementById('editorTitle').textContent = window.t('forms.editor.title_new');
                 renderFields();
                 updatePreview();
             }
@@ -619,7 +624,7 @@ $path_prefix = '../../';
                 const res = await fetch(API_BASE + 'get_form.php?id=' + id);
                 const data = await res.json();
                 if (!data.success) {
-                    showToast(data.error || 'Form not found', 'error');
+                    showToast(data.error || window.t('forms.toast.form_not_found'), 'error');
                     return;
                 }
                 document.getElementById('formTitle').value = data.form.title;
@@ -634,7 +639,7 @@ $path_prefix = '../../';
                 updatePreview();
                 renderFormMeta(data.form);
             } catch (e) {
-                showToast('Failed to load form: ' + e.message, 'error');
+                showToast(window.t('forms.toast.load_failed', { message: e.message }), 'error');
             }
         }
 
@@ -691,7 +696,7 @@ $path_prefix = '../../';
             if (banner) banner.style.display = isLeaf ? 'none' : '';
             if (saveBtn) {
                 saveBtn.disabled = !isLeaf;
-                saveBtn.title = isLeaf ? '' : 'This is a historical version — open the current one to edit, or fork from there with "Save as new version"';
+                saveBtn.title = isLeaf ? '' : window.t('forms.editor.readonly_save_title');
             }
 
             // Refresh the version dropdown's cached count + (if open)
@@ -728,30 +733,30 @@ $path_prefix = '../../';
         async function loadVersions() {
             const dd = document.getElementById('versionsDropdown');
             if (!dd) return;
-            if (!currentFormId) { dd.innerHTML = '<div class="vd-empty">Save the form first to start a version history.</div>'; return; }
+            if (!currentFormId) { dd.innerHTML = '<div class="vd-empty">' + esc(window.t('forms.versions.save_first_history')) + '</div>'; return; }
             if (cachedVersions) {
                 renderVersionsList(cachedVersions);
                 return;
             }
-            dd.innerHTML = '<div class="vd-loading">Loading…</div>';
+            dd.innerHTML = '<div class="vd-loading">' + esc(window.t('forms.versions.loading')) + '</div>';
             try {
                 const res = await fetch(API_BASE + 'list_versions.php?id=' + currentFormId);
                 const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'Failed');
+                if (!data.success) throw new Error(data.error || window.t('forms.versions.failed'));
                 cachedVersions = data.versions || [];
                 // Update the count next to the toolbar Versions button
                 const countEl = document.getElementById('versionsBtnCount');
                 if (countEl) countEl.textContent = '(' + cachedVersions.length + ')';
                 renderVersionsList(cachedVersions);
             } catch (e) {
-                dd.innerHTML = '<div class="vd-empty">Couldn\'t load versions: ' + escHtml(e.message) + '</div>';
+                dd.innerHTML = '<div class="vd-empty">' + escHtml(window.t('forms.versions.load_failed', { message: e.message })) + '</div>';
             }
         }
 
         function renderVersionsList(versions) {
             const dd = document.getElementById('versionsDropdown');
             if (!dd) return;
-            if (!versions.length) { dd.innerHTML = '<div class="vd-empty">No version history yet.</div>'; return; }
+            if (!versions.length) { dd.innerHTML = '<div class="vd-empty">' + esc(window.t('forms.versions.none')) + '</div>'; return; }
             const fmt = (s) => {
                 if (!s) return '';
                 const d = new Date(s.replace(' ', 'T') + 'Z');
@@ -764,14 +769,14 @@ $path_prefix = '../../';
             dd.innerHTML = sorted.map(v => {
                 const isActive = v.id === currentFormId;
                 const pillClass = v.is_current ? 'vd-pill current' : 'vd-pill';
-                const pillText  = v.is_current ? 'current' : ('v' + v.version_number);
+                const pillText  = v.is_current ? window.t('forms.versions.current') : ('v' + v.version_number);
                 return `<a href="?id=${v.id}" class="vd-row ${isActive ? 'active' : ''}">
                     <div class="vd-row-top">
-                        <span class="vd-row-title">v${v.version_number} &middot; ${escHtml(v.title || 'Untitled')}</span>
-                        <span class="${pillClass}">${pillText}</span>
+                        <span class="vd-row-title">v${v.version_number} &middot; ${escHtml(v.title || window.t('forms.versions.untitled'))}</span>
+                        <span class="${pillClass}">${escHtml(pillText)}</span>
                     </div>
                     <div class="vd-row-meta">
-                        Edited by ${escHtml(v.modified_by_name || 'Unknown')} &middot; ${escHtml(fmt(v.modified_date))}
+                        ${escHtml(window.t('forms.versions.edited_by', { name: v.modified_by_name || window.t('forms.versions.unknown'), date: fmt(v.modified_date) }))}
                     </div>
                 </a>`;
             }).join('');
@@ -790,14 +795,14 @@ $path_prefix = '../../';
         // ===== Save as new version =====
         async function createNewVersion() {
             if (!currentFormId) {
-                showToast('Save the form first before creating a new version.', 'error');
+                showToast(window.t('forms.toast.save_first'), 'error');
                 return;
             }
             if (isDirty) {
                 const proceed = await showConfirm({
-                    title: 'Unsaved changes',
-                    message: 'You have unsaved changes. Save them as part of the new version? Cancel here and click Save first if you want to keep both.',
-                    okLabel: 'Continue',
+                    title: window.t('forms.newversion.unsaved_title'),
+                    message: window.t('forms.newversion.unsaved_message'),
+                    okLabel: window.t('forms.newversion.unsaved_ok'),
                     okClass: 'primary'
                 });
                 if (!proceed) return;
@@ -808,7 +813,7 @@ $path_prefix = '../../';
                 const ok = await saveForm();
                 if (!ok) return;
             }
-            if (!(await showConfirm({ title: 'Confirm', message: 'Create a new version? The current version becomes a frozen historical snapshot; the new one becomes the editable current version.', okLabel: 'OK', okClass: 'primary' }))) return;
+            if (!(await showConfirm({ title: window.t('forms.newversion.confirm_title'), message: window.t('forms.newversion.confirm_message'), okLabel: window.t('forms.newversion.confirm_ok'), okClass: 'primary' }))) return;
             try {
                 const res = await fetch(API_BASE + 'create_version.php', {
                     method: 'POST',
@@ -817,14 +822,14 @@ $path_prefix = '../../';
                 });
                 const data = await res.json();
                 if (!data.success) {
-                    showToast(data.error || 'Failed to create version', 'error');
+                    showToast(data.error || window.t('forms.toast.version_failed'), 'error');
                     return;
                 }
-                showToast('Created v' + data.version_number);
+                showToast(window.t('forms.toast.version_created', { n: data.version_number }));
                 // Jump to the new version
                 window.location.href = '?id=' + data.id;
             } catch (e) {
-                showToast('Failed to create version', 'error');
+                showToast(window.t('forms.toast.version_failed'), 'error');
             }
         }
 
@@ -869,9 +874,9 @@ $path_prefix = '../../';
         async function cancelEdit() {
             if (isDirty) {
                 const ok = await showConfirm({
-                    title: 'Discard changes',
-                    message: 'You have unsaved changes. Discard them?',
-                    okLabel: 'Discard',
+                    title: window.t('forms.cancel.title'),
+                    message: window.t('forms.cancel.message'),
+                    okLabel: window.t('forms.cancel.ok'),
                     okClass: 'danger'
                 });
                 if (!ok) return;
@@ -912,7 +917,7 @@ $path_prefix = '../../';
             fields.push({
                 field_type: type,
                 label: '',
-                options: hasOptions(type) ? ['Option 1'] : [],
+                options: hasOptions(type) ? [window.t('forms.field.default_option')] : [],
                 is_required: false
             });
             markDirty();
@@ -926,15 +931,15 @@ $path_prefix = '../../';
         function renderFields() {
             const list = document.getElementById('fieldList');
             if (fields.length === 0) {
-                list.innerHTML = '<li class="no-fields">No fields added yet. Click "Add" to start building your form.</li>';
+                list.innerHTML = '<li class="no-fields">' + esc(window.t('forms.editor.no_fields')) + '</li>';
                 return;
             }
             list.innerHTML = fields.map((f, i) => {
                 let optionsHtml = '';
                 if (hasOptions(f.field_type)) {
-                    const optsLabel = f.field_type === 'dropdown' ? 'Dropdown options'
-                                    : f.field_type === 'radio'    ? 'Radio options'
-                                    :                               'Checkbox options';
+                    const optsLabel = f.field_type === 'dropdown' ? window.t('forms.field.options_dropdown')
+                                    : f.field_type === 'radio'    ? window.t('forms.field.options_radio')
+                                    :                               window.t('forms.field.options_checkbox');
                     optionsHtml = `
                         <div class="field-options">
                             <div class="field-options-label">${optsLabel}</div>
@@ -944,15 +949,15 @@ $path_prefix = '../../';
                                      ondragend="onOptDragEnd(event)"
                                      ondragover="onOptDragOver(event, ${i}, ${oi})"
                                      ondrop="onOptDrop(event, ${i}, ${oi})">
-                                    <span class="option-drag" title="Drag to reorder">⠿</span>
+                                    <span class="option-drag" title="${escAttr(window.t('forms.field.drag_reorder'))}">⠿</span>
                                     <input type="text" value="${esc(opt)}"
                                            onchange="updateOption(${i}, ${oi}, this.value)"
                                            onkeydown="onOptionKeydown(event, ${i}, ${oi})"
-                                           placeholder="Option ${oi + 1}">
+                                           placeholder="${escAttr(window.t('forms.field.option_ph', { n: oi + 1 }))}">
                                     <button class="option-remove" onclick="removeOption(${i}, ${oi})">&times;</button>
                                 </div>
                             `).join('')}
-                            <button class="add-option-btn" onclick="addOption(${i})">+ Add option</button>
+                            <button class="add-option-btn" onclick="addOption(${i})">${esc(window.t('forms.field.add_option'))}</button>
                         </div>`;
                 }
                 return `
@@ -962,17 +967,17 @@ $path_prefix = '../../';
                         ondragover="onFieldDragOver(event, ${i})"
                         ondrop="onFieldDrop(event, ${i})">
                         <div class="field-item-header">
-                            <span class="field-drag" title="Drag to reorder">
+                            <span class="field-drag" title="${escAttr(window.t('forms.field.drag_reorder'))}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
                             </span>
                             <span class="field-type-badge ${f.field_type}">${typeName(f.field_type)}</span>
-                            <input type="text" class="field-label-input" value="${esc(f.label)}" placeholder="Field label..." onchange="updateLabel(${i}, this.value)">
+                            <input type="text" class="field-label-input" value="${esc(f.label)}" placeholder="${escAttr(window.t('forms.field.label_ph'))}" onchange="updateLabel(${i}, this.value)">
                             <div class="field-controls">
                                 <label class="field-required-toggle">
                                     <input type="checkbox" ${f.is_required ? 'checked' : ''} onchange="toggleRequired(${i}, this.checked)">
-                                    Required
+                                    ${esc(window.t('forms.field.required'))}
                                 </label>
-                                <button class="field-delete-btn" onclick="deleteField(${i})" title="Remove field">
+                                <button class="field-delete-btn" onclick="deleteField(${i})" title="${escAttr(window.t('forms.field.remove_field'))}">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                 </button>
                             </div>
@@ -981,17 +986,9 @@ $path_prefix = '../../';
                     </li>`;
             }).join('');
         }
-        function typeName(t) {
-            return {
-                text:       'Text',
-                textarea:   'Textarea',
-                checkbox:   'Checkbox',
-                dropdown:   'Dropdown',
-                email:      'Email',
-                number:     'Number',
-                checkboxes: 'Checkboxes',
-                radio:      'Radio'
-            }[t] || t;
+        function typeName(type) {
+            const known = ['text', 'textarea', 'checkbox', 'dropdown', 'email', 'number', 'checkboxes', 'radio'];
+            return known.includes(type) ? window.t('forms.typename.' + type) : type;
         }
         function updateLabel(i, val)    { fields[i].label = val;       markDirty(); updatePreview(); }
         function toggleRequired(i, val) { fields[i].is_required = val; markDirty(); updatePreview(); }
@@ -1114,44 +1111,44 @@ $path_prefix = '../../';
 
         // ===== Preview =====
         function updatePreview() {
-            const title = document.getElementById('formTitle').value || 'Untitled form';
+            const title = document.getElementById('formTitle').value || window.t('forms.preview.untitled_form');
             const desc = document.getElementById('formDesc').value;
             const preview = document.getElementById('previewContent');
             if (fields.length === 0) {
-                preview.innerHTML = '<p class="preview-empty">Add fields to see a preview</p>';
+                preview.innerHTML = '<p class="preview-empty">' + esc(window.t('forms.editor.preview_empty')) + '</p>';
                 return;
             }
             const alignClass = 'align-' + logoAlignment;
-            let html = `<img src="<?php echo BASE_URL; ?>assets/images/CompanyLogo.png" alt="Company logo" class="preview-logo ${alignClass}">`;
+            let html = `<img src="<?php echo BASE_URL; ?>assets/images/CompanyLogo.png" alt="${escAttr(window.t('forms.preview.logo_alt'))}" class="preview-logo ${alignClass}">`;
             html += `<p class="preview-title">${esc(title)}</p>`;
             if (desc) html += `<p class="preview-desc">${esc(desc)}</p>`;
             html += fields.map(f => {
                 const reqStar = f.is_required ? '<span class="required-star">*</span>' : '';
-                const label = esc(f.label || 'Untitled field');
+                const label = esc(f.label || window.t('forms.field.untitled_field'));
                 switch (f.field_type) {
                     case 'text':
-                        return `<div class="preview-field"><label>${label}${reqStar}</label><input type="text" disabled placeholder="Text input..."></div>`;
+                        return `<div class="preview-field"><label>${label}${reqStar}</label><input type="text" disabled placeholder="${escAttr(window.t('forms.preview.text_ph'))}"></div>`;
                     case 'textarea':
-                        return `<div class="preview-field"><label>${label}${reqStar}</label><textarea disabled placeholder="Text area..."></textarea></div>`;
+                        return `<div class="preview-field"><label>${label}${reqStar}</label><textarea disabled placeholder="${escAttr(window.t('forms.preview.textarea_ph'))}"></textarea></div>`;
                     case 'email':
-                        return `<div class="preview-field"><label>${label}${reqStar}</label><input type="email" disabled placeholder="name@example.com"></div>`;
+                        return `<div class="preview-field"><label>${label}${reqStar}</label><input type="email" disabled placeholder="${escAttr(window.t('forms.preview.email_ph'))}"></div>`;
                     case 'number':
-                        return `<div class="preview-field"><label>${label}${reqStar}</label><input type="number" disabled placeholder="0"></div>`;
+                        return `<div class="preview-field"><label>${label}${reqStar}</label><input type="number" disabled placeholder="${escAttr(window.t('forms.preview.number_ph'))}"></div>`;
                     case 'checkbox':
                         return `<div class="preview-field"><div class="checkbox-row"><input type="checkbox" disabled> <label>${label}${reqStar}</label></div></div>`;
                     case 'dropdown': {
                         const opts = (f.options || []).filter(o => o).map(o => `<option>${esc(o)}</option>`).join('');
-                        return `<div class="preview-field"><label>${label}${reqStar}</label><select disabled><option value="">Select...</option>${opts}</select></div>`;
+                        return `<div class="preview-field"><label>${label}${reqStar}</label><select disabled><option value="">${esc(window.t('forms.preview.select_ph'))}</option>${opts}</select></div>`;
                     }
                     case 'radio': {
                         const items = (f.options || []).filter(o => o).map(o =>
                             `<div class="checkbox-row"><input type="radio" disabled> <label>${esc(o)}</label></div>`).join('');
-                        return `<div class="preview-field"><label>${label}${reqStar}</label>${items || '<small style="color:#999">No options yet</small>'}</div>`;
+                        return `<div class="preview-field"><label>${label}${reqStar}</label>${items || '<small style="color:#999">' + esc(window.t('forms.preview.no_options')) + '</small>'}</div>`;
                     }
                     case 'checkboxes': {
                         const items = (f.options || []).filter(o => o).map(o =>
                             `<div class="checkbox-row"><input type="checkbox" disabled> <label>${esc(o)}</label></div>`).join('');
-                        return `<div class="preview-field"><label>${label}${reqStar}</label>${items || '<small style="color:#999">No options yet</small>'}</div>`;
+                        return `<div class="preview-field"><label>${label}${reqStar}</label>${items || '<small style="color:#999">' + esc(window.t('forms.preview.no_options')) + '</small>'}</div>`;
                     }
                     default:
                         return '';
@@ -1166,10 +1163,10 @@ $path_prefix = '../../';
         // version snapshot reflects exactly what the user sees.
         async function saveForm() {
             const title = document.getElementById('formTitle').value.trim();
-            if (!title) { showToast('Please enter a form title', 'error'); return false; }
+            if (!title) { showToast(window.t('forms.save.need_title'), 'error'); return false; }
             const validFields = fields.filter(f => f.label.trim());
             if (validFields.length === 0) {
-                showToast('Please add at least one field with a label', 'error');
+                showToast(window.t('forms.save.need_field'), 'error');
                 return false;
             }
             const payload = {
@@ -1200,19 +1197,19 @@ $path_prefix = '../../';
                         // Promote the URL from /forms/edit/ to /forms/edit/?id=N
                         // so a refresh keeps the user in the same form.
                         history.replaceState(null, '', './?id=' + currentFormId);
-                        document.getElementById('editorTitle').textContent = 'Edit form';
+                        document.getElementById('editorTitle').textContent = window.t('forms.editor.title_edit');
                     }
                     clearDirty();
-                    showToast('Form saved successfully');
+                    showToast(window.t('forms.toast.form_saved'));
                     // Reload so the version pill / modified-by reflect
                     // the latest values from the DB.
                     loadFormForEdit(currentFormId);
                     return true;
                 }
-                showToast('Error: ' + data.error, 'error');
+                showToast(window.t('forms.toast.error_prefix', { message: data.error }), 'error');
                 return false;
             } catch (e) {
-                showToast('Failed to save form', 'error');
+                showToast(window.t('forms.toast.save_failed'), 'error');
                 return false;
             }
         }
@@ -1261,35 +1258,35 @@ $path_prefix = '../../';
         // open-time so the user sees relevant ideas for the mode
         // they're in.
         const AI_EXAMPLES_NEW = [
-            { label: 'New starter onboarding form for IT', text: "A new starter onboarding form for the IT team. Capture the new starter's name, job title, start date, line manager, software needed (Outlook, Teams, Adobe, Visual Studio), and a notes field for special equipment." },
-            { label: 'HR leaver form',                    text: "A leaver form for HR. Capture the leaver's name, last working day, line manager, reason for leaving (resignation / retirement / redundancy / dismissal / end of contract), exit interview required (yes/no), and a notes field." },
-            { label: 'User incident reporting form',       text: "An incident reporting form for end users. Subject, description, severity (low / medium / high / critical), affected service, when it started (date as text), and a checkbox confirming they've already tried restarting." },
+            { label: window.t('forms.ai.ex_new1_label'), text: window.t('forms.ai.ex_new1_text') },
+            { label: window.t('forms.ai.ex_new2_label'), text: window.t('forms.ai.ex_new2_text') },
+            { label: window.t('forms.ai.ex_new3_label'), text: window.t('forms.ai.ex_new3_text') },
         ];
         const AI_EXAMPLES_EDIT = [
-            { label: 'Add a phone number field',                    text: 'Add a phone number field after the email address. Required.' },
-            { label: 'Make all fields required',                    text: 'Mark every field as required.' },
-            { label: 'Reorder so the name field comes first',       text: 'Reorder the fields so the name field is at the top.' },
-            { label: 'Tighten the description to one short sentence', text: 'Rewrite the description to one short, neutral sentence (under 25 words).' },
-            { label: 'Remove the consent checkbox',                 text: 'Remove the consent checkbox at the bottom.' },
+            { label: window.t('forms.ai.ex_edit1_label'), text: window.t('forms.ai.ex_edit1_text') },
+            { label: window.t('forms.ai.ex_edit2_label'), text: window.t('forms.ai.ex_edit2_text') },
+            { label: window.t('forms.ai.ex_edit3_label'), text: window.t('forms.ai.ex_edit3_text') },
+            { label: window.t('forms.ai.ex_edit4_label'), text: window.t('forms.ai.ex_edit4_text') },
+            { label: window.t('forms.ai.ex_edit5_label'), text: window.t('forms.ai.ex_edit5_text') },
         ];
 
         function openAiModal() {
             const editing = isEditingExistingForm();
 
             // Toggle modal copy to match the mode.
-            document.getElementById('aiModalTitle').innerHTML = editing
-                ? '<span class="ai-sparkle">&#10024;</span> AI Assist &mdash; what would you like to change?'
-                : '<span class="ai-sparkle">&#10024;</span> AI Assist &mdash; describe your form';
+            document.getElementById('aiModalTitle').innerHTML = '<span class="ai-sparkle">&#10024;</span> ' + escHtml(editing
+                ? window.t('forms.ai.title_edit')
+                : window.t('forms.ai.title_new'));
             document.getElementById('aiPromptLabel').textContent = editing
-                ? 'What change do you want?'
-                : "What's the form for?";
+                ? window.t('forms.ai.prompt_edit')
+                : window.t('forms.ai.prompt_new');
             const ta = document.getElementById('aiDescription');
             ta.placeholder = editing
-                ? 'e.g. Add a date-of-birth field. Make the email field required. Rewrite the description to mention the SLA.'
-                : "e.g. A holiday request form for staff. Capture the requester's name, the start and end date, the type of leave (annual / sick / parental / unpaid), an optional note, and a confirmation checkbox that they've checked the team rota.";
+                ? window.t('forms.ai.ta_ph_edit')
+                : window.t('forms.ai.ta_ph_new');
             document.getElementById('aiHint').textContent = editing
-                ? "The AI will see the current form and modify it based on your request — it won't rebuild from scratch."
-                : 'Tell it what the form does and what info it needs to capture. The more specific you are, the better the result.';
+                ? window.t('forms.ai.hint_edit')
+                : window.t('forms.ai.hint_new');
 
             // Swap the suggested-prompt list.
             const list = document.getElementById('aiExamplesList');
@@ -1365,7 +1362,7 @@ $path_prefix = '../../';
             const prop = document.getElementById('aiProposal');
             const summary = document.getElementById('aiProposalSummary');
             const fieldsCount = (proposedForm.fields || []).length;
-            const fw = fieldsCount === 1 ? 'field' : 'fields';
+            const fw = fieldsCount === 1 ? window.t('forms.ai.prop_field') : window.t('forms.ai.prop_fields');
 
             // Build a tiny diff view: list each proposed field with a
             // colour-coded badge (added / changed / unchanged / removed
@@ -1380,17 +1377,17 @@ $path_prefix = '../../';
                 seen.add(labelKey);
                 const cur = currentByLabel.get(labelKey);
                 let badge, badgeBg;
-                if (!editing) { badge = 'new'; badgeBg = '#3b82f6'; }
-                else if (!cur) { badge = 'added'; badgeBg = '#16a34a'; }
+                if (!editing) { badge = window.t('forms.ai.badge_new'); badgeBg = '#3b82f6'; }
+                else if (!cur) { badge = window.t('forms.ai.badge_added'); badgeBg = '#16a34a'; }
                 else if (cur.field_type !== f.field_type || !!cur.is_required !== !!f.is_required) {
-                    badge = 'changed'; badgeBg = '#f59e0b';
+                    badge = window.t('forms.ai.badge_changed'); badgeBg = '#f59e0b';
                 } else {
-                    badge = 'unchanged'; badgeBg = '#94a3b8';
+                    badge = window.t('forms.ai.badge_unchanged'); badgeBg = '#94a3b8';
                 }
                 return `<li>
-                    <span class="ai-prop-badge" style="background:${badgeBg};">${badge}</span>
-                    <strong>${escHtml(f.label || 'Untitled field')}</strong>
-                    <span class="ai-prop-meta">${typeName(f.field_type)}${f.is_required ? ' · required' : ''}</span>
+                    <span class="ai-prop-badge" style="background:${badgeBg};">${escHtml(badge)}</span>
+                    <strong>${escHtml(f.label || window.t('forms.field.untitled_field'))}</strong>
+                    <span class="ai-prop-meta">${escHtml(typeName(f.field_type))}${f.is_required ? ' · ' + escHtml(window.t('forms.ai.prop_required')) : ''}</span>
                 </li>`;
             });
             // Removed fields — present in the current form but not in
@@ -1400,22 +1397,27 @@ $path_prefix = '../../';
                     const labelKey = (f.label || '').trim().toLowerCase();
                     if (!seen.has(labelKey)) {
                         rows.push(`<li>
-                            <span class="ai-prop-badge" style="background:#dc2626;">removed</span>
-                            <strong>${escHtml(f.label || 'Untitled field')}</strong>
-                            <span class="ai-prop-meta">${typeName(f.field_type)}</span>
+                            <span class="ai-prop-badge" style="background:#dc2626;">${escHtml(window.t('forms.ai.badge_removed'))}</span>
+                            <strong>${escHtml(f.label || window.t('forms.field.untitled_field'))}</strong>
+                            <span class="ai-prop-meta">${escHtml(typeName(f.field_type))}</span>
                         </li>`);
                     }
                 });
             }
 
+            const propHead = window.t('forms.ai.prop_head', {
+                what: editing ? window.t('forms.ai.prop_head_change') : window.t('forms.ai.prop_head_new'),
+                seconds: seconds
+            });
+            const propCount = window.t('forms.ai.prop_count', { count: fieldsCount, fields: fw });
             summary.innerHTML = `
                 <div class="ai-prop-head">
-                    AI proposed ${editing ? 'this change' : 'a new form'} in ${seconds}s &mdash;
-                    <strong>${escHtml(proposedForm.title || 'Untitled form')}</strong>
-                    (${fieldsCount} ${fw})
+                    ${escHtml(propHead)}
+                    <strong>${escHtml(proposedForm.title || window.t('forms.preview.untitled_form'))}</strong>
+                    ${escHtml(propCount)}
                 </div>
                 <ul class="ai-prop-list">${rows.join('')}</ul>
-                <div class="ai-prop-note">Click <strong>Apply</strong> to load this into the editor, or <strong>Cancel</strong> to keep your current form.</div>
+                <div class="ai-prop-note">${window.t('forms.ai.prop_note')}</div>
             `;
             prop.style.display = 'block';
             // Swap buttons: hide Generate, show Apply
@@ -1433,18 +1435,18 @@ $path_prefix = '../../';
             applyGeneratedForm(aiProposedForm);
             switchFormTab('preview');
             closeAiModal();
-            showToast(isEditingExistingForm() ? 'Form updated' : 'Form built', 'success');
+            showToast(isEditingExistingForm() ? window.t('forms.toast.form_updated') : window.t('forms.toast.form_built'), 'success');
             aiProposedForm = null;
         }
         async function runAiGeneration() {
             const description = document.getElementById('aiDescription').value.trim();
             const editing = isEditingExistingForm();
             if (!description) {
-                showToast(editing ? 'Please describe what you want to change' : 'Please describe the form you want to build', 'error');
+                showToast(editing ? window.t('forms.ai.need_change') : window.t('forms.ai.need_describe'), 'error');
                 return;
             }
             if (description.length > 2000) {
-                showToast('Description is too long (max 2000 characters)', 'error');
+                showToast(window.t('forms.ai.too_long'), 'error');
                 return;
             }
             // No destructive-replace warning in edit mode — the backend
@@ -1460,7 +1462,7 @@ $path_prefix = '../../';
             const status = document.getElementById('aiStatus');
             const stream = document.getElementById('aiStream');
             stream.textContent = '';
-            status.textContent = editing ? 'Applying your change…' : 'Designing your form…';
+            status.textContent = editing ? window.t('forms.ai.status_applying') : window.t('forms.ai.status_designing');
             aiAbortController = new AbortController();
 
             // Snapshot the current form to send as context when editing.
@@ -1487,7 +1489,7 @@ $path_prefix = '../../';
                     body: JSON.stringify(payload),
                     signal: aiAbortController.signal
                 });
-                if (!resp.body) throw new Error('Streaming not supported by your browser');
+                if (!resp.body) throw new Error(window.t('forms.ai.streaming_unsupported'));
                 const reader = resp.body.getReader();
                 const decoder = new TextDecoder();
                 let buffer = '';
@@ -1528,7 +1530,7 @@ $path_prefix = '../../';
                             break;
                         }
                         case 'error':
-                            throw new Error(data.message || 'AI request failed');
+                            throw new Error(data.message || window.t('forms.ai.request_failed'));
                     }
                 };
                 while (true) {
@@ -1553,8 +1555,8 @@ $path_prefix = '../../';
                     // user cancelled
                 } else {
                     prog.classList.add('error');
-                    document.getElementById('aiStatus').textContent = 'Error: ' + err.message;
-                    showToast('AI Assist failed: ' + err.message, 'error');
+                    document.getElementById('aiStatus').textContent = window.t('forms.ai.error_status', { message: err.message });
+                    showToast(window.t('forms.ai.failed', { message: err.message }), 'error');
                 }
             } finally {
                 generateBtn.disabled = false;
@@ -1581,28 +1583,28 @@ $path_prefix = '../../';
     <div class="ai-modal-overlay" id="aiModal">
         <div class="ai-modal">
             <div class="ai-modal-header">
-                <h3 id="aiModalTitle"><span class="ai-sparkle">&#10024;</span> AI Assist &mdash; describe your form</h3>
+                <h3 id="aiModalTitle"><span class="ai-sparkle">&#10024;</span> <?php echo htmlspecialchars(t('forms.ai.title_new')); ?></h3>
             </div>
             <div class="ai-modal-body">
-                <label for="aiDescription" id="aiPromptLabel">What's the form for?</label>
+                <label for="aiDescription" id="aiPromptLabel"><?php echo htmlspecialchars(t('forms.ai.prompt_new')); ?></label>
                 <textarea id="aiDescription"></textarea>
-                <div class="ai-hint" id="aiHint">Tell it what the form does and what info it needs to capture. The more specific you are, the better the result.</div>
+                <div class="ai-hint" id="aiHint"><?php echo htmlspecialchars(t('forms.ai.hint_new')); ?></div>
 
                 <div class="ai-examples">
-                    <strong>Try:</strong>
+                    <strong><?php echo htmlspecialchars(t('forms.ai.try')); ?></strong>
                     <ul id="aiExamplesList"></ul>
                 </div>
 
                 <div class="ai-progress" id="aiProgress" style="display:none;">
                     <div class="ai-progress-status">
                         <div class="ai-spinner"></div>
-                        <span id="aiStatus">Designing your form&hellip;</span>
+                        <span id="aiStatus"><?php echo htmlspecialchars(t('forms.ai.status_designing')); ?></span>
                     </div>
                     <div class="ai-progress-counters">
-                        <span>Fields detected: <strong id="aiFieldCount">0</strong></span>
-                        <span>Tokens in: <strong id="aiTokensIn">0</strong></span>
-                        <span>Tokens out: <strong id="aiTokensOut">0</strong></span>
-                        <span>Cached: <strong id="aiCacheRead">0</strong></span>
+                        <span><?php echo htmlspecialchars(t('forms.ai.fields_detected')); ?> <strong id="aiFieldCount">0</strong></span>
+                        <span><?php echo htmlspecialchars(t('forms.ai.tokens_in')); ?> <strong id="aiTokensIn">0</strong></span>
+                        <span><?php echo htmlspecialchars(t('forms.ai.tokens_out')); ?> <strong id="aiTokensOut">0</strong></span>
+                        <span><?php echo htmlspecialchars(t('forms.ai.cached')); ?> <strong id="aiCacheRead">0</strong></span>
                     </div>
                     <pre class="ai-stream" id="aiStream"></pre>
                 </div>
@@ -1615,14 +1617,14 @@ $path_prefix = '../../';
                 </div>
             </div>
             <div class="ai-modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeAiModal()">Cancel</button>
+                <button type="button" class="btn btn-secondary" onclick="closeAiModal()"><?php echo htmlspecialchars(t('forms.ai.cancel')); ?></button>
                 <button type="button" class="btn btn-ai-assist" id="aiGenerateBtn" onclick="runAiGeneration()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.9 5.8L20 10l-5.8 1.9L12 18l-1.9-5.8L4 10l6.1-2.2z"></path></svg>
-                    Generate
+                    <?php echo htmlspecialchars(t('forms.ai.generate')); ?>
                 </button>
                 <button type="button" class="btn btn-primary" id="aiApplyBtn" onclick="applyProposedForm()" style="display:none;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    Apply
+                    <?php echo htmlspecialchars(t('forms.ai.apply')); ?>
                 </button>
             </div>
         </div>
