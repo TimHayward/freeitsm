@@ -1330,11 +1330,27 @@ body.ticket-popout .ticket-toolbar {
     display: flex;
     flex-direction: column;
     transform: scale(0.95) translateY(-10px);
-    transition: transform 0.2s ease;
+    /* Strong ease-out curve — the built-in CSS `ease` is too weak and
+       feels sluggish; this cubic-bezier gives the entrance an
+       intentional, snappy settle. Modals stay centred (origin: center)
+       because they aren't anchored to a trigger. */
+    transition: transform 0.2s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .modal.active .modal-content {
     transform: scale(1) translateY(0);
+}
+
+/* Reduced-motion: keep the backdrop fade (on .modal) but drop the
+   scale/slide movement of the content for users who've asked for it. */
+@media (prefers-reduced-motion: reduce) {
+    .modal-content {
+        transform: none;
+        transition: none;
+    }
+    .modal.active .modal-content {
+        transform: none;
+    }
 }
 
 .modal-header {
