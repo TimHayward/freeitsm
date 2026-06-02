@@ -48,7 +48,7 @@ body {
     border-radius: 4px;
     cursor: pointer;
     font-size: 13px;
-    transition: all 0.2s;
+    transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.12s ease-out;
     text-decoration: none;
 }
 
@@ -65,6 +65,11 @@ body {
 .nav-btn:visited:hover {
     background: rgba(255,255,255,0.2);
     color: white !important;
+}
+
+/* Press feedback: subtle scale-down while held, springs back on release */
+.nav-btn:active {
+    transform: scale(0.97);
 }
 
 .nav-btn.active,
