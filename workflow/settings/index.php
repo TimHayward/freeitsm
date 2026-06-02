@@ -104,7 +104,7 @@ $translationNamespaces = ['common', 'workflow'];
                     </div>
 
                     <div class="form-group">
-                        <label class="toggle-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 500; color: #333;">
+                        <label class="toggle-label">
                             <span class="toggle-switch">
                                 <input type="checkbox" id="wfsVerifySsl" checked onchange="WFS.onVerifySslChange()">
                                 <span class="toggle-slider"></span>

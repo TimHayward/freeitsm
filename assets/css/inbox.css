@@ -2281,17 +2281,31 @@ body.ticket-popout .ticket-toolbar {
 .toggle-switch input:checked + .toggle-slider::before {
     transform: translateX(20px);
 }
-/* Wrapper label that puts the toggle + its caption on the same row. Some
-   modules used `.toggle-group` or `.toggle-row` historically — keep them
-   as aliases so existing markup keeps working. */
+/* Wrapper label for a toggle + its caption. Stacked vertically — caption
+   on top, switch below — so a toggle reads as a normal form field (label
+   then control), consistent with every other field in the modal. The
+   caption is styled to match `.form-group label` (13px / 500 / #333).
+   Some modules used `.toggle-group` or `.toggle-row` historically — keep
+   them as aliases so existing markup keeps working. */
 .toggle-label,
 .toggle-group,
 .toggle-row {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
     cursor: pointer;
+}
+/* Switch sits BELOW its caption. `order` forces the switch last
+   regardless of whether the markup placed the caption before or after
+   it (both patterns exist across modules). */
+.toggle-label .toggle-switch,
+.toggle-group .toggle-switch,
+.toggle-row .toggle-switch {
+    order: 1;
 }
 
 /* Canonical modal form-field styling (#454). One file for fonts, sizes,
