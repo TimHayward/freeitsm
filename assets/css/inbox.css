@@ -395,7 +395,7 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s, transform 0.12s ease-out;
 }
 
 .icon-btn:hover {
@@ -2005,6 +2005,7 @@ body.ticket-popout .ticket-toolbar {
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
+    transition: transform 0.12s ease-out;
     /* When .add-btn is on an <a> (e.g. workflow's New button links to
        editor.php rather than opening a modal) the user-agent underline
        bleeds through. Strip it so anchor-as-button matches button-as-button. */
@@ -2082,6 +2083,25 @@ body.ticket-popout .ticket-toolbar {
 .table-action-btn svg {
     width: 16px;
     height: 16px;
+}
+
+/* ---------------------------------------------------------------
+   Press feedback: every shared button primitive dips slightly while
+   held and springs back on release (subtle ~0.97 scale, matches the
+   nav-btn press). transform is GPU-cheap and these classes set no
+   other transform, so this overrides nothing. The `transition: all`
+   classes already animate the scale; .add-btn and .icon-btn get an
+   explicit transform transition above so their spring-back animates
+   too. Modifier classes (.btn-primary, .action-btn-danger,
+   .table-action-btn.delete, etc.) are always used with their base
+   class, so the base :active rule covers them.
+   --------------------------------------------------------------- */
+.btn:active,
+.add-btn:active,
+.action-btn:active,
+.table-action-btn:active,
+.icon-btn:active {
+    transform: scale(0.97);
 }
 
 /* Status Badges */
