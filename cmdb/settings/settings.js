@@ -50,7 +50,7 @@ function switchTab(tab) {
 
     if (tab === 'classes') loadClasses();
     else if (tab === 'relationship-types') loadRelTypes();
-    else if (tab === 'ai') loadAiSettings();
+    else if (tab === 'ai') loadCmdbAiExtras();
     else if (tab === 'left-panel') loadSidebarMode();
 }
 
@@ -445,59 +445,31 @@ async function deleteRelType(id, verb) {
 }
 
 // ---------- AI Integration ----------
+// Provider / model / key / SSL are owned by the shared AI panel
+// (renderAiSettingsPanel('cmdb_ai') + assets/js/ai-settings.js). This file only
+// manages the CMDB-specific custom-instructions textarea.
 
-async function loadAiSettings() {
+async function loadCmdbAiExtras() {
     try {
         const res = await fetch(API + 'get_ai_settings.php');
         const data = await res.json();
         if (!data.success) throw new Error(data.error || window.t('cmdb.settings.ai_load_failed'));
-        document.getElementById('aiApiKey').value = data.api_key_masked || '';
-        document.getElementById('aiApiKey').placeholder = data.has_api_key ? '' : 'sk-ant-...';
-        document.getElementById('aiModel').value = data.model || 'claude-haiku-4-5-20251001';
         document.getElementById('aiCustomInstructions').value = data.custom_instructions || '';
-        const r = document.getElementById('aiTestResult');
-        r.style.display = 'none';
-        r.className = 'test-result';
     } catch (err) {
         showInlineToast(window.t('cmdb.settings.ai_load_error', { message: err.message }), true);
     }
 }
 
-async function saveAiSettings(ev) {
+async function saveCmdbAiExtras(ev) {
     if (ev) ev.preventDefault();
-    const payload = {
-        api_key: document.getElementById('aiApiKey').value,
-        model: document.getElementById('aiModel').value,
-        custom_instructions: document.getElementById('aiCustomInstructions').value
-    };
     try {
-        const data = await postJson(API + 'save_ai_settings.php', payload);
+        const data = await postJson(API + 'save_ai_settings.php', {
+            custom_instructions: document.getElementById('aiCustomInstructions').value
+        });
         if (!data.success) throw new Error(data.error || window.t('cmdb.settings.save_failed'));
         showInlineToast(window.t('cmdb.settings.ai_saved'));
-        loadAiSettings();
     } catch (err) {
         showInlineToast(window.t('cmdb.settings.error_prefix', { message: err.message }), true);
-    }
-}
-
-async function testAiKey() {
-    const r = document.getElementById('aiTestResult');
-    r.className = 'test-result';
-    r.style.display = 'block';
-    r.textContent = window.t('cmdb.settings.ai_testing');
-    try {
-        const res = await fetch(API + 'test_ai_key.php', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) {
-            r.className = 'test-result success';
-            r.textContent = data.message || window.t('cmdb.settings.ai_connection_ok');
-        } else {
-            r.className = 'test-result error';
-            r.textContent = window.t('cmdb.settings.ai_test_failed', { error: data.error || window.t('cmdb.settings.ai_unknown_error') });
-        }
-    } catch (err) {
-        r.className = 'test-result error';
-        r.textContent = window.t('cmdb.settings.ai_network_error', { message: err.message });
     }
 }
 

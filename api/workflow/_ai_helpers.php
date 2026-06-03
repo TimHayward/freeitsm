@@ -23,6 +23,7 @@
  */
 
 require_once __DIR__ . '/../../includes/encryption.php';
+require_once __DIR__ . '/../../includes/ai_settings.php';
 
 const WORKFLOW_AI_VALID_PROVIDERS = ['anthropic', 'openai'];
 
@@ -79,48 +80,27 @@ function workflowEffectiveSslVerify(bool $perCallVerify): bool
  */
 function loadWorkflowAiConfig(PDO $conn): array
 {
-    $stmt = $conn->prepare(
-        "SELECT setting_key, setting_value FROM system_settings
-          WHERE setting_key IN ('workflow_ai_provider', 'workflow_ai_model',
-                                'workflow_ai_api_key', 'workflow_ai_verify_ssl')"
-    );
-    $stmt->execute();
-
-    $cfg = ['provider' => 'anthropic', 'model' => '', 'api_key' => '', 'verify_ssl' => true];
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $k = $row['setting_key'];
-        $v = $row['setting_value'];
-        if ($k === 'workflow_ai_provider') {
-            if (in_array($v, WORKFLOW_AI_VALID_PROVIDERS, true)) $cfg['provider'] = $v;
-        } elseif ($k === 'workflow_ai_model' && $v !== '') {
-            $cfg['model'] = $v;
-        } elseif ($k === 'workflow_ai_api_key') {
-            $cfg['api_key'] = decryptValue($v) ?? '';
-        } elseif ($k === 'workflow_ai_verify_ssl') {
-            $cfg['verify_ssl'] = $v !== '0';
-        }
-    }
-
-    if ($cfg['model'] === '') {
-        $cfg['model'] = WORKFLOW_AI_DEFAULT_MODEL[$cfg['provider']] ?? '';
-    }
-    if ($cfg['api_key'] === '') {
+    // Provider / model / key / verify_ssl now come from the shared building
+    // block (ns=workflow_ai), which adds OpenRouter alongside Anthropic/OpenAI.
+    $cfg = aiSettingsLoad($conn, 'workflow_ai');
+    if (($cfg['api_key'] ?? '') === '') {
         throw new Exception('AI co-author is not configured. Set your provider, model and API key under Workflow → Settings → AI Integration.');
     }
     return $cfg;
 }
 
 /**
- * Provider-agnostic one-shot call. Returns the assistant's response text
- * (a plain string). Streaming is a planned follow-up — for now the modal
- * waits for the full response before applying anything.
+ * Provider-agnostic one-shot call via the shared client (Anthropic / OpenAI /
+ * OpenRouter). Returns the assistant's response text (a plain string).
  */
 function callWorkflowAi(array $cfg, string $systemPrompt, string $userMessage, int $maxTokens = 2500): string
 {
-    if ($cfg['provider'] === 'openai') {
-        return wfCallOpenAI($cfg, $systemPrompt, $userMessage, $maxTokens);
-    }
-    return wfCallAnthropic($cfg, $systemPrompt, $userMessage, $maxTokens);
+    $r = aiProviderChat($cfg, [
+        'system'     => $systemPrompt,
+        'user'       => $userMessage,
+        'max_tokens' => $maxTokens,
+    ]);
+    return (string)($r['content'] ?? '');
 }
 
 // ---------------------------------------------------------------------

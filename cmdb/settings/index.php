@@ -268,42 +268,20 @@ $translationNamespaces = ['common', 'cmdb'];
                 <?php echo htmlspecialchars(t('cmdb.settings.ai_intro2')); ?>
             </p>
 
-            <form id="aiForm" onsubmit="saveAiSettings(event)">
-                <div class="ai-form-grid">
-                    <div class="ai-col-left">
-                        <div class="form-group">
-                            <label for="aiApiKey"><?php echo htmlspecialchars(t('cmdb.settings.ai_api_key')); ?></label>
-                            <input type="password" id="aiApiKey" autocomplete="off" placeholder="sk-ant-...">
-                            <small><?php echo htmlspecialchars(t('cmdb.settings.ai_api_key_help')); ?></small>
-                        </div>
+            <!-- Provider / model / key — shared reusable panel (Anthropic / OpenAI / OpenRouter). -->
+            <?php renderAiSettingsPanel('cmdb_ai'); ?>
 
-                        <div class="form-group">
-                            <label for="aiModel"><?php echo htmlspecialchars(t('cmdb.settings.ai_model')); ?></label>
-                            <select id="aiModel">
-                                <option value="claude-haiku-4-5-20251001"><?php echo htmlspecialchars(t('cmdb.settings.ai_model_haiku')); ?></option>
-                                <option value="claude-sonnet-4-6"><?php echo htmlspecialchars(t('cmdb.settings.ai_model_sonnet')); ?></option>
-                                <option value="claude-opus-4-7"><?php echo htmlspecialchars(t('cmdb.settings.ai_model_opus')); ?></option>
-                            </select>
-                            <small><?php echo htmlspecialchars(t('cmdb.settings.ai_model_help')); ?></small>
-                        </div>
-                    </div>
-
-                    <div class="ai-col-right">
-                        <div class="form-group">
-                            <label for="aiCustomInstructions"><?php echo htmlspecialchars(t('cmdb.settings.ai_custom')); ?> <span style="color: #999; font-weight: normal;"><?php echo htmlspecialchars(t('cmdb.settings.ai_custom_optional')); ?></span></label>
-                            <textarea id="aiCustomInstructions" maxlength="4000"
-                                      placeholder="<?php echo htmlspecialchars(t('cmdb.settings.ai_custom_placeholder')); ?>"></textarea>
-                            <small><?php echo htmlspecialchars(t('cmdb.settings.ai_custom_help')); ?></small>
-                        </div>
-                    </div>
+            <!-- CMDB-specific custom instructions, saved separately. -->
+            <form id="cmdbAiExtrasForm" onsubmit="saveCmdbAiExtras(event)" style="max-width: 640px; margin-top: 28px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                <div class="form-group">
+                    <label for="aiCustomInstructions"><?php echo htmlspecialchars(t('cmdb.settings.ai_custom')); ?> <span style="color: #999; font-weight: normal;"><?php echo htmlspecialchars(t('cmdb.settings.ai_custom_optional')); ?></span></label>
+                    <textarea id="aiCustomInstructions" maxlength="4000"
+                              placeholder="<?php echo htmlspecialchars(t('cmdb.settings.ai_custom_placeholder')); ?>"></textarea>
+                    <small><?php echo htmlspecialchars(t('cmdb.settings.ai_custom_help')); ?></small>
                 </div>
-
-                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <div style="margin-top: 12px;">
                     <button type="submit" class="btn btn-primary"><?php echo htmlspecialchars(t('cmdb.settings.ai_save')); ?></button>
-                    <button type="button" class="btn btn-test" onclick="testAiKey()"><?php echo htmlspecialchars(t('cmdb.settings.ai_test')); ?></button>
                 </div>
-
-                <div id="aiTestResult" class="test-result"></div>
             </form>
         </div>
 
@@ -595,7 +573,8 @@ $translationNamespaces = ['common', 'cmdb'];
         </div>
     </div>
 
+    <script src="../../assets/js/ai-settings.js"></script>
     <script src="../options-editor.js?v=1"></script>
-    <script src="settings.js?v=6"></script>
+    <script src="settings.js?v=7"></script>
 </body>
 </html>

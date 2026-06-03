@@ -30,12 +30,27 @@ function aiSettingsRegistry(): array
             'default_provider'=> 'anthropic',
             'default_model'   => 'claude-haiku-4-5-20251001',
         ],
-        // Future adopters (each needs its <ns>_api_key in encryption.php lists):
-        // 'cmdb_ai'                  => [...],
-        // 'rfp_ai'                   => [...],
-        // 'workflow_ai'              => [...],
-        // 'forms_ai'                 => [...],
-        // 'tickets_reply_cleanup'    => [...],
+        'cmdb_ai' => [
+            'label'           => 'CMDB AI',
+            'default_provider'=> 'anthropic',
+            'default_model'   => 'claude-haiku-4-5-20251001',
+        ],
+        'workflow_ai' => [
+            'label'           => 'Workflow AI',
+            'default_provider'=> 'anthropic',
+            'default_model'   => 'claude-sonnet-4-6',
+        ],
+        'forms_ai' => [
+            'label'           => 'Forms AI',
+            'default_provider'=> 'anthropic',
+            'default_model'   => 'claude-sonnet-4-6',
+        ],
+        'tickets_reply_cleanup' => [
+            'label'           => 'Tickets Reply Cleanup',
+            'default_provider'=> 'anthropic',
+            'default_model'   => 'claude-haiku-4-5-20251001',
+        ],
+        // Deferred: 'rfp_ai' (RFP Builder) — needs real OpenRouter SSE streaming first.
     ];
 }
 
@@ -96,11 +111,17 @@ function aiSettingsLoad(PDO $conn, string $ns): array
         $apiKey = (string)decryptValue($rows[$keys['api_key']]);
     }
 
+    // SSL verify follows the global SSL_VERIFY_PEER kill-switch ANDed with the
+    // per-namespace toggle (default on). So on a dev box where the global is
+    // false (no CA bundle), outbound HTTPS skips verification regardless of the
+    // toggle; in production set the global true and use the toggle to opt out.
+    $globalVerify = defined('SSL_VERIFY_PEER') ? (bool)SSL_VERIFY_PEER : true;
     if (array_key_exists($keys['verify_ssl'], $rows) && $rows[$keys['verify_ssl']] !== null && $rows[$keys['verify_ssl']] !== '') {
-        $verifySsl = $rows[$keys['verify_ssl']] === '1';
+        $rowVerify = $rows[$keys['verify_ssl']] === '1';
     } else {
-        $verifySsl = defined('SSL_VERIFY_PEER') ? (bool)SSL_VERIFY_PEER : true;
+        $rowVerify = true;
     }
+    $verifySsl = $globalVerify && $rowVerify;
 
     return [
         'provider'   => $provider,
