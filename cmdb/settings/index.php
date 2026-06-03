@@ -200,7 +200,7 @@ $translationNamespaces = ['common', 'cmdb'];
             <button class="tab active" data-tab="classes" onclick="switchTab('classes')"><?php echo htmlspecialchars(t('cmdb.settings.tab_classes')); ?></button>
             <button class="tab" data-tab="relationship-types" onclick="switchTab('relationship-types')"><?php echo htmlspecialchars(t('cmdb.settings.tab_rel_types')); ?></button>
             <button class="tab" data-tab="ai" onclick="switchTab('ai')"><?php echo htmlspecialchars(t('cmdb.settings.tab_ai')); ?></button>
-            <button class="tab" data-tab="left-panel" onclick="switchTab('left-panel')"><?php echo htmlspecialchars(t('cmdb.settings.tab_left_panel')); ?></button>
+            <button class="tab" data-tab="left-panel" onclick="switchTab('left-panel')"><?php echo htmlspecialchars(t('common.left_panel.tab')); ?></button>
         </div>
 
         <!-- Classes Tab -->
@@ -310,23 +310,23 @@ $translationNamespaces = ['common', 'cmdb'];
         <!-- Left panel tab — per-analyst preference -->
         <div class="tab-content" id="left-panel-tab">
             <div class="section-header">
-                <h2><?php echo htmlspecialchars(t('cmdb.settings.tab_left_panel')); ?></h2>
+                <h2><?php echo htmlspecialchars(t('common.left_panel.tab')); ?></h2>
             </div>
             <p style="color: #666; margin-bottom: 20px;"><?php echo htmlspecialchars(t('cmdb.settings.left_panel_intro')); ?></p>
 
             <form id="leftPanelForm" autocomplete="off" onsubmit="event.preventDefault();">
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 10px; font-weight: 500; color: #333;"><?php echo htmlspecialchars(t('cmdb.settings.left_panel_visibility')); ?></label>
+                    <label style="display: block; margin-bottom: 10px; font-weight: 500; color: #333;"><?php echo htmlspecialchars(t('common.left_panel.visibility')); ?></label>
                     <label style="display: block; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 8px; cursor: pointer;">
                         <input type="radio" name="cmdbSidebarMode" value="always" onchange="saveSidebarMode(this.value)">
-                        <strong><?php echo htmlspecialchars(t('cmdb.settings.left_panel_always')); ?></strong>
+                        <strong><?php echo htmlspecialchars(t('common.left_panel.always')); ?></strong>
                         <span style="display: block; font-size: 12px; color: #777; margin-top: 4px; margin-left: 22px;">
                             <?php echo htmlspecialchars(t('cmdb.settings.left_panel_always_desc')); ?>
                         </span>
                     </label>
                     <label style="display: block; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer;">
                         <input type="radio" name="cmdbSidebarMode" value="hover" onchange="saveSidebarMode(this.value)">
-                        <strong><?php echo htmlspecialchars(t('cmdb.settings.left_panel_hover')); ?></strong>
+                        <strong><?php echo htmlspecialchars(t('common.left_panel.hover')); ?></strong>
                         <span style="display: block; font-size: 12px; color: #777; margin-top: 4px; margin-left: 22px;">
                             <?php echo htmlspecialchars(t('cmdb.settings.left_panel_hover_desc')); ?>
                         </span>

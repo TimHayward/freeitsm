@@ -268,8 +268,6 @@ return [
         'panel_change_management' => 'Change Management',
         'panel_asset_management'  => 'Asset Management',
         'panel_system_wiki'       => 'System Wiki',
-        'always_visible' => 'Always visible',
-        'show_on_hover'  => 'Show on hover',
 
         'mc_heading' => 'Morning checks bar fill',
         'mc_desc'    => 'Solid or gradient fill for the Morning Checks 30-day trend chart. Also available on the Morning Checks settings page.',

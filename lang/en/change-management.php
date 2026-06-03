@@ -335,14 +335,10 @@ return [
         'tab_priorities'  => 'Priorities',
         'tab_types'       => 'Types',
         'tab_impacts'     => 'Impacts',
-        'tab_left_panel'  => 'Left panel',
 
-        // Left panel (per-analyst sidebar visibility)
+        // Left panel — shared labels (tab/visibility/always/hover) live in common.left_panel
         'left_panel_intro'        => 'Choose how the left panel behaves on the changes list. This preference is saved to your account.',
-        'left_panel_visibility'   => 'Left panel visibility',
-        'left_panel_always'       => 'Always visible',
         'left_panel_always_desc'  => 'Keep the left panel pinned open at all times.',
-        'left_panel_hover'        => 'Show on hover',
         'left_panel_hover_desc'   => 'Collapse the left panel to a thin strip that expands when you hover over it, giving the list more room.',
 
         'fields_heading'  => 'Form fields',

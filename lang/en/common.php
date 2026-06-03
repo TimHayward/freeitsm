@@ -6,6 +6,17 @@
  * Other locales mirror this file structure under lang/<locale>/common.php.
  */
 return [
+    // Left-panel visibility preference — shared labels reused by every module
+    // that has a left panel (settings pages + System → Preferences). Only the
+    // identical strings live here; per-module intro/description copy stays in
+    // each module's own file.
+    'left_panel' => [
+        'tab'        => 'Left panel',
+        'visibility' => 'Visibility',
+        'always'     => 'Always visible',
+        'hover'      => 'Show on hover',
+    ],
+
     // Buttons
     'save'         => 'Save',
     'cancel'       => 'Cancel',

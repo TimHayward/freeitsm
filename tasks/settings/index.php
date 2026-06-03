@@ -97,7 +97,7 @@ $translationNamespaces = ['common', 'tasks'];
             <button class="tab" data-tab="calendar" onclick="switchTab('calendar')"><?php echo htmlspecialchars(t('tasks.settings.tab_calendar')); ?></button>
             <button class="tab" data-tab="card" onclick="switchTab('card')"><?php echo htmlspecialchars(t('tasks.settings.tab_card')); ?></button>
             <button class="tab" data-tab="tags" onclick="switchTab('tags')"><?php echo htmlspecialchars(t('tasks.settings.tab_tags')); ?></button>
-            <button class="tab" data-tab="left-panel" onclick="switchTab('left-panel')"><?php echo htmlspecialchars(t('tasks.settings.tab_left_panel')); ?></button>
+            <button class="tab" data-tab="left-panel" onclick="switchTab('left-panel')"><?php echo htmlspecialchars(t('common.left_panel.tab')); ?></button>
         </div>
 
         <!-- Statuses Tab -->
@@ -303,21 +303,21 @@ $translationNamespaces = ['common', 'tasks'];
         <div class="tab-content" id="left-panel-tab">
             <div class="settings-group">
                 <div class="section-header">
-                    <h3><?php echo htmlspecialchars(t('tasks.settings.tab_left_panel')); ?></h3>
+                    <h3><?php echo htmlspecialchars(t('common.left_panel.tab')); ?></h3>
                 </div>
                 <p style="color: #666; margin-bottom: 14px;"><?php echo htmlspecialchars(t('tasks.settings.left_panel_intro')); ?></p>
                 <form id="leftPanelForm" autocomplete="off" onsubmit="event.preventDefault();">
-                    <label style="display: block; margin-bottom: 10px; font-weight: 500; color: #333;"><?php echo htmlspecialchars(t('tasks.settings.left_panel_visibility')); ?></label>
+                    <label style="display: block; margin-bottom: 10px; font-weight: 500; color: #333;"><?php echo htmlspecialchars(t('common.left_panel.visibility')); ?></label>
                     <label style="display: block; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 8px; cursor: pointer;">
                         <input type="radio" name="tasksSidebarMode" value="always" onchange="saveSidebarMode(this.value)">
-                        <strong><?php echo htmlspecialchars(t('tasks.settings.left_panel_always')); ?></strong>
+                        <strong><?php echo htmlspecialchars(t('common.left_panel.always')); ?></strong>
                         <span style="display: block; font-size: 12px; color: #777; margin-top: 4px; margin-left: 22px;">
                             <?php echo htmlspecialchars(t('tasks.settings.left_panel_always_desc')); ?>
                         </span>
                     </label>
                     <label style="display: block; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer;">
                         <input type="radio" name="tasksSidebarMode" value="hover" onchange="saveSidebarMode(this.value)">
-                        <strong><?php echo htmlspecialchars(t('tasks.settings.left_panel_hover')); ?></strong>
+                        <strong><?php echo htmlspecialchars(t('common.left_panel.hover')); ?></strong>
                         <span style="display: block; font-size: 12px; color: #777; margin-top: 4px; margin-left: 22px;">
                             <?php echo htmlspecialchars(t('tasks.settings.left_panel_hover_desc')); ?>
                         </span>

@@ -256,16 +256,12 @@ return [
         'tab_classes'    => 'Classes',
         'tab_rel_types'  => 'Relationship types',
         'tab_ai'         => 'AI integration',
-        'tab_left_panel' => 'Left panel',
         'add'            => 'Add',
         'loading'        => 'Loading…',
 
-        // Left panel (per-analyst sidebar visibility)
+        // Left panel — shared labels (tab/visibility/always/hover) live in common.left_panel
         'left_panel_intro'        => 'Choose how the left panel behaves when browsing the CMDB. This preference is saved to your account.',
-        'left_panel_visibility'   => 'Left panel visibility',
-        'left_panel_always'       => 'Always visible',
         'left_panel_always_desc'  => 'Keep the left panel pinned open at all times.',
-        'left_panel_hover'        => 'Show on hover',
         'left_panel_hover_desc'   => 'Collapse the left panel to a thin strip that expands when you hover over it, giving the browser more room.',
         'left_panel_saved'        => 'Saved',
 

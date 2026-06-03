@@ -391,8 +391,8 @@ if (isset($_SESSION['analyst_id'])) {
             { key: 'asset_management_sidebar_mode',  label: window.t('system.preferences.panel_asset_management') },
             { key: 'system_wiki_sidebar_mode',       label: window.t('system.preferences.panel_system_wiki') }
         ];
-        const ALWAYS_LABEL = window.t('system.preferences.always_visible');
-        const HOVER_LABEL  = window.t('system.preferences.show_on_hover');
+        const ALWAYS_LABEL = window.t('common.left_panel.always');
+        const HOVER_LABEL  = window.t('common.left_panel.hover');
         const panelsList = document.getElementById('sidebarPanelsList');
         if (panelsList) {
             SIDEBAR_PANELS.forEach(panel => {

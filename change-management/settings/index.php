@@ -265,7 +265,7 @@ $translationNamespaces = ['common', 'change-management'];
             <button class="tab" data-tab="priorities" onclick="switchTab('priorities')"><?php echo htmlspecialchars(t('change-management.settings.tab_priorities')); ?></button>
             <button class="tab" data-tab="types" onclick="switchTab('types')"><?php echo htmlspecialchars(t('change-management.settings.tab_types')); ?></button>
             <button class="tab" data-tab="impacts" onclick="switchTab('impacts')"><?php echo htmlspecialchars(t('change-management.settings.tab_impacts')); ?></button>
-            <button class="tab" data-tab="left-panel" onclick="switchTab('left-panel')"><?php echo htmlspecialchars(t('change-management.settings.tab_left_panel')); ?></button>
+            <button class="tab" data-tab="left-panel" onclick="switchTab('left-panel')"><?php echo htmlspecialchars(t('common.left_panel.tab')); ?></button>
         </div>
 
         <!-- Form Fields Tab -->
@@ -338,23 +338,23 @@ $translationNamespaces = ['common', 'change-management'];
         <!-- Left panel tab — per-analyst preference -->
         <div class="tab-content" id="left-panel-tab">
             <div class="section-header">
-                <h2><?php echo htmlspecialchars(t('change-management.settings.tab_left_panel')); ?></h2>
+                <h2><?php echo htmlspecialchars(t('common.left_panel.tab')); ?></h2>
             </div>
             <p style="color: #666; margin-bottom: 16px;"><?php echo htmlspecialchars(t('change-management.settings.left_panel_intro')); ?></p>
 
             <form id="leftPanelForm" autocomplete="off" onsubmit="event.preventDefault();">
                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 10px; font-weight: 500; color: #333;"><?php echo htmlspecialchars(t('change-management.settings.left_panel_visibility')); ?></label>
+                    <label style="display: block; margin-bottom: 10px; font-weight: 500; color: #333;"><?php echo htmlspecialchars(t('common.left_panel.visibility')); ?></label>
                     <label style="display: block; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 8px; cursor: pointer;">
                         <input type="radio" name="cmSidebarMode" value="always" onchange="saveSidebarMode(this.value)">
-                        <strong><?php echo htmlspecialchars(t('change-management.settings.left_panel_always')); ?></strong>
+                        <strong><?php echo htmlspecialchars(t('common.left_panel.always')); ?></strong>
                         <span style="display: block; font-size: 12px; color: #777; margin-top: 4px; margin-left: 22px;">
                             <?php echo htmlspecialchars(t('change-management.settings.left_panel_always_desc')); ?>
                         </span>
                     </label>
                     <label style="display: block; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer;">
                         <input type="radio" name="cmSidebarMode" value="hover" onchange="saveSidebarMode(this.value)">
-                        <strong><?php echo htmlspecialchars(t('change-management.settings.left_panel_hover')); ?></strong>
+                        <strong><?php echo htmlspecialchars(t('common.left_panel.hover')); ?></strong>
                         <span style="display: block; font-size: 12px; color: #777; margin-top: 4px; margin-left: 22px;">
                             <?php echo htmlspecialchars(t('change-management.settings.left_panel_hover_desc')); ?>
                         </span>

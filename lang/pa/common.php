@@ -4,6 +4,14 @@
  * Gurmukhi script (Indian Punjabi). Falls back per-key to lang/en/common.php.
  */
 return [
+    // Left-panel visibility preference — shared labels (mirrors lang/en/common.php).
+    'left_panel' => [
+        'tab'        => 'ਖੱਬਾ ਪੈਨਲ',
+        'visibility' => 'ਦ੍ਰਿਸ਼ਟੀਯੋਗਤਾ',
+        'always'     => 'ਹਮੇਸ਼ਾ ਦਿਖਾਈ ਦੇਵੇ',
+        'hover'      => 'ਹੋਵਰ \'ਤੇ ਦਿਖਾਓ',
+    ],
+
     'save'         => 'ਸੰਭਾਲੋ',
     'cancel'       => 'ਰੱਦ ਕਰੋ',
     'delete'       => 'ਮਿਟਾਓ',

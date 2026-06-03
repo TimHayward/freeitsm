@@ -4,6 +4,14 @@
  * Falls back per-key to lang/en/common.php for anything missing here.
  */
 return [
+    // Left-panel visibility preference — shared labels (mirrors lang/en/common.php).
+    'left_panel' => [
+        'tab'        => 'Painel esquerdo',
+        'visibility' => 'Visibilidade',
+        'always'     => 'Sempre visível',
+        'hover'      => 'Exibir ao passar o mouse',
+    ],
+
     'save'         => 'Salvar',
     'cancel'       => 'Cancelar',
     'delete'       => 'Excluir',

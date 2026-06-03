@@ -4,6 +4,14 @@
  * Falls back per-key to lang/en/common.php for anything missing here.
  */
 return [
+    // Left-panel visibility preference — shared labels (mirrors lang/en/common.php).
+    'left_panel' => [
+        'tab'        => 'ಎಡ ಫಲಕ',
+        'visibility' => 'ಗೋಚರತೆ',
+        'always'     => 'ಯಾವಾಗಲೂ ಗೋಚರ',
+        'hover'      => 'ಹೋವರ್‌ನಲ್ಲಿ ತೋರಿಸಿ',
+    ],
+
     'save'         => 'ಉಳಿಸಿ',
     'cancel'       => 'ರದ್ದು',
     'delete'       => 'ಅಳಿಸಿ',

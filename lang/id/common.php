@@ -5,6 +5,14 @@
  * Mirrors lang/en/common.php structure exactly. Only values change.
  */
 return [
+    // Left-panel visibility preference — shared labels (mirrors lang/en/common.php).
+    'left_panel' => [
+        'tab'        => 'Panel kiri',
+        'visibility' => 'Visibilitas',
+        'always'     => 'Selalu terlihat',
+        'hover'      => 'Tampilkan saat ditunjuk',
+    ],
+
     // Buttons
     'save'         => 'Simpan',
     'cancel'       => 'Batal',
