@@ -29,6 +29,7 @@ return [
         'model_placeholder'   => 'Type or pick a model…',
         'model_set'           => 'Model',
         'loading_models'      => 'Loading model list…',
+        'no_models'           => 'No matching models — you can type any model id',
         'openrouter_pricing'  => 'Prices shown per 1M tokens (in / out).',
         'models_stale'        => 'cached',
         'api_key'             => 'API key',
