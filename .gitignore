@@ -28,6 +28,9 @@ database/backups/
 CLAUDE.local.md
 CHANGELOG.local.md
 
+# Design docs not yet ready to publish
+docs/design/
+
 # Visual Studio Code
 .vscode/
 *.code-workspace
