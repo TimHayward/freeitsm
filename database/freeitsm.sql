@@ -348,6 +348,7 @@ CREATE TABLE IF NOT EXISTS `sla_cron_runs` (
 
 CREATE TABLE IF NOT EXISTS `tickets` (
     `id`                    INT NOT NULL AUTO_INCREMENT,
+    `tenant_id`             INT NULL,
     `ticket_number`         VARCHAR(50) NOT NULL,
     `subject`               VARCHAR(500) NOT NULL,
     `status_id`             INT NULL,
@@ -371,13 +372,15 @@ CREATE TABLE IF NOT EXISTS `tickets` (
     KEY `ix_tickets_assigned_analyst_id` (`assigned_analyst_id`),
     KEY `ix_tickets_department_id` (`department_id`),
     KEY `ix_tickets_created_datetime` (`created_datetime`),
+    KEY `ix_tickets_tenant_id` (`tenant_id`),
     CONSTRAINT `fk_tickets_analysts` FOREIGN KEY (`assigned_analyst_id`) REFERENCES `analysts` (`id`),
     CONSTRAINT `fk_tickets_departments` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
     CONSTRAINT `fk_tickets_origin` FOREIGN KEY (`origin_id`) REFERENCES `ticket_origins` (`id`),
     CONSTRAINT `fk_tickets_ticket_types` FOREIGN KEY (`ticket_type_id`) REFERENCES `ticket_types` (`id`),
     CONSTRAINT `fk_tickets_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
     CONSTRAINT `fk_tickets_status` FOREIGN KEY (`status_id`) REFERENCES `ticket_statuses` (`id`),
-    CONSTRAINT `fk_tickets_priority` FOREIGN KEY (`priority_id`) REFERENCES `ticket_priorities` (`id`)
+    CONSTRAINT `fk_tickets_priority` FOREIGN KEY (`priority_id`) REFERENCES `ticket_priorities` (`id`),
+    CONSTRAINT `fk_tickets_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ticket_audit` (

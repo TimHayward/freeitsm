@@ -242,6 +242,7 @@ $schema = [
 
     'tickets' => [
         'id'                    => 'INT NOT NULL AUTO_INCREMENT',
+        'tenant_id'             => 'INT NULL',
         'ticket_number'         => 'VARCHAR(50) NOT NULL',
         'subject'               => 'VARCHAR(500) NOT NULL',
         'status_id'             => 'INT NULL',
@@ -2312,6 +2313,24 @@ try {
         }
         if (!$fkExists('analyst_tenant_access', 'fk_ata_tenant')) {
             try { $conn->exec("ALTER TABLE analyst_tenant_access ADD CONSTRAINT fk_ata_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE CASCADE"); } catch (Exception $e) {}
+        }
+    }
+    // tickets.tenant_id — index + FK + backfill existing rows to the Default tenant.
+    // (Inert: no query filters on tenant_id yet; this just makes every ticket
+    // belong to the silent Default tenant on single-company installs.)
+    if ($tableExists('tickets') && $tableExists('tenants') && $colExists('tickets', 'tenant_id')) {
+        if (!$idxExists('tickets', 'ix_tickets_tenant_id')) {
+            try { $conn->exec("ALTER TABLE tickets ADD KEY ix_tickets_tenant_id (tenant_id)"); } catch (Exception $e) {}
+        }
+        if (!$fkExists('tickets', 'fk_tickets_tenant')) {
+            try { $conn->exec("ALTER TABLE tickets ADD CONSTRAINT fk_tickets_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id)"); } catch (Exception $e) {}
+        }
+        $defaultTenantId = (int) ($conn->query("SELECT id FROM tenants WHERE is_default = 1 ORDER BY id LIMIT 1")->fetchColumn() ?: 0);
+        if ($defaultTenantId > 0) {
+            $backfilled = $conn->exec("UPDATE tickets SET tenant_id = $defaultTenantId WHERE tenant_id IS NULL");
+            if ($backfilled > 0) {
+                $results[] = ['table' => 'tickets', 'status' => 'updated', 'details' => ["Backfilled tenant_id on $backfilled ticket(s) to the Default tenant"]];
+            }
         }
     }
 
