@@ -1073,6 +1073,13 @@ $translationNamespaces = ['common', 'tickets'];
                         <input type="email" id="mailboxEmail" required placeholder="<?php echo htmlspecialchars(t('tickets.settings.modals.mailbox.target_mailbox_placeholder')); ?>">
                     </div>
 
+                    <!-- Multi-tenancy: only shown when more than one company exists (populated by JS). -->
+                    <div class="form-group" id="mailboxCompanyGroup" style="display: none; grid-column: span 2;">
+                        <label for="mailboxCompany"><?php echo htmlspecialchars(t('tickets.settings.modals.mailbox.company_label')); ?></label>
+                        <select id="mailboxCompany"></select>
+                        <small style="color: #666; display: block; margin-top: 4px;"><?php echo htmlspecialchars(t('tickets.settings.modals.mailbox.company_help')); ?></small>
+                    </div>
+
                     <div class="form-group provider-microsoft">
                         <label for="mailboxTenantId"><?php echo htmlspecialchars(t('tickets.settings.modals.mailbox.azure_tenant_id')); ?> *</label>
                         <input type="text" id="mailboxTenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
@@ -2293,8 +2300,25 @@ $translationNamespaces = ['common', 'tickets'];
         }
 
         // Mailbox Functions
+        // Multi-tenancy: a name lookup so the list can badge each mailbox with the
+        // company it's pinned to. mailboxMultiCompany stays false (badge hidden) on
+        // single-company installs.
+        let mailboxCompaniesById = {};
+        let mailboxMultiCompany = false;
+        async function loadMailboxCompanies() {
+            try {
+                const r = await fetch('../../api/system/get_tenants.php');
+                const d = await r.json();
+                const companies = d.success ? d.companies : [];
+                mailboxCompaniesById = {};
+                companies.forEach(c => { mailboxCompaniesById[c.id] = c.name; });
+                mailboxMultiCompany = companies.length > 1;
+            } catch (e) { mailboxCompaniesById = {}; mailboxMultiCompany = false; }
+        }
+
         async function loadMailboxes() {
             try {
+                await loadMailboxCompanies();
                 const response = await fetch(API_BASE + 'get_mailboxes.php');
                 const data = await response.json();
                 console.log('Mailboxes loaded:', data);
@@ -2366,9 +2390,19 @@ $translationNamespaces = ['common', 'tickets'];
                     ? ' <span class="status-badge" style="background:#e8f5e9;color:#2e7d32;">Google</span>'
                     : ' <span class="status-badge" style="background:#e3f2fd;color:#1565c0;">Microsoft</span>';
 
+                // Multi-tenancy: show the routing target — pinned company, or shared intake.
+                let companyBadge = '';
+                if (mailboxMultiCompany) {
+                    if (mb.tenant_id && mailboxCompaniesById[mb.tenant_id]) {
+                        companyBadge = ` <span class="status-badge" style="background:#ede7f6;color:#5e35b1;">${escapeHtml(mailboxCompaniesById[mb.tenant_id])}</span>`;
+                    } else {
+                        companyBadge = ` <span class="status-badge" style="background:#fff3e0;color:#ef6c00;">${escapeHtml(t('tickets.settings.modals.mailbox.company_shared_badge'))}</span>`;
+                    }
+                }
+
                 return `
                     <tr>
-                        <td><strong>${escapeHtml(mb.name)}</strong>${providerBadge}${activeBadge}</td>
+                        <td><strong>${escapeHtml(mb.name)}</strong>${providerBadge}${activeBadge}${companyBadge}</td>
                         <td>${escapeHtml(mb.target_mailbox)}</td>
                         <td>${statusBadge}</td>
                         <td>${lastChecked}</td>
@@ -2376,6 +2410,36 @@ $translationNamespaces = ['common', 'tickets'];
                     </tr>
                 `;
             }).join('');
+        }
+
+        // Multi-tenancy: populate the mailbox "Company" picker. The whole field
+        // stays hidden until a second company exists, so single-company installs
+        // never see it. value "" = shared intake (route inbound by sender domain).
+        async function populateMailboxCompanies(selectedTenantId) {
+            const group = document.getElementById('mailboxCompanyGroup');
+            const select = document.getElementById('mailboxCompany');
+            let companies = [];
+            try {
+                const r = await fetch('../../api/system/get_tenants.php');
+                const d = await r.json();
+                companies = d.success ? d.companies : [];
+            } catch (e) { companies = []; }
+
+            if (companies.length < 2) {
+                group.style.display = 'none';
+                select.innerHTML = '';
+                return;
+            }
+
+            let html = '<option value="">' + escapeHtml(t('tickets.settings.modals.mailbox.company_shared')) + '</option>';
+            companies.forEach(c => {
+                // Hide inactive companies unless this mailbox is currently pinned to one.
+                if (!c.is_active && c.id != selectedTenantId) return;
+                html += '<option value="' + c.id + '">' + escapeHtml(c.name) + '</option>';
+            });
+            select.innerHTML = html;
+            select.value = (selectedTenantId === null || selectedTenantId === undefined) ? '' : String(selectedTenantId);
+            group.style.display = '';
         }
 
         async function openMailboxModal(mailbox = null) {
@@ -2400,6 +2464,7 @@ $translationNamespaces = ['common', 'tickets'];
             toggleImportedFolder();
             document.getElementById('verifyFolderResult').style.display = 'none';
             document.getElementById('mailboxActive').checked = mailbox ? mailbox.is_active : true;
+            await populateMailboxCompanies(mailbox ? (mailbox.tenant_id ?? null) : null);
 
             // Load whitelist
             whitelistEntries = [];
@@ -2746,7 +2811,9 @@ $translationNamespaces = ['common', 'tickets'];
                 rejected_action: document.getElementById('mailboxRejectedAction').value,
                 imported_action: document.getElementById('mailboxImportedAction').value,
                 imported_folder: document.getElementById('mailboxImportedFolder').value || null,
-                is_active: document.getElementById('mailboxActive').checked
+                is_active: document.getElementById('mailboxActive').checked,
+                // Multi-tenancy: "" (shared intake) when the picker is hidden/unset → NULL server-side.
+                tenant_id: document.getElementById('mailboxCompany').value || null
             };
 
             try {
