@@ -320,6 +320,17 @@ $schema = [
         'created_datetime' => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
     ],
 
+    // Specific sender addresses mapped to a company (shared-intake routing). The
+    // address-level twin of tenant_domains: matched before the domain, so a
+    // personal/freemail address (jane@gmail.com) can route to a company even
+    // though its domain is never mappable. UNIQUE so one address routes one way.
+    'tenant_sender_addresses' => [
+        'id'               => 'INT NOT NULL AUTO_INCREMENT',
+        'tenant_id'        => 'INT NOT NULL',
+        'email'            => 'VARCHAR(255) NOT NULL',
+        'created_datetime' => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
     // Which analysts may access which tenants (only consulted when an analyst
     // is NOT flagged can_access_all_tenants).
     'analyst_tenant_access' => [
@@ -2336,6 +2347,14 @@ try {
         }
         if (!$fkExists('tenant_domains', 'fk_tenant_domains_tenant')) {
             try { $conn->exec("ALTER TABLE tenant_domains ADD CONSTRAINT fk_tenant_domains_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE CASCADE"); } catch (Exception $e) {}
+        }
+    }
+    if ($tableExists('tenant_sender_addresses') && $tableExists('tenants')) {
+        if (!$idxExists('tenant_sender_addresses', 'uq_tenant_sender_email')) {
+            try { $conn->exec("ALTER TABLE tenant_sender_addresses ADD UNIQUE KEY uq_tenant_sender_email (email)"); } catch (Exception $e) {}
+        }
+        if (!$fkExists('tenant_sender_addresses', 'fk_tenant_sender_tenant')) {
+            try { $conn->exec("ALTER TABLE tenant_sender_addresses ADD CONSTRAINT fk_tenant_sender_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE CASCADE"); } catch (Exception $e) {}
         }
     }
     if ($tableExists('analyst_tenant_access') && $tableExists('analysts') && $tableExists('tenants')) {

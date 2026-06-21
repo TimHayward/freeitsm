@@ -470,6 +470,20 @@ CREATE TABLE IF NOT EXISTS `freemail_domains` (
     UNIQUE KEY `uq_freemail_domains_domain` (`domain`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Specific sender addresses mapped to a company (shared-intake routing). The
+-- address-level twin of tenant_domains: matched before the domain, so a
+-- personal/freemail address (jane@gmail.com) can route to a company even though
+-- its domain can never be mapped. UNIQUE so one address routes exactly one way.
+CREATE TABLE IF NOT EXISTS `tenant_sender_addresses` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `tenant_id`         INT NOT NULL,
+    `email`             VARCHAR(255) NOT NULL,
+    `created_datetime`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_tenant_sender_email` (`email`),
+    CONSTRAINT `fk_tenant_sender_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Which analysts may access which tenants (only consulted when an analyst is
 -- NOT flagged can_access_all_tenants).
 CREATE TABLE IF NOT EXISTS `analyst_tenant_access` (

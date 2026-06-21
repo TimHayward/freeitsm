@@ -229,11 +229,15 @@ function ticketTenantFilter(PDO $conn, int $analystId, string $alias = 't'): arr
  *   1. Single-company install (!isMultiTenant) → always the Default company.
  *   2. Pinned mailbox (target_mailboxes.tenant_id set) → that company; the
  *      sender is ignored. (A pinned mailbox is also the outbound reply identity.)
- *   3. Shared-intake mailbox (tenant_id NULL) → match the sender's domain
- *      against the companies' registered domains (tenant_domains):
- *        - match  → that company.
- *        - no match (including freemail, which is never registered) → NULL,
- *          meaning "triage": the ticket is left un-companied and, because
+ *   3. Shared-intake mailbox (tenant_id NULL) → most-specific-match wins:
+ *        (a) the exact sender address is on a company's "specific senders" list
+ *            (tenant_sender_addresses) → that company. This is how a personal /
+ *            freemail address (jane@gmail.com) reaches the right company even
+ *            though its domain can never be mapped (two clients share gmail.com).
+ *        (b) otherwise match the sender's domain against the companies'
+ *            registered domains (tenant_domains) → that company.
+ *        - no match (including freemail not on any list) → NULL, meaning
+ *          "triage": the ticket is left un-companied and, because
  *          ticketTenantFilter() treats NULL as Default-owned, surfaces under
  *          the Default company until an analyst files it. Nothing is ever lost.
  *
@@ -264,7 +268,24 @@ function resolveTicketTenantForEmail(PDO $conn, $mailboxId, string $fromAddress)
         }
     }
 
-    // (3) Shared intake → route by the sender's domain.
+    // (3a) Shared intake → exact sender-address match (most specific wins).
+    // A personal/freemail address (jane@gmail.com) can be filed to a company
+    // even though its domain is never mappable — this is that override.
+    $addr = strtolower(trim($fromAddress));
+    if ($addr !== '') {
+        try {
+            $stmt = $conn->prepare("SELECT tenant_id FROM tenant_sender_addresses WHERE email = ? LIMIT 1");
+            $stmt->execute([$addr]);
+            $val = $stmt->fetchColumn();
+            if ($val !== false && $val !== null) {
+                return (int) $val;
+            }
+        } catch (Exception $e) {
+            // tenant_sender_addresses missing → fall through to domain routing.
+        }
+    }
+
+    // (3b) Shared intake → route by the sender's domain.
     $domain = '';
     if (strpos($fromAddress, '@') !== false) {
         $domain = strtolower(trim(substr(strrchr($fromAddress, '@'), 1)));
@@ -360,4 +381,24 @@ function normaliseEmailDomain(string $raw): string {
         return '';
     }
     return $d;
+}
+
+/**
+ * Normalise a user-entered email address for storage/matching: lower-cased,
+ * trimmed, with any "mailto:" prefix or surrounding angle brackets stripped.
+ * Returns '' if what remains isn't a valid email address.
+ *
+ * Used for the per-company "specific senders" list (tenant_sender_addresses),
+ * which matches on the exact sender address — unlike domains, freemail
+ * addresses are allowed here (that's the whole point: route an individual
+ * personal address even when its domain can't be mapped).
+ */
+function normaliseEmailAddress(string $raw): string {
+    $a = strtolower(trim($raw));
+    $a = preg_replace('#^mailto:#', '', $a);
+    $a = trim($a, '<> ');
+    if ($a === '' || filter_var($a, FILTER_VALIDATE_EMAIL) === false) {
+        return '';
+    }
+    return $a;
 }

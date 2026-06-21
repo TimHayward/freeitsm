@@ -59,6 +59,14 @@ try {
     $stmt->execute([$tenantId]);
     $domains = array_map(fn($r) => $r['domain'], $stmt->fetchAll(PDO::FETCH_ASSOC));
 
+    // Mapped specific sender addresses (shared-intake routing keys, address-level).
+    $senders = [];
+    try {
+        $stmt = $conn->prepare("SELECT email FROM tenant_sender_addresses WHERE tenant_id = ? ORDER BY email");
+        $stmt->execute([$tenantId]);
+        $senders = array_map(fn($r) => $r['email'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+    } catch (Exception $e) { $senders = []; }
+
     // Mailbox auth/active state is enough here — no secrets, so no decryption.
     // target_mailbox (the address) is encrypted at rest; decrypt just that one.
     $authExpr = "CASE WHEN token_data IS NOT NULL AND token_data != '' THEN 1 ELSE 0 END";
@@ -98,8 +106,9 @@ try {
         ];
     }
 
-    // Shared intake: a path only when this company has domains to match on.
-    if (!empty($domains)) {
+    // Shared intake: a path only when this company has domains or specific
+    // sender addresses to match on.
+    if (!empty($domains) || !empty($senders)) {
         foreach ($sharedRows as $m) {
             if (!$m['is_active']) continue; // inactive shared box routes nothing
             $paths[] = [
@@ -109,6 +118,7 @@ try {
                 'is_active'       => true,
                 'authenticated'   => (bool)$m['is_authenticated'],
                 'matched_domains' => $domains,
+                'matched_senders' => $senders,
             ];
         }
     }
@@ -119,11 +129,11 @@ try {
     foreach ($sharedRows as $m) { if ($m['is_active']) { $hasActiveShared = true; break; } }
 
     if (empty($paths)) {
-        // No pinned box, and either no domains or nothing shared to match them.
+        // No pinned box, and either no domains/senders or nothing shared to match them.
         $warnings[] = 'no_route';
     }
-    if (!empty($domains) && !$hasActiveShared) {
-        // Domains registered but nothing to match them against.
+    if ((!empty($domains) || !empty($senders)) && !$hasActiveShared) {
+        // Domains/senders registered but nothing to match them against.
         $warnings[] = 'domains_no_shared';
     }
     foreach ($paths as $p) {
@@ -134,6 +144,7 @@ try {
         'success'    => true,
         'company'    => ['id' => (int)$company['id'], 'name' => $company['name'], 'is_default' => $isDefault],
         'domains'    => $domains,
+        'senders'    => $senders,
         'paths'      => $paths,
         'warnings'   => $warnings,
         // Default catches anything that routed nowhere (triage / NULL tenant).

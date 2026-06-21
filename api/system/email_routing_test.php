@@ -85,6 +85,19 @@ try {
     }
     $isFreemail = $fromDomain !== '' && isFreemailDomain($conn, $fromDomain);
 
+    // Which company (if any) the exact sender address is mapped to (step 3a,
+    // matched before the domain — the freemail-safe override).
+    $senderAddrLower = strtolower(trim($fromForRouting));
+    $senderTenantId = null;
+    if ($senderAddrLower !== '') {
+        try {
+            $ss = $conn->prepare("SELECT tenant_id FROM tenant_sender_addresses WHERE email = ? LIMIT 1");
+            $ss->execute([$senderAddrLower]);
+            $v = $ss->fetchColumn();
+            if ($v !== false && $v !== null) $senderTenantId = (int)$v;
+        } catch (Exception $e) { /* table missing → no match */ }
+    }
+
     // Which company (if any) owns the sender's domain.
     $domainTenantId = null;
     if ($fromDomain !== '') {
@@ -107,6 +120,8 @@ try {
         $rule = 'single_company';
     } elseif ($isPinned) {
         $rule = 'pinned';
+    } elseif ($senderTenantId !== null) {
+        $rule = 'sender_match';
     } elseif ($domainTenantId !== null) {
         $rule = 'domain_match';
     } else {
@@ -133,20 +148,31 @@ try {
             $steps[] = ['key' => 'pinned', 'status' => 'skipped',
                 'mailbox' => $mbAddress ?: $mbRow['name']];
 
-            // Step 3 — sender-domain match (only reached when not pinned).
-            if ($fromDomain === '') {
-                $steps[] = ['key' => 'domain', 'status' => 'no_domain'];
-            } elseif ($domainTenantId !== null) {
-                $steps[] = ['key' => 'domain', 'status' => 'fired',
-                    'domain' => $fromDomain, 'company' => $tenantName($conn, $domainTenantId)];
+            // Step 3a — specific sender-address match (most specific; reached
+            // when not pinned, checked before the domain).
+            if ($senderTenantId !== null) {
+                $steps[] = ['key' => 'sender', 'status' => 'fired',
+                    'address' => $senderAddrLower, 'company' => $tenantName($conn, $senderTenantId)];
             } else {
-                $steps[] = ['key' => 'domain', 'status' => $isFreemail ? 'freemail' : 'no_match',
-                    'domain' => $fromDomain];
-            }
+                $steps[] = ['key' => 'sender', 'status' => $senderAddrLower === '' ? 'no_address' : 'no_match',
+                    'address' => $senderAddrLower];
 
-            // Step 4 — triage (only when domain didn't resolve).
-            if ($resultIsTriage) {
-                $steps[] = ['key' => 'triage', 'status' => 'fired'];
+                // Step 3b — sender-domain match (only reached when the address
+                // wasn't on any company's specific-senders list).
+                if ($fromDomain === '') {
+                    $steps[] = ['key' => 'domain', 'status' => 'no_domain'];
+                } elseif ($domainTenantId !== null) {
+                    $steps[] = ['key' => 'domain', 'status' => 'fired',
+                        'domain' => $fromDomain, 'company' => $tenantName($conn, $domainTenantId)];
+                } else {
+                    $steps[] = ['key' => 'domain', 'status' => $isFreemail ? 'freemail' : 'no_match',
+                        'domain' => $fromDomain];
+                }
+
+                // Step 4 — triage (only when neither sender nor domain resolved).
+                if ($resultIsTriage) {
+                    $steps[] = ['key' => 'triage', 'status' => 'fired'];
+                }
             }
         }
     }

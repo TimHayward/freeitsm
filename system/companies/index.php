@@ -175,6 +175,19 @@ $translationNamespaces = ['common', 'system'];
                     </div>
                 </div>
 
+                <!-- Specific senders (shared-intake routing, address-level). Lets a
+                     personal/freemail address route to this company even though its
+                     domain can't be mapped. Same visibility as the domains section. -->
+                <div class="form-field" id="sendersSection" style="display: none;">
+                    <label><?php echo htmlspecialchars(t('system.companies.senders_label')); ?></label>
+                    <div class="hint"><?php echo htmlspecialchars(t('system.companies.senders_hint')); ?></div>
+                    <div id="sendersList"></div>
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                        <input type="text" id="senderInput" placeholder="<?php echo htmlspecialchars(t('system.companies.sender_placeholder')); ?>" style="flex: 1;">
+                        <button type="button" class="btn btn-secondary" id="addSenderBtn"><?php echo htmlspecialchars(t('system.companies.sender_add')); ?></button>
+                    </div>
+                </div>
+
                 <!-- Derived, read-only "How email reaches this company" summary.
                      Same visibility as the domains section (multi-company edit). -->
                 <div class="form-field" id="routingSection" style="display: none;">
@@ -252,17 +265,23 @@ $translationNamespaces = ['common', 'system'];
         // Email domains: only when editing an existing company on a multi-company
         // install (shared-intake routing is meaningless with a single company).
         const domainsSection = document.getElementById('domainsSection');
+        const sendersSection = document.getElementById('sendersSection');
         const routingSection = document.getElementById('routingSection');
         document.getElementById('domainInput').value = '';
+        document.getElementById('senderInput').value = '';
         if (c && c.id && companies.length > 1) {
             domainsSection.style.display = '';
+            sendersSection.style.display = '';
             routingSection.style.display = '';
             loadDomains(c.id);
+            loadSenders(c.id);
             loadRouting(c.id);
         } else {
             domainsSection.style.display = 'none';
+            sendersSection.style.display = 'none';
             routingSection.style.display = 'none';
             document.getElementById('domainsList').innerHTML = '';
+            document.getElementById('sendersList').innerHTML = '';
             document.getElementById('routingPanel').innerHTML = '';
         }
 
@@ -336,6 +355,70 @@ $translationNamespaces = ['common', 'system'];
             }
         } catch (e) { showToast(window.t('system.companies.domain_remove_failed'), 'error'); }
     }
+    // ---------- Company specific senders (address-level routing) ----------
+    let currentSenders = [];
+    async function loadSenders(tenantId) {
+        document.getElementById('sendersList').innerHTML = '';
+        try {
+            const r = await fetch(API + 'system/get_tenant_senders.php?tenant_id=' + tenantId);
+            const d = await r.json();
+            currentSenders = d.success ? d.senders : [];
+        } catch (e) { currentSenders = []; }
+        renderSenders();
+    }
+    function renderSenders() {
+        const list = document.getElementById('sendersList');
+        if (!currentSenders.length) {
+            list.innerHTML = '<div style="color:#aaa; font-size:12px; font-style:italic; padding:6px 0;">' + esc(window.t('system.companies.senders_none')) + '</div>';
+            return;
+        }
+        list.innerHTML = currentSenders.map(s => `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border:1px solid #eee; border-radius:5px; margin-bottom:6px; font-size:13px;">
+                <span>${esc(s.email)}</span>
+                <button type="button" class="table-action-btn" data-remove-sender="${s.id}">${esc(window.t('system.companies.sender_remove'))}</button>
+            </div>`).join('');
+    }
+    async function addSender() {
+        const tenantId = document.getElementById('companyId').value;
+        const input = document.getElementById('senderInput');
+        const email = input.value.trim();
+        if (!tenantId || !email) return;
+        const btn = document.getElementById('addSenderBtn');
+        btn.disabled = true;
+        try {
+            const r = await fetch(API + 'system/add_tenant_sender.php', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tenant_id: tenantId, email })
+            });
+            const d = await r.json();
+            if (d.success) {
+                input.value = '';
+                showToast(window.t('system.companies.sender_added'), 'success');
+                loadSenders(tenantId);
+                loadRouting(tenantId); // senders drive shared-intake routing
+            } else {
+                showToast(d.error || window.t('system.companies.sender_add_failed'), 'error');
+            }
+        } catch (e) { showToast(window.t('system.companies.sender_add_failed'), 'error'); }
+        btn.disabled = false;
+    }
+    async function removeSender(id) {
+        try {
+            const r = await fetch(API + 'system/delete_tenant_sender.php', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+            const d = await r.json();
+            if (d.success) {
+                showToast(window.t('system.companies.sender_removed'), 'success');
+                loadSenders(document.getElementById('companyId').value);
+                loadRouting(document.getElementById('companyId').value); // senders drive routing
+            } else {
+                showToast(d.error || window.t('system.companies.sender_remove_failed'), 'error');
+            }
+        } catch (e) { showToast(window.t('system.companies.sender_remove_failed'), 'error'); }
+    }
+
     // ---------- How email reaches this company (derived, read-only) ----------
     async function loadRouting(tenantId) {
         const panel = document.getElementById('routingPanel');
@@ -372,12 +455,23 @@ $translationNamespaces = ['common', 'system'];
                     </div>
                 </div>`;
             } else {
-                const domains = (p.matched_domains || []).map(d => '<strong>' + esc(d) + '</strong>').join(', ');
+                const domainList = p.matched_domains || [];
+                const senderList = p.matched_senders || [];
+                const domains = domainList.map(d => '<strong>' + esc(d) + '</strong>').join(', ');
+                const senders = senderList.map(s => '<strong>' + esc(s) + '</strong>').join(', ');
+                let desc;
+                if (domainList.length && senderList.length) {
+                    desc = window.t('system.companies.routing_shared_desc_both', { address: addr, domains: domains, senders: senders });
+                } else if (senderList.length) {
+                    desc = window.t('system.companies.routing_shared_desc_senders', { address: addr, senders: senders });
+                } else {
+                    desc = window.t('system.companies.routing_shared_desc', { address: addr, domains: domains });
+                }
                 html += `<div class="routing-path">
                     <span class="rp-icon">📥</span>
                     <div class="rp-body">
                         <div class="rp-kind">${esc(window.t('system.companies.routing_shared'))}${routingFlags(p)}</div>
-                        <div class="rp-desc">${window.t('system.companies.routing_shared_desc', { address: addr, domains: domains })}</div>
+                        <div class="rp-desc">${desc}</div>
                     </div>
                 </div>`;
             }
@@ -405,6 +499,15 @@ $translationNamespaces = ['common', 'system'];
     document.getElementById('domainsList').addEventListener('click', e => {
         const rm = e.target.getAttribute('data-remove-domain');
         if (rm) removeDomain(parseInt(rm, 10));
+    });
+
+    document.getElementById('addSenderBtn').addEventListener('click', addSender);
+    document.getElementById('senderInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); addSender(); }
+    });
+    document.getElementById('sendersList').addEventListener('click', e => {
+        const rm = e.target.getAttribute('data-remove-sender');
+        if (rm) removeSender(parseInt(rm, 10));
     });
 
     document.getElementById('addCompanyBtn').addEventListener('click', () => openModal(null));

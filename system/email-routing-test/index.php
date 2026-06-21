@@ -197,6 +197,10 @@ $translationNamespaces = ['common', 'system'];
             case 'pinned':
                 if (s.status === 'fired') return { name: window.t('system.routing_test.step_pinned'), detail: window.t('system.routing_test.step_pinned_fired', { mailbox: '<strong>' + esc(s.mailbox) + '</strong>', company: '<strong>' + esc(s.company) + '</strong>' }) };
                 return { name: window.t('system.routing_test.step_pinned'), detail: window.t('system.routing_test.step_pinned_skipped', { mailbox: '<strong>' + esc(s.mailbox) + '</strong>' }) };
+            case 'sender':
+                if (s.status === 'fired')      return { name: window.t('system.routing_test.step_sender'), detail: window.t('system.routing_test.step_sender_fired', { address: '<strong>' + esc(s.address) + '</strong>', company: '<strong>' + esc(s.company) + '</strong>' }) };
+                if (s.status === 'no_address') return { name: window.t('system.routing_test.step_sender'), detail: window.t('system.routing_test.step_sender_noaddress') };
+                return { name: window.t('system.routing_test.step_sender'), detail: window.t('system.routing_test.step_sender_nomatch', { address: '<strong>' + esc(s.address) + '</strong>' }) };
             case 'domain':
                 if (s.status === 'fired')     return { name: window.t('system.routing_test.step_domain'), detail: window.t('system.routing_test.step_domain_fired', { domain: '<strong>' + esc(s.domain) + '</strong>', company: '<strong>' + esc(s.company) + '</strong>' }) };
                 if (s.status === 'freemail')  return { name: window.t('system.routing_test.step_domain'), detail: window.t('system.routing_test.step_domain_freemail', { domain: '<strong>' + esc(s.domain) + '</strong>' }) };

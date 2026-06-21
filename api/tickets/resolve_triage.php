@@ -7,13 +7,19 @@
  *   new_company_name: string  name for the new company (when tenant_id is 0),
  *   domain:           string  the sender's domain (for mapping/sweeping),
  *   map_domain:       bool    also register `domain` to the company so this and
- *                             all other queued mail from it route automatically
+ *                             all other queued mail from it route automatically,
+ *   from_address:     string  the sender's full address (for sender mapping),
+ *   map_sender:       bool    also map `from_address` to the company so this and
+ *                             all other queued mail from that exact address route
+ *                             automatically (the freemail-safe alternative to
+ *                             mapping a whole domain)
  * }
  *
  * "Mapping a domain sweeps both ways" (design §6): registering the domain both
  * re-files every queued ticket from it AND auto-routes future mail. Free-email
- * domains are never mapped (two clients can share them) — those are filed one
- * ticket at a time.
+ * domains are never mapped (two clients can share them) — for those, map the
+ * specific sender address instead, which sweeps and auto-routes the same way but
+ * only for that one address. Failing both, the ticket is filed on its own.
  */
 session_start(['read_and_close' => true]);
 require_once '../../config.php';
@@ -38,6 +44,8 @@ $tenantId  = isset($data['tenant_id']) ? (int)$data['tenant_id'] : 0;
 $newName   = trim($data['new_company_name'] ?? '');
 $domain    = normaliseEmailDomain($data['domain'] ?? '');
 $mapDomain = !empty($data['map_domain']);
+$senderAddr = normaliseEmailAddress($data['from_address'] ?? '');
+$mapSender  = !empty($data['map_sender']);
 
 if ($ticketId <= 0) {
     echo json_encode(['success' => false, 'error' => 'Missing ticket']);
@@ -68,6 +76,7 @@ try {
     // Free-email domains can never be mapped (shared across clients).
     $freemail = $domain !== '' && isFreemailDomain($conn, $domain);
     $domainMapped = false;
+    $senderMapped = false;
 
     if ($mapDomain && $domain !== '' && !$freemail) {
         // Domain is unique across companies — only map if free, or already ours.
@@ -82,6 +91,22 @@ try {
         } else {
             $ownerRow = getTenantById($conn, (int)$owner);
             echo json_encode(['success' => false, 'error' => "That domain is already mapped to " . ($ownerRow['name'] ?? 'another company') . " — pick that company, or assign this ticket without mapping the domain."]);
+            exit;
+        }
+    } elseif ($mapSender && $senderAddr !== '') {
+        // Map the exact sender address (the freemail-safe alternative). Address is
+        // unique across companies — only map if free, or already ours.
+        $check = $conn->prepare("SELECT tenant_id FROM tenant_sender_addresses WHERE email = ?");
+        $check->execute([$senderAddr]);
+        $owner = $check->fetchColumn();
+        if ($owner === false) {
+            $conn->prepare("INSERT INTO tenant_sender_addresses (tenant_id, email) VALUES (?, ?)")->execute([$tenantId, $senderAddr]);
+            $senderMapped = true;
+        } elseif ((int)$owner === $tenantId) {
+            $senderMapped = true; // already mapped to this company
+        } else {
+            $ownerRow = getTenantById($conn, (int)$owner);
+            echo json_encode(['success' => false, 'error' => "That address is already mapped to " . ($ownerRow['name'] ?? 'another company') . " — pick that company, or file this ticket without mapping the sender."]);
             exit;
         }
     }
@@ -108,6 +133,26 @@ try {
         $one = $conn->prepare("UPDATE tickets SET tenant_id = ? WHERE id = ? AND tenant_id IS NULL");
         $one->execute([$tenantId, $ticketId]);
         $assigned += $one->rowCount();
+    } elseif ($senderMapped) {
+        // Sweep: every queued ticket whose origin sender is this exact address.
+        $sweep = $conn->prepare(
+            "UPDATE tickets t
+             JOIN emails e ON e.id = (
+                 SELECT e2.id FROM emails e2
+                 WHERE e2.ticket_id = t.id AND e2.direction = 'Inbound'
+                 ORDER BY e2.is_initial DESC, e2.received_datetime ASC, e2.id ASC
+                 LIMIT 1
+             )
+             SET t.tenant_id = ?
+             WHERE t.tenant_id IS NULL
+               AND LOWER(TRIM(e.from_address)) = ?"
+        );
+        $sweep->execute([$tenantId, $senderAddr]);
+        $assigned = $sweep->rowCount();
+        // Safety net: file the clicked ticket even if its From header didn't match.
+        $one = $conn->prepare("UPDATE tickets SET tenant_id = ? WHERE id = ? AND tenant_id IS NULL");
+        $one->execute([$tenantId, $ticketId]);
+        $assigned += $one->rowCount();
     } else {
         $one = $conn->prepare("UPDATE tickets SET tenant_id = ? WHERE id = ? AND tenant_id IS NULL");
         $one->execute([$tenantId, $ticketId]);
@@ -119,6 +164,7 @@ try {
         'tenant_id'       => $tenantId,
         'assigned_count'  => $assigned,
         'domain_mapped'   => $domainMapped,
+        'sender_mapped'   => $senderMapped,
         'created_company' => $createdCompany,
         'freemail'        => $freemail,
     ]);

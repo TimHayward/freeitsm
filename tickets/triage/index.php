@@ -129,6 +129,13 @@ $translationNamespaces = ['common', 'tickets'];
                         <span id="mapDomainHelp"></span>
                     </div>
                 </div>
+                <div class="checkbox-field" id="mapSenderField" style="display:none;">
+                    <input type="checkbox" id="resolveMapSender" checked>
+                    <div class="cb-label">
+                        <strong id="mapSenderLabel"></strong>
+                        <span id="mapSenderHelp"></span>
+                    </div>
+                </div>
                 <div class="freemail-note" id="freemailNote" style="display:none;"></div>
             </div>
             <div class="tr-modal-footer">
@@ -205,9 +212,13 @@ $translationNamespaces = ['common', 'tickets'];
     function syncModalControls() {
         const isNew = document.getElementById('resolveCompany').value === '__new__';
         document.getElementById('newNameField').style.display = isNew ? '' : 'none';
-        // Map-domain only makes sense for a real (non-freemail) domain.
-        const canMap = current && current.domain && !current.is_freemail;
-        document.getElementById('mapDomainField').style.display = canMap ? '' : 'none';
+        // Map-domain only makes sense for a real (non-freemail) domain. When the
+        // sender is on a public provider (or has no usable domain), offer to map
+        // the exact address instead — the freemail-safe alternative.
+        const canMapDomain = !!(current && current.domain && !current.is_freemail);
+        const canMapSender = !!(current && current.from_address && !canMapDomain);
+        document.getElementById('mapDomainField').style.display = canMapDomain ? '' : 'none';
+        document.getElementById('mapSenderField').style.display = canMapSender ? '' : 'none';
         const freemailNote = document.getElementById('freemailNote');
         if (current && current.domain && current.is_freemail) {
             freemailNote.style.display = '';
@@ -227,6 +238,9 @@ $translationNamespaces = ['common', 'tickets'];
         document.getElementById('resolveMapDomain').checked = true;
         document.getElementById('mapDomainLabel').textContent = window.t('tickets.triage.map_domain_label', { domain: current.domain || '' });
         document.getElementById('mapDomainHelp').textContent = window.t('tickets.triage.map_domain_help', { domain: current.domain || '' });
+        document.getElementById('resolveMapSender').checked = true;
+        document.getElementById('mapSenderLabel').textContent = window.t('tickets.triage.map_sender_label', { address: current.from_address || '' });
+        document.getElementById('mapSenderHelp').textContent = window.t('tickets.triage.map_sender_help', { address: current.from_address || '' });
         syncModalControls();
         modal.classList.add('open');
     }
@@ -244,12 +258,16 @@ $translationNamespaces = ['common', 'tickets'];
         if (!current) return;
         const sel = document.getElementById('resolveCompany').value;
         const isNew = sel === '__new__';
+        const canMapDomain = !!(current.domain && !current.is_freemail);
+        const canMapSender = !!(current.from_address && !canMapDomain);
         const payload = {
             ticket_id: current.ticket_id,
             tenant_id: isNew ? 0 : parseInt(sel, 10),
             new_company_name: isNew ? document.getElementById('resolveNewName').value.trim() : '',
             domain: current.domain || '',
-            map_domain: (current.domain && !current.is_freemail) ? document.getElementById('resolveMapDomain').checked : false
+            map_domain: canMapDomain ? document.getElementById('resolveMapDomain').checked : false,
+            from_address: current.from_address || '',
+            map_sender: canMapSender ? document.getElementById('resolveMapSender').checked : false
         };
         if (isNew && !payload.new_company_name) {
             showToast(window.t('tickets.triage.choose_company'), 'error');
