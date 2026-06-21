@@ -510,6 +510,7 @@ return [
         'pick_mailbox'     => 'Choose a mailbox first',
         'failed'           => 'Routing test failed',
 
+        'placeholder'          => 'Run a test to see where an email would land.',
         'result_company_label' => 'Filed to company',
         'result_triage_label'  => 'Sent to',
         'result_triage_value'  => 'Triage queue (unassigned)',

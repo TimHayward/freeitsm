@@ -25,11 +25,22 @@ $translationNamespaces = ['common', 'system'];
     <title>Service Desk - <?php echo htmlspecialchars(t('system.routing_test.title')); ?></title>
     <link rel="stylesheet" href="../../assets/css/inbox.css">
     <style>
-        .rt-container { flex: 1; overflow-y: auto; padding: 30px 20px; }
+        /* inbox.css gives body height:100vh + overflow:hidden but no flex
+           column, so flex:1 children can't bound their height. Make body a
+           column here so the content area scrolls under a header of any
+           height (the #535 reasoning — no hardcoded 100vh-48px). */
+        body { display: flex; flex-direction: column; }
+        .rt-container { flex: 1; min-height: 0; overflow-y: auto; padding: 30px 20px; }
         .page-title { font-size: 22px; font-weight: 600; color: #333; margin: 0 0 6px 0; }
         .page-subtitle { font-size: 13px; color: #888; margin: 0 0 24px 0; max-width: 640px; }
 
-        .settings-card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 24px; max-width: 720px; }
+        /* Two columns: the form on the left, the result on the right. Wraps to
+           a single column when there isn't room. */
+        .rt-grid { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+        .rt-col-form   { flex: 0 0 400px; max-width: 100%; }
+        .rt-col-result { flex: 1 1 360px; min-width: 0; }
+
+        .settings-card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 
         .form-field { margin-bottom: 16px; }
         .form-field label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 4px; }
@@ -45,6 +56,8 @@ $translationNamespaces = ['common', 'system'];
         .rt-note { font-size: 13px; color: #8a5a00; background: #fff8e1; border: 1px solid #ffe0a3; border-radius: 6px; padding: 12px 14px; margin-bottom: 24px; max-width: 720px; }
 
         /* Result */
+        .rt-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; color: #b0b8bd; background: #fafbfc; border: 1px dashed #dde3e6; border-radius: 8px; padding: 48px 24px; }
+        .rt-placeholder svg { opacity: 0.6; }
         .rt-result { display: none; }
         .rt-result.show { display: block; }
         .rt-headline { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-radius: 8px; margin-bottom: 18px; }
@@ -77,30 +90,44 @@ $translationNamespaces = ['common', 'system'];
             <?php echo htmlspecialchars(t('system.routing_test.single_company_note')); ?>
         </div>
 
-        <div class="settings-card">
-            <div class="form-field">
-                <label for="fromInput"><?php echo htmlspecialchars(t('system.routing_test.from_label')); ?></label>
-                <div class="hint"><?php echo htmlspecialchars(t('system.routing_test.from_hint')); ?></div>
-                <input type="text" id="fromInput" placeholder="<?php echo htmlspecialchars(t('system.routing_test.from_placeholder')); ?>">
-            </div>
-            <div class="form-field">
-                <label for="mailboxSelect"><?php echo htmlspecialchars(t('system.routing_test.mailbox_label')); ?></label>
-                <div class="hint"><?php echo htmlspecialchars(t('system.routing_test.mailbox_hint')); ?></div>
-                <select id="mailboxSelect"><option value=""><?php echo htmlspecialchars(t('system.routing_test.mailbox_loading')); ?></option></select>
-            </div>
-            <button class="btn btn-primary" id="testBtn"><?php echo htmlspecialchars(t('system.routing_test.run')); ?></button>
-        </div>
-
-        <div class="settings-card rt-result" id="resultCard">
-            <div class="rt-headline" id="rtHeadline">
-                <span class="rt-h-icon" id="rtHeadIcon"></span>
-                <div>
-                    <div class="rt-h-label" id="rtHeadLabel"></div>
-                    <div class="rt-h-value" id="rtHeadValue"></div>
+        <div class="rt-grid">
+            <div class="rt-col-form">
+                <div class="settings-card">
+                    <div class="form-field">
+                        <label for="fromInput"><?php echo htmlspecialchars(t('system.routing_test.from_label')); ?></label>
+                        <div class="hint"><?php echo htmlspecialchars(t('system.routing_test.from_hint')); ?></div>
+                        <input type="text" id="fromInput" placeholder="<?php echo htmlspecialchars(t('system.routing_test.from_placeholder')); ?>">
+                    </div>
+                    <div class="form-field">
+                        <label for="mailboxSelect"><?php echo htmlspecialchars(t('system.routing_test.mailbox_label')); ?></label>
+                        <div class="hint"><?php echo htmlspecialchars(t('system.routing_test.mailbox_hint')); ?></div>
+                        <select id="mailboxSelect"><option value=""><?php echo htmlspecialchars(t('system.routing_test.mailbox_loading')); ?></option></select>
+                    </div>
+                    <button class="btn btn-primary" id="testBtn"><?php echo htmlspecialchars(t('system.routing_test.run')); ?></button>
                 </div>
             </div>
-            <p class="rt-steps-title"><?php echo htmlspecialchars(t('system.routing_test.steps_title')); ?></p>
-            <div id="rtSteps"></div>
+
+            <div class="rt-col-result">
+                <div class="rt-placeholder" id="resultPlaceholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                    </svg>
+                    <div><?php echo htmlspecialchars(t('system.routing_test.placeholder')); ?></div>
+                </div>
+
+                <div class="settings-card rt-result" id="resultCard">
+                    <div class="rt-headline" id="rtHeadline">
+                        <span class="rt-h-icon" id="rtHeadIcon"></span>
+                        <div>
+                            <div class="rt-h-label" id="rtHeadLabel"></div>
+                            <div class="rt-h-value" id="rtHeadValue"></div>
+                        </div>
+                    </div>
+                    <p class="rt-steps-title"><?php echo htmlspecialchars(t('system.routing_test.steps_title')); ?></p>
+                    <div id="rtSteps"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -188,6 +215,7 @@ $translationNamespaces = ['common', 'system'];
 
     function renderResult(data) {
         const card = document.getElementById('resultCard');
+        document.getElementById('resultPlaceholder').style.display = 'none';
         const triage = data.result.is_triage;
 
         const headline = document.getElementById('rtHeadline');
