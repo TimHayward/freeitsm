@@ -35,6 +35,8 @@ return [
         'subtitle' => 'Inbound email that arrived at a shared-intake mailbox but matched no company. File each one to a company — nothing is lost in the meantime.',
         'loading'  => 'Loading…',
         'empty'    => 'Nothing to triage. Mail that doesn\'t match a company domain will appear here.',
+        'info_title' => 'Why is this mail here, and what about Gmail/Outlook addresses?',
+        'info_body'  => 'A shared-intake mailbox routes each email to the company that owns the sender\'s domain. Anything that matches no company\'s domain lands here so it\'s never lost. When you file a ticket from a company\'s own domain you can also <strong>route that domain</strong>, which moves its other queued mail and auto-routes future mail. Addresses on <strong>public providers</strong> (Gmail, Outlook, Yahoo, iCloud, …) are tagged <em>Public email</em> and can only be filed one at a time — many unrelated people share those domains, so there is no safe rule to route them automatically.',
         'col_sender'   => 'Sender',
         'col_domain'   => 'Domain',
         'col_subject'  => 'Subject',

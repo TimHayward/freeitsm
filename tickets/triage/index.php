@@ -26,6 +26,12 @@ $translationNamespaces = ['common', 'tickets'];
         .page-subtitle { font-size: 13px; color: #888; margin: 0 0 24px 0; max-width: 760px; }
         .settings-card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 24px; }
 
+        .triage-info { display: flex; gap: 12px; align-items: flex-start; background: #eef4f8; border: 1px solid #d5e3ec; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; max-width: 860px; }
+        .triage-info svg { flex-shrink: 0; color: #4a7a96; margin-top: 1px; }
+        .triage-info .ti-text { font-size: 12.5px; color: #38596b; line-height: 1.5; }
+        .triage-info .ti-text strong { color: #1f3d4d; }
+        .triage-info .ti-title { display: block; font-weight: 600; color: #1f3d4d; margin-bottom: 3px; font-size: 13px; }
+
         .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all 0.15s; }
         .btn-primary { background: #546e7a; color: #fff; }
         .btn-primary:hover { background: #455a64; }
@@ -71,6 +77,14 @@ $translationNamespaces = ['common', 'tickets'];
     <div class="triage-container">
         <h1 class="page-title"><?php echo htmlspecialchars(t('tickets.triage.title')); ?></h1>
         <p class="page-subtitle"><?php echo htmlspecialchars(t('tickets.triage.subtitle')); ?></p>
+
+        <div class="triage-info">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <div class="ti-text">
+                <span class="ti-title"><?php echo htmlspecialchars(t('tickets.triage.info_title')); ?></span>
+                <?php echo t('tickets.triage.info_body'); /* contains intentional <strong>/<em> markup */ ?>
+            </div>
+        </div>
 
         <div class="settings-card">
             <table class="triage">
