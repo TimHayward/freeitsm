@@ -1578,11 +1578,11 @@ $translationNamespaces = ['common', 'tickets'];
         // Load ticket types
         async function loadTicketTypes() {
             try {
-                const response = await fetch(API_BASE + 'get_ticket_types.php');
+                const response = await fetch(API_BASE + 'get_ticket_types.php?manage=1');
                 const data = await response.json();
 
                 if (data.success) {
-                    renderTicketTypes(data.ticket_types);
+                    renderTicketTypes(data);
                 } else {
                     showToast('Error loading ticket types: ' + data.error, 'error');
                 }
@@ -1845,30 +1845,101 @@ $translationNamespaces = ['common', 'tickets'];
         }
 
         // Render ticket types
-        function renderTicketTypes(types) {
-            const tbody = document.getElementById('ticket-types-list');
+        // SVG markup reused across rows.
+        const TT_EDIT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
+        const TT_DELETE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
 
-            if (types.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No ticket types found</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = types.map(type => `
+        function ticketTypeRowEditable(type) {
+            return `
                 <tr>
                     <td><strong>${escapeHtml(type.name)}</strong></td>
                     <td>${escapeHtml(type.description || '')}</td>
                     <td>${type.display_order}</td>
                     <td><span class="status-badge status-${type.is_active ? 'active' : 'inactive'}">${type.is_active ? 'Active' : 'Inactive'}</span></td>
                     <td>
-                        <button class="action-btn" onclick="editItem('ticket-type', ${type.id})" title="${t('common.edit')}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                        </button>
-                        <button class="action-btn delete" onclick="deleteItem('ticket-type', ${type.id}, '${escapeHtml(type.name)}')" title="${t('common.delete')}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        </button>
+                        <button class="action-btn" onclick="editItem('ticket-type', ${type.id})" title="${t('common.edit')}">${TT_EDIT_SVG}</button>
+                        <button class="action-btn delete" onclick="deleteItem('ticket-type', ${type.id}, '${escapeHtml(type.name)}')" title="${t('common.delete')}">${TT_DELETE_SVG}</button>
                     </td>
-                </tr>
-            `).join('');
+                </tr>`;
+        }
+
+        function renderTicketTypes(data) {
+            const tbody = document.getElementById('ticket-types-list');
+
+            // Multi-company, inside a client company's context → the two-group
+            // "shared defaults (add/hide) + this company's own types" view.
+            if (data && data.scoped && data.scoped.is_default === false) {
+                renderTicketTypesScoped(tbody, data.scoped);
+                return;
+            }
+
+            // Otherwise: a flat list — single-company install, or the MSP/Default
+            // context where you manage the shared defaults themselves (as before).
+            const types = (data && data.ticket_types) ? data.ticket_types : [];
+            if (types.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No ticket types found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = types.map(ticketTypeRowEditable).join('');
+        }
+
+        // Per-company view (design §7 add+hide): the company's own types, then the
+        // shared defaults it inherits, each with a Hide/Show toggle.
+        function renderTicketTypesScoped(tbody, scoped) {
+            const groupRow = (label, hint) =>
+                `<tr class="tt-group-row"><td colspan="5" style="background:#f7f9fa;border-top:1px solid #e3e8ea;font-size:12px;font-weight:600;color:#455a64;padding:10px;">${escapeHtml(label)}${hint ? ` <span style="font-weight:400;color:#90a4ae;">— ${escapeHtml(hint)}</span>` : ''}</td></tr>`;
+
+            let html = '';
+
+            // Group 1 — this company's own types.
+            html += groupRow(`${scoped.company.name}’s own types`);
+            if (!scoped.own.length) {
+                html += '<tr><td colspan="5" style="color:#aaa;font-style:italic;padding:10px;">None yet — use Add to create a type just for this company.</td></tr>';
+            } else {
+                html += scoped.own.map(ticketTypeRowEditable).join('');
+            }
+
+            // Group 2 — shared defaults, with a per-company Hide/Show toggle.
+            html += groupRow('Shared defaults', `inherited by ${scoped.company.name}`);
+            html += scoped.globals.map(tp => {
+                const dim = tp.hidden ? 'opacity:0.5;' : '';
+                const statusCell = tp.hidden
+                    ? '<span class="status-badge status-inactive">Hidden here</span>'
+                    : `<span class="status-badge status-${tp.is_active ? 'active' : 'inactive'}">${tp.is_active ? 'Active' : 'Inactive'}</span>`;
+                const toggle = tp.hidden
+                    ? `<button class="action-btn" style="width:auto;padding:0 10px;font-size:12px;" onclick="toggleTicketTypeHidden(${tp.id}, false)">Show</button>`
+                    : `<button class="action-btn" style="width:auto;padding:0 10px;font-size:12px;" onclick="toggleTicketTypeHidden(${tp.id}, true)">Hide</button>`;
+                return `
+                    <tr style="${dim}">
+                        <td><strong>${escapeHtml(tp.name)}</strong></td>
+                        <td>${escapeHtml(tp.description || '')}</td>
+                        <td>${tp.display_order}</td>
+                        <td>${statusCell}</td>
+                        <td>${toggle}</td>
+                    </tr>`;
+            }).join('');
+
+            tbody.innerHTML = html;
+        }
+
+        // Hide / show a shared default type for the active company (add+hide model).
+        async function toggleTicketTypeHidden(id, hidden) {
+            try {
+                const response = await fetch(API_BASE + 'set_ticket_type_hidden.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticket_type_id: id, hidden: hidden })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showToast(hidden ? 'Hidden from this company' : 'Shown for this company', 'success');
+                    loadTicketTypes();
+                } else {
+                    showToast(data.error || 'Could not update', 'error');
+                }
+            } catch (error) {
+                showToast('Could not update', 'error');
+            }
         }
 
         // Render ticket origins

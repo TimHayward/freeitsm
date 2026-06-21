@@ -161,7 +161,10 @@ CREATE TABLE IF NOT EXISTS `ticket_types` (
     `tenant_id`         INT NULL,
     `created_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_ticket_types_name` (`name`)
+    -- Per-scope name uniqueness (a company may hold a type whose name matches a
+    -- global default). Global-name dedup is enforced in the API, since NULL
+    -- tenant_id rows aren't de-duped by a unique key.
+    UNIQUE KEY `uq_ticket_types_tenant_name` (`tenant_id`, `name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ticket_origins` (

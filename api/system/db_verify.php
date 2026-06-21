@@ -2390,6 +2390,15 @@ try {
         if (!$fkExists('ticket_types', 'fk_ticket_types_tenant')) {
             try { $conn->exec("ALTER TABLE ticket_types ADD CONSTRAINT fk_ticket_types_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE CASCADE"); } catch (Exception $e) {}
         }
+        // Widen name-uniqueness from global to per-scope so a company can hold a
+        // type whose name matches a global default. (Global-name dedup is enforced
+        // in the API — NULL tenant_id rows aren't de-duped by a unique key.)
+        if ($idxExists('ticket_types', 'uq_ticket_types_name')) {
+            try { $conn->exec("ALTER TABLE ticket_types DROP INDEX uq_ticket_types_name"); } catch (Exception $e) {}
+        }
+        if (!$idxExists('ticket_types', 'uq_ticket_types_tenant_name')) {
+            try { $conn->exec("ALTER TABLE ticket_types ADD UNIQUE KEY uq_ticket_types_tenant_name (tenant_id, name)"); } catch (Exception $e) {}
+        }
     }
     if ($tableExists('analyst_tenant_access') && $tableExists('analysts') && $tableExists('tenants')) {
         if (!$idxExists('analyst_tenant_access', 'uq_analyst_tenant')) {
