@@ -198,6 +198,21 @@ $translationNamespaces = ['common', 'system'];
                     <h3><?php echo htmlspecialchars(t('system.landing.debug_tools_title')); ?></h3>
                     <p><?php echo htmlspecialchars(t('system.landing.debug_tools_desc')); ?></p>
                 </a>
+
+                <a href="companies/" class="system-card">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 21h18"></path>
+                        <path d="M9 8h1"></path>
+                        <path d="M9 12h1"></path>
+                        <path d="M9 16h1"></path>
+                        <path d="M14 8h1"></path>
+                        <path d="M14 12h1"></path>
+                        <path d="M14 16h1"></path>
+                        <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+                    </svg>
+                    <h3><?php echo htmlspecialchars(t('system.landing.companies_title')); ?></h3>
+                    <p><?php echo htmlspecialchars(t('system.landing.companies_desc')); ?></p>
+                </a>
             </div>
         </div>
     </div>

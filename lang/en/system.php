@@ -54,6 +54,8 @@ return [
         'demo_data_desc'    => 'Import realistic sample data across all modules. Ideal for evaluation and testing on a fresh install.',
         'debug_tools_title' => 'Debug Tools',
         'debug_tools_desc'  => 'Library of diagnostics for troubleshooting failed flows. Run on request and send the output back to support.',
+        'companies_title'   => 'Companies',
+        'companies_desc'    => 'Manage the client companies this install serves.',
     ],
 
     // Branding page (system/branding/index.php)
@@ -416,5 +418,41 @@ return [
         'delete_this'     => 'this provider',
         'provider_deleted'=> 'Provider deleted',
         'delete_failed'   => 'Failed to delete',
+    ],
+
+    // Companies page (system/companies/index.php). "Company" is the
+    // user-facing word for a tenant; the underlying table/code stays `tenants`.
+    'companies' => [
+        'title'    => 'Companies',
+        'subtitle' => 'The client companies this install serves. Each new company is a separate space; the default company always stays active.',
+
+        'add' => 'Add',
+
+        'col_name'    => 'Name',
+        'col_status'  => 'Status',
+        'col_actions' => 'Actions',
+
+        'loading'      => 'Loading…',
+        'no_companies' => 'No companies yet. Click {add} to create one.',
+        'add_strong'   => 'Add',
+        'default'      => 'Default',
+        'active'       => 'Active',
+        'inactive'     => 'Inactive',
+        'edit'         => 'Edit',
+
+        'modal_add_title'  => 'Add company',
+        'modal_edit_title' => 'Edit company',
+        'field_name'       => 'Name',
+        'field_name_hint'  => 'The company name shown across the app.',
+        'field_name_placeholder' => 'Acme Ltd',
+        'cb_active'        => 'Active',
+        'cb_active_desc'   => 'Inactive companies are hidden from day-to-day use. The default company is always active.',
+        'cancel'          => 'Cancel',
+        'save'            => 'Save',
+
+        'required_name' => 'Name is required',
+        'company_saved' => 'Company saved',
+        'error'         => 'Error: {error}',
+        'save_failed'   => 'Failed to save',
     ],
 ];
