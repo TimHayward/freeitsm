@@ -191,3 +191,30 @@ function getActiveTenantId(PDO $conn, ?int $analystId = null): int {
 function setActiveTenantId(int $tenantId): void {
     $_SESSION['active_tenant_id'] = $tenantId;
 }
+
+/**
+ * Build a SQL predicate that scopes ticket rows to the analyst's active company.
+ *
+ * Returns ['', []] when multi-tenancy is dormant (single company) — i.e. NO
+ * filtering at N=1, so single-company installs are unaffected.
+ *
+ * The Default company also "owns" any ticket whose tenant_id is NULL (e.g. an
+ * email/self-service/workflow ticket not yet routed to a company) — so nothing
+ * is ever hidden from view; an un-routed ticket simply shows under Default.
+ *
+ * @param string $alias the tickets table alias used in the query (e.g. 't')
+ * @return array [sqlFragment, params] — append the fragment to a WHERE/ON clause
+ *               and merge the params into the statement's bound values.
+ */
+function ticketTenantFilter(PDO $conn, int $analystId, string $alias = 't'): array {
+    if (!isMultiTenant($conn)) {
+        return ['', []];
+    }
+    $active  = getActiveTenantId($conn, $analystId);
+    $default = getDefaultTenantId($conn);
+    $col = $alias === '' ? 'tenant_id' : "$alias.tenant_id";
+    if ($active === $default) {
+        return [" AND ($col = ? OR $col IS NULL)", [$active]];
+    }
+    return [" AND $col = ?", [$active]];
+}
