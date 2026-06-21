@@ -72,6 +72,20 @@ $translationNamespaces = ['common', 'system'];
         .checkbox-field .cb-label { font-size: 13px; color: #444; }
         .checkbox-field .cb-label strong { display: block; }
         .checkbox-field .cb-label span { color: #999; font-size: 12px; }
+
+        /* "How email reaches this company" — derived routing summary panel */
+        .routing-panel { background: #f7f9fa; border: 1px solid #e3e8ea; border-radius: 6px; padding: 12px 14px; }
+        .routing-path { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #eceff1; }
+        .routing-path:last-child { border-bottom: none; }
+        .routing-path .rp-icon { flex: 0 0 auto; font-size: 15px; line-height: 1.3; }
+        .routing-path .rp-body { flex: 1; min-width: 0; }
+        .routing-path .rp-kind { font-size: 12px; font-weight: 600; color: #455a64; }
+        .routing-path .rp-kind .rp-flag { font-weight: 600; color: #c62828; font-size: 11px; margin-left: 6px; }
+        .routing-path .rp-desc { font-size: 12px; color: #666; margin-top: 2px; }
+        .routing-path .rp-desc strong { color: #444; font-weight: 600; }
+        .routing-note { font-size: 12px; color: #777; margin-top: 10px; font-style: italic; }
+        .routing-warn { display: flex; gap: 8px; font-size: 12px; color: #8a5a00; background: #fff8e1; border: 1px solid #ffe0a3; border-radius: 5px; padding: 8px 10px; margin-top: 8px; }
+        .routing-empty { font-size: 12px; color: #aaa; font-style: italic; }
     </style>
 </head>
 <body>
@@ -128,6 +142,14 @@ $translationNamespaces = ['common', 'system'];
                         <input type="text" id="domainInput" placeholder="<?php echo htmlspecialchars(t('system.companies.domain_placeholder')); ?>" style="flex: 1;">
                         <button type="button" class="btn btn-secondary" id="addDomainBtn"><?php echo htmlspecialchars(t('system.companies.domain_add')); ?></button>
                     </div>
+                </div>
+
+                <!-- Derived, read-only "How email reaches this company" summary.
+                     Same visibility as the domains section (multi-company edit). -->
+                <div class="form-field" id="routingSection" style="display: none;">
+                    <label><?php echo htmlspecialchars(t('system.companies.routing_label')); ?></label>
+                    <div class="hint"><?php echo htmlspecialchars(t('system.companies.routing_hint')); ?></div>
+                    <div class="routing-panel" id="routingPanel"></div>
                 </div>
             </div>
             <div class="co-modal-footer">
@@ -193,13 +215,18 @@ $translationNamespaces = ['common', 'system'];
         // Email domains: only when editing an existing company on a multi-company
         // install (shared-intake routing is meaningless with a single company).
         const domainsSection = document.getElementById('domainsSection');
+        const routingSection = document.getElementById('routingSection');
         document.getElementById('domainInput').value = '';
         if (c && c.id && companies.length > 1) {
             domainsSection.style.display = '';
+            routingSection.style.display = '';
             loadDomains(c.id);
+            loadRouting(c.id);
         } else {
             domainsSection.style.display = 'none';
+            routingSection.style.display = 'none';
             document.getElementById('domainsList').innerHTML = '';
+            document.getElementById('routingPanel').innerHTML = '';
         }
 
         modal.classList.add('open');
@@ -247,6 +274,7 @@ $translationNamespaces = ['common', 'system'];
                 input.value = '';
                 showToast(window.t('system.companies.domain_added'), 'success');
                 loadDomains(tenantId);
+                loadRouting(tenantId); // domains drive shared-intake routing
                 loadCompanies(); // keep the list's domain chips in sync
             } else {
                 showToast(d.error || window.t('system.companies.domain_add_failed'), 'error');
@@ -264,12 +292,75 @@ $translationNamespaces = ['common', 'system'];
             if (d.success) {
                 showToast(window.t('system.companies.domain_removed'), 'success');
                 loadDomains(document.getElementById('companyId').value);
+                loadRouting(document.getElementById('companyId').value); // domains drive routing
                 loadCompanies(); // keep the list's domain chips in sync
             } else {
                 showToast(d.error || window.t('system.companies.domain_remove_failed'), 'error');
             }
         } catch (e) { showToast(window.t('system.companies.domain_remove_failed'), 'error'); }
     }
+    // ---------- How email reaches this company (derived, read-only) ----------
+    async function loadRouting(tenantId) {
+        const panel = document.getElementById('routingPanel');
+        panel.innerHTML = '<div class="routing-empty">' + esc(window.t('system.companies.routing_loading')) + '</div>';
+        let data;
+        try {
+            const r = await fetch(API + 'system/get_tenant_email_routing.php?tenant_id=' + tenantId);
+            data = await r.json();
+        } catch (e) { data = null; }
+        if (!data || !data.success) {
+            panel.innerHTML = '<div class="routing-empty">' + esc(window.t('system.companies.routing_failed')) + '</div>';
+            return;
+        }
+        renderRouting(panel, data);
+    }
+
+    function routingFlags(p) {
+        const flags = [];
+        if (!p.is_active) flags.push(window.t('system.companies.routing_inactive'));
+        if (!p.authenticated) flags.push(window.t('system.companies.routing_unauth'));
+        return flags.length ? ' <span class="rp-flag">(' + flags.map(esc).join(', ') + ')</span>' : '';
+    }
+
+    function renderRouting(panel, data) {
+        let html = '';
+        (data.paths || []).forEach(p => {
+            const addr = '<strong>' + esc(p.address || p.name) + '</strong>';
+            if (p.type === 'pinned') {
+                html += `<div class="routing-path">
+                    <span class="rp-icon">📌</span>
+                    <div class="rp-body">
+                        <div class="rp-kind">${esc(window.t('system.companies.routing_pinned'))}${routingFlags(p)}</div>
+                        <div class="rp-desc">${window.t('system.companies.routing_pinned_desc', { address: addr })}</div>
+                    </div>
+                </div>`;
+            } else {
+                const domains = (p.matched_domains || []).map(d => '<strong>' + esc(d) + '</strong>').join(', ');
+                html += `<div class="routing-path">
+                    <span class="rp-icon">📥</span>
+                    <div class="rp-body">
+                        <div class="rp-kind">${esc(window.t('system.companies.routing_shared'))}${routingFlags(p)}</div>
+                        <div class="rp-desc">${window.t('system.companies.routing_shared_desc', { address: addr, domains: domains })}</div>
+                    </div>
+                </div>`;
+            }
+        });
+        if (!html) {
+            html = '<div class="routing-empty">' + esc(window.t('system.companies.routing_warn_no_route')) + '</div>';
+        }
+        (data.warnings || []).forEach(w => {
+            const key = { no_route: 'routing_warn_no_route', domains_no_shared: 'routing_warn_domains_no_shared', unauthenticated: 'routing_warn_unauth' }[w];
+            // no_route already shown as the empty state above.
+            if (key && !(w === 'no_route' && !(data.paths && data.paths.length))) {
+                html += '<div class="routing-warn"><span>⚠️</span><span>' + esc(window.t('system.companies.' + key)) + '</span></div>';
+            }
+        });
+        if (data.catches_unrouted) {
+            html += '<div class="routing-note">' + esc(window.t('system.companies.routing_default_note')) + '</div>';
+        }
+        panel.innerHTML = html;
+    }
+
     document.getElementById('addDomainBtn').addEventListener('click', addDomain);
     document.getElementById('domainInput').addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); addDomain(); }

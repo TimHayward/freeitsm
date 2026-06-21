@@ -469,5 +469,22 @@ return [
         'domain_removed'      => 'Domain removed',
         'domain_add_failed'   => 'Failed to add domain',
         'domain_remove_failed'=> 'Failed to remove domain',
+
+        // "How email reaches this company" — derived, read-only routing summary.
+        'routing_label'        => 'How email reaches this company',
+        'routing_hint'         => 'A read-only summary, worked out from the mailboxes and domains above. Replies always go out from the same mailbox a message arrived on.',
+        'routing_loading'      => 'Working out routing…',
+        'routing_pinned'       => 'Dedicated mailbox',
+        'routing_pinned_desc'  => 'Mail to {address} always belongs to this company. Replies go out from this address.',
+        'routing_shared'       => 'Shared intake',
+        'routing_shared_desc'  => 'Mail to {address} is routed here when the sender\'s domain is {domains}. Replies go out from this address.',
+        'routing_reply_from'   => 'Replies from {address}',
+        'routing_inactive'     => 'inactive',
+        'routing_unauth'       => 'not authenticated',
+        'routing_default_note' => 'As the default company, it also receives any mail that matched no other company (the triage queue).',
+        'routing_warn_no_route'   => 'No automatic email route. Mail for this company has to be filed by hand from the triage queue. Pin a mailbox to it, or register an email domain so shared intake can match it.',
+        'routing_warn_domains_no_shared' => 'Domains are registered, but there\'s no active shared-intake mailbox to match them against. Add one, or pin a mailbox to this company.',
+        'routing_warn_unauth'     => 'A mailbox on a route above is not authenticated, so mail won\'t flow until it\'s reconnected in Settings.',
+        'routing_failed'       => 'Couldn\'t load the routing summary.',
     ],
 ];
