@@ -1073,6 +1073,13 @@ $translationNamespaces = ['common', 'tickets'];
                         <input type="email" id="mailboxEmail" required placeholder="<?php echo htmlspecialchars(t('tickets.settings.modals.mailbox.target_mailbox_placeholder')); ?>">
                     </div>
 
+                    <!-- Multi-tenancy: only shown when more than one company exists (populated by JS). -->
+                    <div class="form-group" id="mailboxCompanyGroup" style="display: none; grid-column: span 2;">
+                        <label for="mailboxCompany"><?php echo htmlspecialchars(t('tickets.settings.modals.mailbox.company_label')); ?></label>
+                        <select id="mailboxCompany"></select>
+                        <small style="color: #666; display: block; margin-top: 4px;"><?php echo htmlspecialchars(t('tickets.settings.modals.mailbox.company_help')); ?></small>
+                    </div>
+
                     <div class="form-group provider-microsoft">
                         <label for="mailboxTenantId"><?php echo htmlspecialchars(t('tickets.settings.modals.mailbox.azure_tenant_id')); ?> *</label>
                         <input type="text" id="mailboxTenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
@@ -1571,11 +1578,11 @@ $translationNamespaces = ['common', 'tickets'];
         // Load ticket types
         async function loadTicketTypes() {
             try {
-                const response = await fetch(API_BASE + 'get_ticket_types.php');
+                const response = await fetch(API_BASE + 'get_ticket_types.php?manage=1');
                 const data = await response.json();
 
                 if (data.success) {
-                    renderTicketTypes(data.ticket_types);
+                    renderTicketTypes(data);
                 } else {
                     showToast('Error loading ticket types: ' + data.error, 'error');
                 }
@@ -1587,11 +1594,11 @@ $translationNamespaces = ['common', 'tickets'];
         // Load ticket origins
         async function loadTicketOrigins() {
             try {
-                const response = await fetch(API_BASE + 'get_ticket_origins.php');
+                const response = await fetch(API_BASE + 'get_ticket_origins.php?manage=1');
                 const data = await response.json();
 
                 if (data.success) {
-                    renderTicketOrigins(data.origins);
+                    renderTicketOrigins(data);
                 } else {
                     showToast('Error loading ticket origins: ' + data.error, 'error');
                 }
@@ -1838,57 +1845,189 @@ $translationNamespaces = ['common', 'tickets'];
         }
 
         // Render ticket types
-        function renderTicketTypes(types) {
-            const tbody = document.getElementById('ticket-types-list');
+        // SVG markup reused across rows.
+        const TT_EDIT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
+        const TT_DELETE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+        // Open eye = currently visible to this company; slashed eye = hidden from it.
+        const TT_EYE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+        const TT_EYE_OFF_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
 
-            if (types.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No ticket types found</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = types.map(type => `
+        function ticketTypeRowEditable(type) {
+            return `
                 <tr>
                     <td><strong>${escapeHtml(type.name)}</strong></td>
                     <td>${escapeHtml(type.description || '')}</td>
                     <td>${type.display_order}</td>
                     <td><span class="status-badge status-${type.is_active ? 'active' : 'inactive'}">${type.is_active ? 'Active' : 'Inactive'}</span></td>
                     <td>
-                        <button class="action-btn" onclick="editItem('ticket-type', ${type.id})" title="${t('common.edit')}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                        </button>
-                        <button class="action-btn delete" onclick="deleteItem('ticket-type', ${type.id}, '${escapeHtml(type.name)}')" title="${t('common.delete')}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        </button>
+                        <button class="action-btn" onclick="editItem('ticket-type', ${type.id})" title="${t('common.edit')}">${TT_EDIT_SVG}</button>
+                        <button class="action-btn delete" onclick="deleteItem('ticket-type', ${type.id}, '${escapeHtml(type.name)}')" title="${t('common.delete')}">${TT_DELETE_SVG}</button>
                     </td>
-                </tr>
-            `).join('');
+                </tr>`;
         }
 
-        // Render ticket origins
-        function renderTicketOrigins(origins) {
-            const tbody = document.getElementById('ticket-origins-list');
+        function renderTicketTypes(data) {
+            const tbody = document.getElementById('ticket-types-list');
 
-            if (origins.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No ticket origins found</td></tr>';
+            // Multi-company, inside a client company's context → the two-group
+            // "shared defaults (add/hide) + this company's own types" view.
+            if (data && data.scoped && data.scoped.is_default === false) {
+                renderTicketTypesScoped(tbody, data.scoped);
                 return;
             }
 
-            tbody.innerHTML = origins.map(origin => `
+            // Otherwise: a flat list — single-company install, or the MSP/Default
+            // context where you manage the shared defaults themselves (as before).
+            const types = (data && data.ticket_types) ? data.ticket_types : [];
+            if (types.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No ticket types found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = types.map(ticketTypeRowEditable).join('');
+        }
+
+        // Per-company view (design §7 add+hide): the company's own types, then the
+        // shared defaults it inherits, each with a Hide/Show toggle.
+        function renderTicketTypesScoped(tbody, scoped) {
+            const groupRow = (label, hint) =>
+                `<tr class="tt-group-row"><td colspan="5" style="background:#f7f9fa;border-top:1px solid #e3e8ea;font-size:12px;font-weight:600;color:#455a64;padding:10px;">${escapeHtml(label)}${hint ? ` <span style="font-weight:400;color:#90a4ae;">— ${escapeHtml(hint)}</span>` : ''}</td></tr>`;
+
+            let html = '';
+
+            // Group 1 — this company's own types.
+            html += groupRow(`${scoped.company.name}’s own types`);
+            if (!scoped.own.length) {
+                html += '<tr><td colspan="5" style="color:#aaa;font-style:italic;padding:10px;">None yet — use Add to create a type just for this company.</td></tr>';
+            } else {
+                html += scoped.own.map(ticketTypeRowEditable).join('');
+            }
+
+            // Group 2 — shared defaults, with a per-company Hide/Show toggle.
+            html += groupRow('Shared defaults', `inherited by ${scoped.company.name}`);
+            html += scoped.globals.map(tp => {
+                const dim = tp.hidden ? 'opacity:0.5;' : '';
+                const statusCell = tp.hidden
+                    ? '<span class="status-badge status-inactive">Hidden here</span>'
+                    : `<span class="status-badge status-${tp.is_active ? 'active' : 'inactive'}">${tp.is_active ? 'Active' : 'Inactive'}</span>`;
+                const toggle = tp.hidden
+                    ? `<button class="action-btn" onclick="toggleTicketTypeHidden(${tp.id}, false)" title="Hidden from this company — click to show">${TT_EYE_OFF_SVG}</button>`
+                    : `<button class="action-btn" onclick="toggleTicketTypeHidden(${tp.id}, true)" title="Visible to this company — click to hide">${TT_EYE_SVG}</button>`;
+                return `
+                    <tr style="${dim}">
+                        <td><strong>${escapeHtml(tp.name)}</strong></td>
+                        <td>${escapeHtml(tp.description || '')}</td>
+                        <td>${tp.display_order}</td>
+                        <td>${statusCell}</td>
+                        <td>${toggle}</td>
+                    </tr>`;
+            }).join('');
+
+            tbody.innerHTML = html;
+        }
+
+        // Hide / show a shared default type for the active company (add+hide model).
+        async function toggleTicketTypeHidden(id, hidden) {
+            try {
+                const response = await fetch(API_BASE + 'set_ticket_type_hidden.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticket_type_id: id, hidden: hidden })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showToast(hidden ? 'Hidden from this company' : 'Shown for this company', 'success');
+                    loadTicketTypes();
+                } else {
+                    showToast(data.error || 'Could not update', 'error');
+                }
+            } catch (error) {
+                showToast('Could not update', 'error');
+            }
+        }
+
+        // Render ticket origins
+        function ticketOriginRowEditable(origin) {
+            return `
                 <tr>
                     <td><strong>${escapeHtml(origin.name)}</strong></td>
                     <td>${escapeHtml(origin.description || '')}</td>
                     <td>${origin.display_order}</td>
                     <td><span class="status-badge status-${origin.is_active ? 'active' : 'inactive'}">${origin.is_active ? 'Active' : 'Inactive'}</span></td>
                     <td>
-                        <button class="action-btn" onclick="editItem('ticket-origin', ${origin.id})" title="${t('common.edit')}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                        </button>
-                        <button class="action-btn delete" onclick="deleteItem('ticket-origin', ${origin.id}, '${escapeHtml(origin.name)}')" title="${t('common.delete')}">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        </button>
+                        <button class="action-btn" onclick="editItem('ticket-origin', ${origin.id})" title="${t('common.edit')}">${TT_EDIT_SVG}</button>
+                        <button class="action-btn delete" onclick="deleteItem('ticket-origin', ${origin.id}, '${escapeHtml(origin.name)}')" title="${t('common.delete')}">${TT_DELETE_SVG}</button>
                     </td>
-                </tr>
-            `).join('');
+                </tr>`;
+        }
+
+        function renderTicketOrigins(data) {
+            const tbody = document.getElementById('ticket-origins-list');
+
+            // Multi-company, client context → the two-group add/hide view.
+            if (data && data.scoped && data.scoped.is_default === false) {
+                renderTicketOriginsScoped(tbody, data.scoped);
+                return;
+            }
+
+            const origins = (data && data.origins) ? data.origins : [];
+            if (origins.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No ticket origins found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = origins.map(ticketOriginRowEditable).join('');
+        }
+
+        function renderTicketOriginsScoped(tbody, scoped) {
+            const groupRow = (label, hint) =>
+                `<tr class="tt-group-row"><td colspan="5" style="background:#f7f9fa;border-top:1px solid #e3e8ea;font-size:12px;font-weight:600;color:#455a64;padding:10px;">${escapeHtml(label)}${hint ? ` <span style="font-weight:400;color:#90a4ae;">— ${escapeHtml(hint)}</span>` : ''}</td></tr>`;
+
+            let html = '';
+            html += groupRow(`${scoped.company.name}’s own origins`);
+            if (!scoped.own.length) {
+                html += '<tr><td colspan="5" style="color:#aaa;font-style:italic;padding:10px;">None yet — use Add to create an origin just for this company.</td></tr>';
+            } else {
+                html += scoped.own.map(ticketOriginRowEditable).join('');
+            }
+
+            html += groupRow('Shared defaults', `inherited by ${scoped.company.name}`);
+            html += scoped.globals.map(o => {
+                const dim = o.hidden ? 'opacity:0.5;' : '';
+                const statusCell = o.hidden
+                    ? '<span class="status-badge status-inactive">Hidden here</span>'
+                    : `<span class="status-badge status-${o.is_active ? 'active' : 'inactive'}">${o.is_active ? 'Active' : 'Inactive'}</span>`;
+                const toggle = o.hidden
+                    ? `<button class="action-btn" onclick="toggleTicketOriginHidden(${o.id}, false)" title="Hidden from this company — click to show">${TT_EYE_OFF_SVG}</button>`
+                    : `<button class="action-btn" onclick="toggleTicketOriginHidden(${o.id}, true)" title="Visible to this company — click to hide">${TT_EYE_SVG}</button>`;
+                return `
+                    <tr style="${dim}">
+                        <td><strong>${escapeHtml(o.name)}</strong></td>
+                        <td>${escapeHtml(o.description || '')}</td>
+                        <td>${o.display_order}</td>
+                        <td>${statusCell}</td>
+                        <td>${toggle}</td>
+                    </tr>`;
+            }).join('');
+
+            tbody.innerHTML = html;
+        }
+
+        async function toggleTicketOriginHidden(id, hidden) {
+            try {
+                const response = await fetch(API_BASE + 'set_ticket_origin_hidden.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticket_origin_id: id, hidden: hidden })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showToast(hidden ? 'Hidden from this company' : 'Shown for this company', 'success');
+                    loadTicketOrigins();
+                } else {
+                    showToast(data.error || 'Could not update', 'error');
+                }
+            } catch (error) {
+                showToast('Could not update', 'error');
+            }
         }
 
         // Render teams
@@ -2293,8 +2432,25 @@ $translationNamespaces = ['common', 'tickets'];
         }
 
         // Mailbox Functions
+        // Multi-tenancy: a name lookup so the list can badge each mailbox with the
+        // company it's pinned to. mailboxMultiCompany stays false (badge hidden) on
+        // single-company installs.
+        let mailboxCompaniesById = {};
+        let mailboxMultiCompany = false;
+        async function loadMailboxCompanies() {
+            try {
+                const r = await fetch('../../api/system/get_tenants.php');
+                const d = await r.json();
+                const companies = d.success ? d.companies : [];
+                mailboxCompaniesById = {};
+                companies.forEach(c => { mailboxCompaniesById[c.id] = c.name; });
+                mailboxMultiCompany = companies.length > 1;
+            } catch (e) { mailboxCompaniesById = {}; mailboxMultiCompany = false; }
+        }
+
         async function loadMailboxes() {
             try {
+                await loadMailboxCompanies();
                 const response = await fetch(API_BASE + 'get_mailboxes.php');
                 const data = await response.json();
                 console.log('Mailboxes loaded:', data);
@@ -2366,9 +2522,19 @@ $translationNamespaces = ['common', 'tickets'];
                     ? ' <span class="status-badge" style="background:#e8f5e9;color:#2e7d32;">Google</span>'
                     : ' <span class="status-badge" style="background:#e3f2fd;color:#1565c0;">Microsoft</span>';
 
+                // Multi-tenancy: show the routing target — pinned company, or shared intake.
+                let companyBadge = '';
+                if (mailboxMultiCompany) {
+                    if (mb.tenant_id && mailboxCompaniesById[mb.tenant_id]) {
+                        companyBadge = ` <span class="status-badge" style="background:#ede7f6;color:#5e35b1;">${escapeHtml(mailboxCompaniesById[mb.tenant_id])}</span>`;
+                    } else {
+                        companyBadge = ` <span class="status-badge" style="background:#fff3e0;color:#ef6c00;">${escapeHtml(t('tickets.settings.modals.mailbox.company_shared_badge'))}</span>`;
+                    }
+                }
+
                 return `
                     <tr>
-                        <td><strong>${escapeHtml(mb.name)}</strong>${providerBadge}${activeBadge}</td>
+                        <td><strong>${escapeHtml(mb.name)}</strong>${providerBadge}${activeBadge}${companyBadge}</td>
                         <td>${escapeHtml(mb.target_mailbox)}</td>
                         <td>${statusBadge}</td>
                         <td>${lastChecked}</td>
@@ -2376,6 +2542,36 @@ $translationNamespaces = ['common', 'tickets'];
                     </tr>
                 `;
             }).join('');
+        }
+
+        // Multi-tenancy: populate the mailbox "Company" picker. The whole field
+        // stays hidden until a second company exists, so single-company installs
+        // never see it. value "" = shared intake (route inbound by sender domain).
+        async function populateMailboxCompanies(selectedTenantId) {
+            const group = document.getElementById('mailboxCompanyGroup');
+            const select = document.getElementById('mailboxCompany');
+            let companies = [];
+            try {
+                const r = await fetch('../../api/system/get_tenants.php');
+                const d = await r.json();
+                companies = d.success ? d.companies : [];
+            } catch (e) { companies = []; }
+
+            if (companies.length < 2) {
+                group.style.display = 'none';
+                select.innerHTML = '';
+                return;
+            }
+
+            let html = '<option value="">' + escapeHtml(t('tickets.settings.modals.mailbox.company_shared')) + '</option>';
+            companies.forEach(c => {
+                // Hide inactive companies unless this mailbox is currently pinned to one.
+                if (!c.is_active && c.id != selectedTenantId) return;
+                html += '<option value="' + c.id + '">' + escapeHtml(c.name) + '</option>';
+            });
+            select.innerHTML = html;
+            select.value = (selectedTenantId === null || selectedTenantId === undefined) ? '' : String(selectedTenantId);
+            group.style.display = '';
         }
 
         async function openMailboxModal(mailbox = null) {
@@ -2400,6 +2596,7 @@ $translationNamespaces = ['common', 'tickets'];
             toggleImportedFolder();
             document.getElementById('verifyFolderResult').style.display = 'none';
             document.getElementById('mailboxActive').checked = mailbox ? mailbox.is_active : true;
+            await populateMailboxCompanies(mailbox ? (mailbox.tenant_id ?? null) : null);
 
             // Load whitelist
             whitelistEntries = [];
@@ -2746,7 +2943,9 @@ $translationNamespaces = ['common', 'tickets'];
                 rejected_action: document.getElementById('mailboxRejectedAction').value,
                 imported_action: document.getElementById('mailboxImportedAction').value,
                 imported_folder: document.getElementById('mailboxImportedFolder').value || null,
-                is_active: document.getElementById('mailboxActive').checked
+                is_active: document.getElementById('mailboxActive').checked,
+                // Multi-tenancy: "" (shared intake) when the picker is hidden/unset → NULL server-side.
+                tenant_id: document.getElementById('mailboxCompany').value || null
             };
 
             try {

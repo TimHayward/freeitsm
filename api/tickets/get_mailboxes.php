@@ -22,7 +22,7 @@ try {
                    oauth_redirect_uri, oauth_scopes, imap_server, imap_port, imap_encryption,
                    target_mailbox, email_folder, max_emails_per_check, mark_as_read,
                    rejected_action, imported_action, imported_folder,
-                   is_active, created_datetime, last_checked_datetime,
+                   is_active, tenant_id, created_datetime, last_checked_datetime,
                    CASE WHEN token_data IS NOT NULL AND token_data != '' THEN 1 ELSE 0 END as is_authenticated
             FROM target_mailboxes
             ORDER BY name";
@@ -48,6 +48,8 @@ try {
         $mailbox['id'] = (int)$mailbox['id'];
         $mailbox['imap_port'] = (int)$mailbox['imap_port'];
         $mailbox['max_emails_per_check'] = (int)$mailbox['max_emails_per_check'];
+        // Multi-tenancy: the company this mailbox is pinned to (null = shared intake).
+        $mailbox['tenant_id'] = ($mailbox['tenant_id'] === null) ? null : (int)$mailbox['tenant_id'];
 
         // Convert bit fields to booleans
         $mailbox['is_active'] = (bool)$mailbox['is_active'];

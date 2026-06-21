@@ -6,6 +6,7 @@
 session_start(['read_and_close' => true]);
 require_once '../../config.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/tenancy.php';
 
 header('Content-Type: application/json');
 
@@ -82,6 +83,11 @@ try {
         $sql .= " AND ts.name = ?";
         $params[] = $status;
     }
+
+    // Multi-tenancy: scope the list to the analyst's active company (no-op at N=1).
+    list($tenantSql, $tenantParams) = ticketTenantFilter($conn, (int)$_SESSION['analyst_id']);
+    $sql .= $tenantSql;
+    $params = array_merge($params, $tenantParams);
 
     $sql .= " ORDER BY le.received_datetime DESC";
 

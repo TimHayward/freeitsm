@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS `analysts` (
     `failed_login_count`        INT NOT NULL DEFAULT 0,
     `locked_until`              DATETIME NULL,
     `auth_provider_id`          INT NULL,
+    `can_access_all_tenants`    TINYINT(1) NOT NULL DEFAULT 1,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_analysts_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -153,9 +154,17 @@ CREATE TABLE IF NOT EXISTS `ticket_types` (
     `description`       VARCHAR(255) NULL,
     `is_active`         TINYINT(1) NULL DEFAULT 1,
     `display_order`     INT NULL DEFAULT 0,
+    -- Multi-tenancy: NULL = global default type (shared by every company); set =
+    -- a type a company added for itself. Existing rows stay NULL, so a
+    -- single-company install is unaffected. (Config meaning of tenant_id: NULL =
+    -- global default — unlike scoped data tables where NULL means "unrouted".)
+    `tenant_id`         INT NULL,
     `created_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_ticket_types_name` (`name`)
+    -- Per-scope name uniqueness (a company may hold a type whose name matches a
+    -- global default). Global-name dedup is enforced in the API, since NULL
+    -- tenant_id rows aren't de-duped by a unique key.
+    UNIQUE KEY `uq_ticket_types_tenant_name` (`tenant_id`, `name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ticket_origins` (
@@ -164,6 +173,8 @@ CREATE TABLE IF NOT EXISTS `ticket_origins` (
     `description`       VARCHAR(255) NULL,
     `display_order`     INT NULL DEFAULT 0,
     `is_active`         TINYINT(1) NULL DEFAULT 1,
+    -- Multi-tenancy: NULL = global default origin; set = a company's own.
+    `tenant_id`         INT NULL,
     `created_datetime`  DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -347,6 +358,7 @@ CREATE TABLE IF NOT EXISTS `sla_cron_runs` (
 
 CREATE TABLE IF NOT EXISTS `tickets` (
     `id`                    INT NOT NULL AUTO_INCREMENT,
+    `tenant_id`             INT NULL,
     `ticket_number`         VARCHAR(50) NOT NULL,
     `subject`               VARCHAR(500) NOT NULL,
     `status_id`             INT NULL,
@@ -370,13 +382,15 @@ CREATE TABLE IF NOT EXISTS `tickets` (
     KEY `ix_tickets_assigned_analyst_id` (`assigned_analyst_id`),
     KEY `ix_tickets_department_id` (`department_id`),
     KEY `ix_tickets_created_datetime` (`created_datetime`),
+    KEY `ix_tickets_tenant_id` (`tenant_id`),
     CONSTRAINT `fk_tickets_analysts` FOREIGN KEY (`assigned_analyst_id`) REFERENCES `analysts` (`id`),
     CONSTRAINT `fk_tickets_departments` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),
     CONSTRAINT `fk_tickets_origin` FOREIGN KEY (`origin_id`) REFERENCES `ticket_origins` (`id`),
     CONSTRAINT `fk_tickets_ticket_types` FOREIGN KEY (`ticket_type_id`) REFERENCES `ticket_types` (`id`),
     CONSTRAINT `fk_tickets_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
     CONSTRAINT `fk_tickets_status` FOREIGN KEY (`status_id`) REFERENCES `ticket_statuses` (`id`),
-    CONSTRAINT `fk_tickets_priority` FOREIGN KEY (`priority_id`) REFERENCES `ticket_priorities` (`id`)
+    CONSTRAINT `fk_tickets_priority` FOREIGN KEY (`priority_id`) REFERENCES `ticket_priorities` (`id`),
+    CONSTRAINT `fk_tickets_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `ticket_audit` (
@@ -422,6 +436,94 @@ CREATE TABLE IF NOT EXISTS `ticket_time_entries` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------
+-- Multi-tenancy (foundation)
+-- A single FreeITSM install can host multiple client companies (tenants).
+-- Single-company installs run entirely inside one silent "Default" tenant,
+-- so multi-tenancy stays invisible until a second tenant is created.
+-- ----------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `tenants` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `name`              VARCHAR(150) NOT NULL,
+    `slug`              VARCHAR(100) NULL,
+    `is_default`        TINYINT(1) NOT NULL DEFAULT 0,
+    `is_active`         TINYINT(1) NOT NULL DEFAULT 1,
+    `created_datetime`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- The silent default tenant that owns all data on a single-company install.
+INSERT INTO `tenants` (`name`, `is_default`, `is_active`)
+SELECT 'Default', 1, 1 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM `tenants`);
+
+-- Domains owned by a tenant (used by shared-intake email routing).
+CREATE TABLE IF NOT EXISTS `tenant_domains` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `tenant_id`         INT NOT NULL,
+    `domain`            VARCHAR(255) NOT NULL,
+    `created_datetime`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_tenant_domains_domain` (`domain`),
+    CONSTRAINT `fk_tenant_domains_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Admin-added public/free-email domains. gmail.com etc. are built into the code
+-- (freemailBuiltinDomains); this table holds extra domains an MSP wants treated
+-- as public. Public domains are never mapped to a company — their mail is filed
+-- by hand from the triage queue.
+CREATE TABLE IF NOT EXISTS `freemail_domains` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `domain`            VARCHAR(255) NOT NULL,
+    `created_datetime`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_freemail_domains_domain` (`domain`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Specific sender addresses mapped to a company (shared-intake routing). The
+-- address-level twin of tenant_domains: matched before the domain, so a
+-- personal/freemail address (jane@gmail.com) can route to a company even though
+-- its domain can never be mapped. UNIQUE so one address routes exactly one way.
+CREATE TABLE IF NOT EXISTS `tenant_sender_addresses` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `tenant_id`         INT NOT NULL,
+    `email`             VARCHAR(255) NOT NULL,
+    `created_datetime`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_tenant_sender_email` (`email`),
+    CONSTRAINT `fk_tenant_sender_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Per-company "hide" layer for global config (the add+hide override model, design
+-- §7). A row = "this company doesn't want global <entity_type> #<entity_id> in its
+-- lists". Generic so one table serves every overridable config type (ticket_type,
+-- ticket_origin, department, …). The global row is never touched, so closed/historic
+-- tickets still resolve it — hiding only removes it from that company's pickers.
+CREATE TABLE IF NOT EXISTS `tenant_config_hidden` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `tenant_id`         INT NOT NULL,
+    `entity_type`       VARCHAR(50) NOT NULL,
+    `entity_id`         INT NOT NULL,
+    `created_datetime`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_tenant_config_hidden` (`tenant_id`, `entity_type`, `entity_id`),
+    CONSTRAINT `fk_tenant_config_hidden_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Which analysts may access which tenants (only consulted when an analyst is
+-- NOT flagged can_access_all_tenants).
+CREATE TABLE IF NOT EXISTS `analyst_tenant_access` (
+    `id`                INT NOT NULL AUTO_INCREMENT,
+    `analyst_id`        INT NOT NULL,
+    `tenant_id`         INT NOT NULL,
+    `created_datetime`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_analyst_tenant` (`analyst_id`, `tenant_id`),
+    CONSTRAINT `fk_ata_analyst` FOREIGN KEY (`analyst_id`) REFERENCES `analysts` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_ata_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------
 -- Email / Mailbox
 -- ----------------------------------------------------------
 
@@ -446,9 +548,12 @@ CREATE TABLE IF NOT EXISTS `target_mailboxes` (
     `imported_action`       VARCHAR(20) NOT NULL DEFAULT 'delete',
     `imported_folder`       VARCHAR(100) NULL,
     `is_active`             TINYINT(1) NOT NULL DEFAULT 1,
+    `tenant_id`             INT NULL,
     `created_datetime`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `last_checked_datetime` DATETIME NULL,
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    KEY `ix_target_mailboxes_tenant_id` (`tenant_id`),
+    CONSTRAINT `fk_target_mailboxes_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `emails` (

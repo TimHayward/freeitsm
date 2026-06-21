@@ -76,6 +76,22 @@ try {
     $imported_folder = $data['imported_folder'] ?? null;
     $is_active = isset($data['is_active']) ? ($data['is_active'] ? 1 : 0) : 1;
 
+    // Multi-tenancy: the company this mailbox is pinned to. Empty/0/absent means
+    // "shared intake" (NULL → inbound routed by sender domain). Validate it's a
+    // real company; if not, fall back to NULL rather than risk a bad FK.
+    $tenant_id = $data['tenant_id'] ?? null;
+    if ($tenant_id === '' || $tenant_id === 0 || $tenant_id === '0') {
+        $tenant_id = null;
+    }
+    if ($tenant_id !== null) {
+        $tenant_id = (int) $tenant_id;
+        $tCheck = $conn->prepare("SELECT COUNT(*) FROM tenants WHERE id = ?");
+        $tCheck->execute([$tenant_id]);
+        if ((int) $tCheck->fetchColumn() === 0) {
+            $tenant_id = null;
+        }
+    }
+
     // Validate action values
     $allowedRejectedActions = ['delete', 'move_to_deleted', 'mark_read'];
     $allowedImportedActions = ['delete', 'move_to_folder'];
@@ -92,7 +108,7 @@ try {
                         imap_port = ?, imap_encryption = ?, target_mailbox = ?,
                         email_folder = ?, max_emails_per_check = ?, mark_as_read = ?,
                         rejected_action = ?, imported_action = ?, imported_folder = ?,
-                        is_active = ?
+                        is_active = ?, tenant_id = ?
                     WHERE id = ?";
             $params = [
                 $name, $provider, $azure_tenant_id, $azure_client_id,
@@ -100,7 +116,7 @@ try {
                 $imap_port, $imap_encryption, $target_mailbox,
                 $email_folder, $max_emails_per_check, $mark_as_read,
                 $rejected_action, $imported_action, $imported_folder,
-                $is_active, $id
+                $is_active, $tenant_id, $id
             ];
         } else {
             $azure_client_secret = encryptValue($azure_client_secret);
@@ -110,7 +126,7 @@ try {
                         imap_server = ?, imap_port = ?, imap_encryption = ?,
                         target_mailbox = ?, email_folder = ?, max_emails_per_check = ?,
                         mark_as_read = ?, rejected_action = ?, imported_action = ?,
-                        imported_folder = ?, is_active = ?
+                        imported_folder = ?, is_active = ?, tenant_id = ?
                     WHERE id = ?";
             $params = [
                 $name, $provider, $azure_tenant_id, $azure_client_id,
@@ -118,7 +134,7 @@ try {
                 $imap_server, $imap_port, $imap_encryption,
                 $target_mailbox, $email_folder, $max_emails_per_check,
                 $mark_as_read, $rejected_action, $imported_action,
-                $imported_folder, $is_active, $id
+                $imported_folder, $is_active, $tenant_id, $id
             ];
         }
 
@@ -144,8 +160,8 @@ try {
                     oauth_redirect_uri, oauth_scopes, imap_server, imap_port,
                     imap_encryption, target_mailbox, email_folder, max_emails_per_check,
                     mark_as_read, rejected_action, imported_action, imported_folder,
-                    is_active
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    is_active, tenant_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         $stmt = $conn->prepare($sql);
         $stmt->execute([
@@ -153,7 +169,7 @@ try {
             $oauth_redirect_uri, $oauth_scopes, $imap_server, $imap_port,
             $imap_encryption, $target_mailbox, $email_folder, $max_emails_per_check,
             $mark_as_read, $rejected_action, $imported_action, $imported_folder,
-            $is_active
+            $is_active, $tenant_id
         ]);
 
         $newId = $conn->lastInsertId();

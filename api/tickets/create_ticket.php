@@ -6,6 +6,7 @@
 session_start(['read_and_close' => true]);
 require_once '../../config.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/tenancy.php';
 require_once dirname(dirname(__DIR__)) . '/workflow/includes/engine.php';
 
 header('Content-Type: application/json');
@@ -81,12 +82,16 @@ try {
     // Generate ticket number
     $ticketNumber = generateTicketNumber($conn);
 
+    // Stamp the ticket with the analyst's active company (multi-tenancy).
+    // At N=1 this is simply the Default company.
+    $tenantId = getActiveTenantId($conn, $analystId);
+
     // Create the ticket and get the ID. Resolve status/priority names to ids via subselects.
     $ticketSql = "INSERT INTO tickets (
-        ticket_number, subject, status_id, priority_id, department_id, ticket_type_id,
+        tenant_id, ticket_number, subject, status_id, priority_id, department_id, ticket_type_id,
         assigned_analyst_id, user_id, created_datetime, updated_datetime
     ) VALUES (
-        ?, ?,
+        ?, ?, ?,
         (SELECT id FROM ticket_statuses   WHERE name = 'Open' LIMIT 1),
         (SELECT id FROM ticket_priorities WHERE name = ? LIMIT 1),
         ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP()
@@ -94,6 +99,7 @@ try {
 
     $ticketStmt = $conn->prepare($ticketSql);
     $ticketStmt->execute([
+        $tenantId,
         $ticketNumber,
         $subject,
         $priority,

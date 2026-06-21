@@ -39,6 +39,7 @@ $schema = [
         'failed_login_count'     => 'INT NOT NULL DEFAULT 0',
         'locked_until'           => 'DATETIME NULL',
         'auth_provider_id'       => 'INT NULL',
+        'can_access_all_tenants' => 'TINYINT(1) NOT NULL DEFAULT 1',
     ],
 
     'auth_providers' => [
@@ -121,6 +122,12 @@ $schema = [
         'description'       => 'VARCHAR(255) NULL',
         'is_active'         => 'TINYINT(1) NULL DEFAULT 1',
         'display_order'     => 'INT NULL DEFAULT 0',
+        // Multi-tenancy: NULL = a global default type (shared by every company);
+        // set = a type that company added for itself. Existing rows stay NULL, so
+        // a single-company install is unaffected (all types are global). NB this
+        // is the *config* meaning of tenant_id (NULL = global default) — different
+        // from scoped data tables like `tickets` where NULL means "unrouted".
+        'tenant_id'         => 'INT NULL',
         'created_datetime'  => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
     ],
 
@@ -130,7 +137,25 @@ $schema = [
         'description'       => 'VARCHAR(255) NULL',
         'display_order'     => 'INT NULL DEFAULT 0',
         'is_active'         => 'TINYINT(1) NULL DEFAULT 1',
+        // Multi-tenancy: NULL = global default origin; set = a company's own.
+        // (Config meaning of tenant_id — see ticket_types.) Existing rows stay
+        // NULL, so a single-company install is unaffected.
+        'tenant_id'         => 'INT NULL',
         'created_datetime'  => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
+    // Multi-tenancy: the per-company "hide" layer for global config (the add+hide
+    // override model — design §7). A row means "this company does NOT want global
+    // <entity_type> #<entity_id> in its lists". Generic so one table serves every
+    // overridable config type (ticket_type, ticket_origin, department, …). The
+    // global row itself is never touched, so history/closed tickets still resolve
+    // it — hiding only removes it from that company's pickers, and is reversible.
+    'tenant_config_hidden' => [
+        'id'                => 'INT NOT NULL AUTO_INCREMENT',
+        'tenant_id'         => 'INT NOT NULL',
+        'entity_type'       => 'VARCHAR(50) NOT NULL',
+        'entity_id'         => 'INT NOT NULL',
+        'created_datetime'  => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
     ],
 
     'ticket_prefixes' => [
@@ -241,6 +266,7 @@ $schema = [
 
     'tickets' => [
         'id'                    => 'INT NOT NULL AUTO_INCREMENT',
+        'tenant_id'             => 'INT NULL',
         'ticket_number'         => 'VARCHAR(50) NOT NULL',
         'subject'               => 'VARCHAR(500) NOT NULL',
         'status_id'             => 'INT NULL',
@@ -290,6 +316,54 @@ $schema = [
         'updated_datetime'    => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
     ],
 
+    // Multi-tenancy foundation — a single install can host multiple client
+    // companies (tenants). Invisible until a second tenant exists.
+    'tenants' => [
+        'id'               => 'INT NOT NULL AUTO_INCREMENT',
+        'name'             => 'VARCHAR(150) NOT NULL',
+        'slug'             => 'VARCHAR(100) NULL',
+        'is_default'       => 'TINYINT(1) NOT NULL DEFAULT 0',
+        'is_active'        => 'TINYINT(1) NOT NULL DEFAULT 1',
+        'created_datetime' => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
+    // Domains owned by a tenant (used by shared-intake email routing).
+    'tenant_domains' => [
+        'id'               => 'INT NOT NULL AUTO_INCREMENT',
+        'tenant_id'        => 'INT NOT NULL',
+        'domain'           => 'VARCHAR(255) NOT NULL',
+        'created_datetime' => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
+    // Admin-added public/free-email domains (gmail.com etc. are built into the
+    // code; this table holds extra ones an MSP wants treated as public). These
+    // are never mapped to a company — their mail is filed by hand from triage.
+    'freemail_domains' => [
+        'id'               => 'INT NOT NULL AUTO_INCREMENT',
+        'domain'           => 'VARCHAR(255) NOT NULL',
+        'created_datetime' => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
+    // Specific sender addresses mapped to a company (shared-intake routing). The
+    // address-level twin of tenant_domains: matched before the domain, so a
+    // personal/freemail address (jane@gmail.com) can route to a company even
+    // though its domain is never mappable. UNIQUE so one address routes one way.
+    'tenant_sender_addresses' => [
+        'id'               => 'INT NOT NULL AUTO_INCREMENT',
+        'tenant_id'        => 'INT NOT NULL',
+        'email'            => 'VARCHAR(255) NOT NULL',
+        'created_datetime' => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
+    // Which analysts may access which tenants (only consulted when an analyst
+    // is NOT flagged can_access_all_tenants).
+    'analyst_tenant_access' => [
+        'id'               => 'INT NOT NULL AUTO_INCREMENT',
+        'analyst_id'       => 'INT NOT NULL',
+        'tenant_id'        => 'INT NOT NULL',
+        'created_datetime' => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
     'target_mailboxes' => [
         'id'                      => 'INT NOT NULL AUTO_INCREMENT',
         'name'                    => 'VARCHAR(100) NOT NULL',
@@ -311,6 +385,7 @@ $schema = [
         'imported_action'         => 'VARCHAR(20) NOT NULL DEFAULT \'delete\'',
         'imported_folder'         => 'VARCHAR(100) NULL',
         'is_active'               => 'TINYINT(1) NOT NULL DEFAULT 1',
+        'tenant_id'               => 'INT NULL',
         'created_datetime'        => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
         'last_checked_datetime'   => 'DATETIME NULL',
     ],
@@ -1986,6 +2061,30 @@ try {
     $results = [];
     $dbName = DB_NAME;
 
+    // Multi-tenancy: was target_mailboxes.tenant_id absent *before* this run added
+    // it? If so the post-schema section backfills existing mailboxes to the Default
+    // company (pinning them) — but ONLY this once. Once multi-tenancy is live a NULL
+    // tenant_id legitimately means "shared intake" (route by sender), so we must
+    // never re-backfill on later verifies or we'd clobber that deliberate choice.
+    $mailboxTenantColWasMissing = false;
+    try {
+        $mbProbe = $conn->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = ? AND table_name = 'target_mailboxes' AND column_name = 'tenant_id'");
+        $mbProbe->execute([$dbName]);
+        $mailboxTenantColWasMissing = ((int)$mbProbe->fetchColumn() === 0);
+    } catch (Exception $e) {}
+
+    // Same one-time logic for tickets.tenant_id: backfill existing tickets to the
+    // Default company only when the column is first added. After that a NULL
+    // tenant_id is meaningful — it marks an inbound email that matched no company
+    // and is waiting in the TRIAGE queue — so a repeated sweep would wrongly file
+    // every triaged ticket under Default and empty the queue.
+    $ticketsTenantColWasMissing = false;
+    try {
+        $tkProbe = $conn->prepare("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = ? AND table_name = 'tickets' AND column_name = 'tenant_id'");
+        $tkProbe->execute([$dbName]);
+        $ticketsTenantColWasMissing = ((int)$tkProbe->fetchColumn() === 0);
+    } catch (Exception $e) {}
+
     foreach ($schema as $tableName => $columns) {
         $tableResult = ['table' => $tableName, 'status' => 'ok', 'details' => []];
 
@@ -2124,6 +2223,23 @@ try {
         ];
     }
 
+    // Seed the silent Default tenant (multi-tenancy foundation) if none exists.
+    // Single-company installs run entirely inside this one tenant; it stays
+    // invisible until a second tenant is created.
+    $tenantTableCheck = $conn->prepare("SELECT COUNT(*) as cnt FROM information_schema.tables WHERE table_schema = ? AND table_name = 'tenants'");
+    $tenantTableCheck->execute([DB_NAME]);
+    if ((int)$tenantTableCheck->fetch(PDO::FETCH_ASSOC)['cnt'] > 0) {
+        $tenantCount = (int) $conn->query("SELECT COUNT(*) FROM tenants")->fetchColumn();
+        if ($tenantCount === 0) {
+            $conn->exec("INSERT INTO tenants (name, is_default, is_active, created_datetime) VALUES ('Default', 1, 1, UTC_TIMESTAMP())");
+            $results[] = [
+                'table' => 'tenants',
+                'status' => 'seeded',
+                'details' => ['Created the default tenant (multi-tenancy foundation; invisible until a second tenant is added)']
+            ];
+        }
+    }
+
     // Seed default dashboard widgets if table is empty
     $widgetCheck = $conn->prepare("SELECT COUNT(*) as cnt FROM information_schema.tables WHERE table_schema = ? AND table_name = 'asset_dashboard_widgets'");
     $widgetCheck->execute([DB_NAME]);
@@ -2242,6 +2358,114 @@ try {
                 ('Critical', '#dc2626', 0, 40),
                 ('Urgent',   '#b91c1c', 0, 50)");
             $results[] = ['table' => 'ticket_priorities', 'status' => 'seeded', 'details' => ['Inserted 5 default ticket priorities']];
+        }
+    }
+
+    // ----------------------------------------------------------
+    // Multi-tenancy foundation — unique keys + FKs for the tenant tables
+    // (the $schema loop builds columns + PK only). Added idempotently.
+    // ----------------------------------------------------------
+    if ($tableExists('tenant_domains') && $tableExists('tenants')) {
+        if (!$idxExists('tenant_domains', 'uq_tenant_domains_domain')) {
+            try { $conn->exec("ALTER TABLE tenant_domains ADD UNIQUE KEY uq_tenant_domains_domain (domain)"); } catch (Exception $e) {}
+        }
+        if (!$fkExists('tenant_domains', 'fk_tenant_domains_tenant')) {
+            try { $conn->exec("ALTER TABLE tenant_domains ADD CONSTRAINT fk_tenant_domains_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE CASCADE"); } catch (Exception $e) {}
+        }
+    }
+    if ($tableExists('tenant_sender_addresses') && $tableExists('tenants')) {
+        if (!$idxExists('tenant_sender_addresses', 'uq_tenant_sender_email')) {
+            try { $conn->exec("ALTER TABLE tenant_sender_addresses ADD UNIQUE KEY uq_tenant_sender_email (email)"); } catch (Exception $e) {}
+        }
+        if (!$fkExists('tenant_sender_addresses', 'fk_tenant_sender_tenant')) {
+            try { $conn->exec("ALTER TABLE tenant_sender_addresses ADD CONSTRAINT fk_tenant_sender_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE CASCADE"); } catch (Exception $e) {}
+        }
+    }
+    // Per-company config: the generic "hide" layer + per-entity tenant_id columns.
+    if ($tableExists('tenant_config_hidden') && $tableExists('tenants')) {
+        if (!$idxExists('tenant_config_hidden', 'uq_tenant_config_hidden')) {
+            try { $conn->exec("ALTER TABLE tenant_config_hidden ADD UNIQUE KEY uq_tenant_config_hidden (tenant_id, entity_type, entity_id)"); } catch (Exception $e) {}
+        }
+        if (!$fkExists('tenant_config_hidden', 'fk_tenant_config_hidden_tenant')) {
+            try { $conn->exec("ALTER TABLE tenant_config_hidden ADD CONSTRAINT fk_tenant_config_hidden_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE CASCADE"); } catch (Exception $e) {}
+        }
+    }
+    if ($tableExists('ticket_types') && $tableExists('tenants') && $colExists('ticket_types', 'tenant_id')) {
+        if (!$fkExists('ticket_types', 'fk_ticket_types_tenant')) {
+            try { $conn->exec("ALTER TABLE ticket_types ADD CONSTRAINT fk_ticket_types_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE CASCADE"); } catch (Exception $e) {}
+        }
+        // Widen name-uniqueness from global to per-scope so a company can hold a
+        // type whose name matches a global default. (Global-name dedup is enforced
+        // in the API — NULL tenant_id rows aren't de-duped by a unique key.)
+        if ($idxExists('ticket_types', 'uq_ticket_types_name')) {
+            try { $conn->exec("ALTER TABLE ticket_types DROP INDEX uq_ticket_types_name"); } catch (Exception $e) {}
+        }
+        if (!$idxExists('ticket_types', 'uq_ticket_types_tenant_name')) {
+            try { $conn->exec("ALTER TABLE ticket_types ADD UNIQUE KEY uq_ticket_types_tenant_name (tenant_id, name)"); } catch (Exception $e) {}
+        }
+    }
+    // ticket_origins had no name unique key historically; we don't add one (would
+    // fail on pre-existing duplicate names) — dedup is enforced in the API.
+    if ($tableExists('ticket_origins') && $tableExists('tenants') && $colExists('ticket_origins', 'tenant_id')) {
+        if (!$fkExists('ticket_origins', 'fk_ticket_origins_tenant')) {
+            try { $conn->exec("ALTER TABLE ticket_origins ADD CONSTRAINT fk_ticket_origins_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE CASCADE"); } catch (Exception $e) {}
+        }
+    }
+    if ($tableExists('analyst_tenant_access') && $tableExists('analysts') && $tableExists('tenants')) {
+        if (!$idxExists('analyst_tenant_access', 'uq_analyst_tenant')) {
+            try { $conn->exec("ALTER TABLE analyst_tenant_access ADD UNIQUE KEY uq_analyst_tenant (analyst_id, tenant_id)"); } catch (Exception $e) {}
+        }
+        if (!$fkExists('analyst_tenant_access', 'fk_ata_analyst')) {
+            try { $conn->exec("ALTER TABLE analyst_tenant_access ADD CONSTRAINT fk_ata_analyst FOREIGN KEY (analyst_id) REFERENCES analysts (id) ON DELETE CASCADE"); } catch (Exception $e) {}
+        }
+        if (!$fkExists('analyst_tenant_access', 'fk_ata_tenant')) {
+            try { $conn->exec("ALTER TABLE analyst_tenant_access ADD CONSTRAINT fk_ata_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE CASCADE"); } catch (Exception $e) {}
+        }
+    }
+    // tickets.tenant_id — index + FK + a ONE-TIME backfill of existing tickets to
+    // the Default company. Like target_mailboxes (and unlike a naive sweep), we
+    // backfill ONLY when the column was just added ($ticketsTenantColWasMissing):
+    // afterwards a NULL tenant_id marks an un-routed inbound email sitting in the
+    // TRIAGE queue, so re-sweeping it to Default would empty that queue.
+    if ($tableExists('tickets') && $tableExists('tenants') && $colExists('tickets', 'tenant_id')) {
+        if (!$idxExists('tickets', 'ix_tickets_tenant_id')) {
+            try { $conn->exec("ALTER TABLE tickets ADD KEY ix_tickets_tenant_id (tenant_id)"); } catch (Exception $e) {}
+        }
+        if (!$fkExists('tickets', 'fk_tickets_tenant')) {
+            try { $conn->exec("ALTER TABLE tickets ADD CONSTRAINT fk_tickets_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id)"); } catch (Exception $e) {}
+        }
+        if ($ticketsTenantColWasMissing) {
+            $defaultTenantId = (int) ($conn->query("SELECT id FROM tenants WHERE is_default = 1 ORDER BY id LIMIT 1")->fetchColumn() ?: 0);
+            if ($defaultTenantId > 0) {
+                $backfilled = $conn->exec("UPDATE tickets SET tenant_id = $defaultTenantId WHERE tenant_id IS NULL");
+                if ($backfilled > 0) {
+                    $results[] = ['table' => 'tickets', 'status' => 'updated', 'details' => ["Backfilled tenant_id on $backfilled ticket(s) to the Default company (multi-tenancy migration)"]];
+                }
+            }
+        }
+    }
+    // target_mailboxes.tenant_id — index + FK + a ONE-TIME backfill pinning every
+    // existing mailbox to the Default company. This keeps existing inbound mail
+    // flowing to Default exactly as before once a second company is added (a
+    // pinned mailbox decides the tenant; the sender is ignored). NULL means
+    // "shared intake" (route by sender domain) going forward, so — unlike tickets
+    // — we backfill ONLY when the column was just added ($mailboxTenantColWasMissing),
+    // never on later verifies, so an admin's deliberate shared-intake choice sticks.
+    if ($tableExists('target_mailboxes') && $tableExists('tenants') && $colExists('target_mailboxes', 'tenant_id')) {
+        if (!$idxExists('target_mailboxes', 'ix_target_mailboxes_tenant_id')) {
+            try { $conn->exec("ALTER TABLE target_mailboxes ADD KEY ix_target_mailboxes_tenant_id (tenant_id)"); } catch (Exception $e) {}
+        }
+        if (!$fkExists('target_mailboxes', 'fk_target_mailboxes_tenant')) {
+            try { $conn->exec("ALTER TABLE target_mailboxes ADD CONSTRAINT fk_target_mailboxes_tenant FOREIGN KEY (tenant_id) REFERENCES tenants (id) ON DELETE SET NULL"); } catch (Exception $e) {}
+        }
+        if ($mailboxTenantColWasMissing) {
+            $defaultTenantId = (int) ($conn->query("SELECT id FROM tenants WHERE is_default = 1 ORDER BY id LIMIT 1")->fetchColumn() ?: 0);
+            if ($defaultTenantId > 0) {
+                $pinned = $conn->exec("UPDATE target_mailboxes SET tenant_id = $defaultTenantId WHERE tenant_id IS NULL");
+                if ($pinned > 0) {
+                    $results[] = ['table' => 'target_mailboxes', 'status' => 'updated', 'details' => ["Pinned $pinned existing mailbox(es) to the Default company (multi-tenancy migration)"]];
+                }
+            }
         }
     }
 
@@ -3316,6 +3540,7 @@ try {
         ['change_field_layout', 'uq_cfl_field_key', '(`field_key`)'],
         ['analyst_sso_identities', 'uq_sso_provider_subject', '(`provider_id`, `subject`)'],
         ['analyst_sso_identities', 'uq_sso_provider_analyst', '(`provider_id`, `analyst_id`)'],
+        ['freemail_domains', 'uq_freemail_domains_domain', '(`domain`)'],
     ];
 
     foreach ($uniqueIndexes as [$tbl, $idxName, $cols]) {

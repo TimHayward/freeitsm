@@ -5,7 +5,14 @@
 session_start();
 require_once '../config.php';
 require_once '../includes/i18n.php';
+require_once '../includes/functions.php';
+require_once '../includes/tenancy.php';
 I18n::initFromSession();
+
+// The email routing test only has anything to decide once a second company
+// exists — keep it invisible at N=1 (defensive: never let it break the page).
+$showRoutingTest = false;
+try { $showRoutingTest = isMultiTenant(connectToDatabase()); } catch (Exception $e) { $showRoutingTest = false; }
 
 $current_page = 'system';
 $path_prefix = '../';
@@ -29,9 +36,10 @@ $translationNamespaces = ['common', 'system'];
 
         .landing-content {
             text-align: center;
-            max-width: 700px;
+            width: 100%;
             margin: auto 0;
-            padding: 30px 20px;
+            padding: 30px 40px;
+            box-sizing: border-box;
         }
 
         .landing-content h2 {
@@ -43,20 +51,19 @@ $translationNamespaces = ['common', 'system'];
         .landing-content .subtitle {
             font-size: 14px;
             color: #888;
-            margin: 0 0 40px 0;
+            margin: 0 0 32px 0;
         }
 
         .system-cards {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            max-width: 700px;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 16px;
         }
 
         .system-card {
             background: #fff;
-            border-radius: 12px;
-            padding: 32px 30px;
+            border-radius: 10px;
+            padding: 20px 18px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.08);
             text-decoration: none;
             color: inherit;
@@ -71,21 +78,23 @@ $translationNamespaces = ['common', 'system'];
         }
 
         .system-card svg {
+            width: 30px;
+            height: 30px;
             color: #546e7a;
-            margin-bottom: 16px;
+            margin-bottom: 10px;
         }
 
         .system-card h3 {
-            margin: 0 0 8px 0;
-            font-size: 18px;
+            margin: 0 0 6px 0;
+            font-size: 16px;
             color: #333;
         }
 
         .system-card p {
             margin: 0;
-            font-size: 13px;
+            font-size: 12px;
             color: #888;
-            line-height: 1.5;
+            line-height: 1.45;
         }
     </style>
 </head>
@@ -198,6 +207,32 @@ $translationNamespaces = ['common', 'system'];
                     <h3><?php echo htmlspecialchars(t('system.landing.debug_tools_title')); ?></h3>
                     <p><?php echo htmlspecialchars(t('system.landing.debug_tools_desc')); ?></p>
                 </a>
+
+                <a href="companies/" class="system-card">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 21h18"></path>
+                        <path d="M9 8h1"></path>
+                        <path d="M9 12h1"></path>
+                        <path d="M9 16h1"></path>
+                        <path d="M14 8h1"></path>
+                        <path d="M14 12h1"></path>
+                        <path d="M14 16h1"></path>
+                        <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+                    </svg>
+                    <h3><?php echo htmlspecialchars(t('system.landing.companies_title')); ?></h3>
+                    <p><?php echo htmlspecialchars(t('system.landing.companies_desc')); ?></p>
+                </a>
+
+                <?php if ($showRoutingTest): ?>
+                <a href="email-routing-test/" class="system-card">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                    </svg>
+                    <h3><?php echo htmlspecialchars(t('system.landing.routing_test_title')); ?></h3>
+                    <p><?php echo htmlspecialchars(t('system.landing.routing_test_desc')); ?></p>
+                </a>
+                <?php endif; ?>
             </div>
         </div>
     </div>
