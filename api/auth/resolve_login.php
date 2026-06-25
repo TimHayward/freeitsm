@@ -1,10 +1,13 @@
 <?php
 /**
  * API: Resolve an email to a login method (for the email-first login router).
- * POST JSON { email }
+ * POST JSON { email, portal? }
+ *
+ * portal = 'analyst' (default) resolves against the analysts table;
+ * portal = 'self-service' resolves against the self-service users table.
  *
  * Returns { mode: 'sso', provider_id, provider_name } when the email belongs
- * to an active analyst assigned to an enabled provider (and SSO is on);
+ * to an active account assigned to an enabled provider (and SSO is on);
  * otherwise { mode: 'local' }.
  *
  * Deliberately returns 'local' for unknown emails too, so this endpoint does
@@ -16,8 +19,9 @@ require_once '../../includes/functions.php';
 
 header('Content-Type: application/json');
 
-$data  = json_decode(file_get_contents('php://input'), true);
-$email = strtolower(trim($data['email'] ?? ''));
+$data   = json_decode(file_get_contents('php://input'), true);
+$email  = strtolower(trim($data['email'] ?? ''));
+$portal = ($data['portal'] ?? '') === 'self-service' ? 'self-service' : 'analyst';
 
 $resp = ['mode' => 'local'];
 
@@ -26,13 +30,22 @@ if ($email !== '') {
         $conn = connectToDatabase();
         $ssoOn = (($conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'sso_enabled'")->fetchColumn()) ?: '0') === '1';
         if ($ssoOn) {
-            $stmt = $conn->prepare(
-                "SELECT a.auth_provider_id, p.display_name
-                   FROM analysts a
-                   JOIN auth_providers p ON p.id = a.auth_provider_id
-                  WHERE LOWER(a.email) = ? AND a.is_active = 1 AND p.enabled = 1
-                  LIMIT 1"
-            );
+            // Each portal pins its account to a provider on its own table. The
+            // self-service users table has no is_active column.
+            if ($portal === 'self-service') {
+                $sql = "SELECT u.auth_provider_id, p.display_name
+                          FROM users u
+                          JOIN auth_providers p ON p.id = u.auth_provider_id
+                         WHERE LOWER(u.email) = ? AND p.enabled = 1
+                         LIMIT 1";
+            } else {
+                $sql = "SELECT a.auth_provider_id, p.display_name
+                          FROM analysts a
+                          JOIN auth_providers p ON p.id = a.auth_provider_id
+                         WHERE LOWER(a.email) = ? AND a.is_active = 1 AND p.enabled = 1
+                         LIMIT 1";
+            }
+            $stmt = $conn->prepare($sql);
             $stmt->execute([$email]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($row) {

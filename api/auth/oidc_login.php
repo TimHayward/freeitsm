@@ -12,10 +12,18 @@ require_once '../../config.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/oidc.php';
 
-/** Bounce back to the login page with an error message. */
+// Which portal is signing in: 'analyst' (default) or 'self-service'. The same
+// callback + IdP redirect URI serve both; the portal is carried in the session
+// so the callback knows which account space to resolve against and where to land.
+$portal = ($_GET['portal'] ?? '') === 'self-service' ? 'self-service' : 'analyst';
+$_SESSION['oidc_portal'] = $portal;
+
+/** Bounce back to the right portal's login page with an error message. */
 function ssoBail(string $msg): void {
+    $loginPath = (($_SESSION['oidc_portal'] ?? 'analyst') === 'self-service')
+        ? 'self-service/login.php' : 'login.php';
     $_SESSION['sso_error'] = $msg;
-    header('Location: ' . BASE_URL . 'login.php');
+    header('Location: ' . BASE_URL . $loginPath);
     exit;
 }
 

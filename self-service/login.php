@@ -11,10 +11,36 @@ if (isset($_SESSION['ss_user_id'])) {
 }
 
 require_once '../config.php';
+require_once '../includes/functions.php';
 require_once '../includes/i18n.php';
 I18n::initFromSession();
 
 $translationNamespaces = ['common', 'self-service'];
+
+// An SSO sign-in attempt that failed bounces back here with a message.
+$sso_error = $_SESSION['sso_error'] ?? null;
+unset($_SESSION['sso_error']);
+
+// Work out SSO / local availability for the email-first router (mirrors the
+// analyst login). At N=1 with SSO off this all collapses to the local form.
+$ssoProviders = [];
+$ssoOn = false; $localOn = true;
+try {
+    $ssoConn = connectToDatabase();
+    $cfg = [];
+    foreach ($ssoConn->query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('sso_enabled','local_login_enabled')") as $r) {
+        $cfg[$r['setting_key']] = $r['setting_value'];
+    }
+    $ssoOn   = ($cfg['sso_enabled'] ?? '0') === '1';
+    $localOn = ($cfg['local_login_enabled'] ?? '1') !== '0';
+    if ($ssoOn) {
+        $ssoProviders = $ssoConn->query("SELECT id, display_name FROM auth_providers WHERE enabled = 1 ORDER BY sort_order, display_name")->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (Exception $e) { $ssoProviders = []; }
+$ssoActive = $ssoOn && !empty($ssoProviders);
+// Break-glass: ?local=1 always reveals the local form, even when local login is "off".
+$forceLocal   = isset($_GET['local']);
+$localAllowed = $localOn || $forceLocal;
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo htmlspecialchars(I18n::getLocale()); ?>">
@@ -150,6 +176,24 @@ $translationNamespaces = ['common', 'self-service'];
             cursor: pointer;
         }
         .mfa-back a:hover { text-decoration: underline; }
+
+        /* Email-first SSO router */
+        .sso-divider {
+            display: flex; align-items: center; gap: 10px;
+            margin: 20px 0 14px; color: #9aa; font-size: 12px;
+        }
+        .sso-divider span { flex: 1; height: 1px; background: #ddd; }
+        .sso-provider-btn {
+            display: block; text-align: center; padding: 11px; margin-bottom: 8px;
+            border: 1px solid #cfd8dc; border-radius: 6px; color: #37474f;
+            text-decoration: none; font-weight: 600; font-size: 14px; background: #fff;
+        }
+        .sso-provider-btn:hover { background: #f7f9fa; }
+        .ss-text-link {
+            display: block; text-align: center; margin-top: 14px;
+            color: #999; text-decoration: none; font-size: 13px; cursor: pointer;
+        }
+        .ss-text-link:hover { color: #666; }
     </style>
 </head>
 <body>
@@ -160,7 +204,7 @@ $translationNamespaces = ['common', 'self-service'];
             <p id="loginSubtitle"><?php echo htmlspecialchars(t('self-service.login.subtitle')); ?></p>
         </div>
 
-        <div class="error-message" id="errorMsg"></div>
+        <div class="error-message" id="errorMsg"<?php if ($sso_error): ?> style="display:block;"<?php endif; ?>><?php echo $sso_error ? htmlspecialchars($sso_error) : ''; ?></div>
 
         <!-- Login Form -->
         <div id="loginSection">
@@ -169,12 +213,25 @@ $translationNamespaces = ['common', 'self-service'];
                     <label for="email"><?php echo htmlspecialchars(t('self-service.login.email')); ?></label>
                     <input type="email" id="email" required autofocus autocomplete="off">
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="passwordGroup"<?php if ($ssoActive): ?> style="display:none;"<?php endif; ?>>
                     <label for="password"><?php echo htmlspecialchars(t('self-service.login.password')); ?></label>
-                    <input type="password" id="password" required autocomplete="off">
+                    <input type="password" id="password" autocomplete="off">
                 </div>
-                <button type="submit" class="login-button" id="loginBtn"><?php echo htmlspecialchars(t('self-service.login.sign_in')); ?></button>
+                <?php if ($ssoActive): ?>
+                    <button type="button" class="login-button" id="continueBtn"><?php echo htmlspecialchars(t('self-service.login.continue')); ?></button>
+                <?php endif; ?>
+                <button type="submit" class="login-button" id="loginBtn"<?php if ($ssoActive): ?> style="display:none;"<?php endif; ?>><?php echo htmlspecialchars(t('self-service.login.sign_in')); ?></button>
             </form>
+
+            <?php if ($ssoActive): ?>
+                <div class="sso-divider"><span></span><?php echo htmlspecialchars(t('self-service.login.or')); ?><span></span></div>
+                <?php foreach ($ssoProviders as $p): ?>
+                    <a class="sso-provider-btn" href="../api/auth/oidc_login.php?provider=<?php echo (int)$p['id']; ?>&amp;portal=self-service"><?php echo htmlspecialchars($p['display_name']); ?></a>
+                <?php endforeach; ?>
+                <?php if ($localAllowed): ?>
+                    <a href="#" id="showLocalLink" class="ss-text-link"><?php echo htmlspecialchars(t('self-service.login.use_local_account')); ?></a>
+                <?php endif; ?>
+            <?php endif; ?>
 
             <div class="login-links">
                 <a href="register.php"><?php echo htmlspecialchars(t('self-service.login.create_account')); ?></a>
@@ -291,6 +348,66 @@ $translationNamespaces = ['common', 'self-service'];
         document.getElementById('password').value = '';
         document.getElementById('otpCode').value = '';
     }
+<?php if ($ssoActive): ?>
+    // --- Email-first SSO router: type email -> routed to your provider, or fall
+    // back to the local password form. Mirrors the analyst login page. ---
+    (function () {
+        var localAllowed  = <?php echo $localAllowed ? 'true' : 'false'; ?>;
+        var emailEl       = document.getElementById('email');
+        var pwGroup       = document.getElementById('passwordGroup');
+        var continueBtn   = document.getElementById('continueBtn');
+        var loginBtn      = document.getElementById('loginBtn');
+        var showLocalLink = document.getElementById('showLocalLink');
+        var errEl         = document.getElementById('errorMsg');
+        var revealed      = false;
+
+        function revealLocal() {
+            revealed = true;
+            if (pwGroup) pwGroup.style.display = '';
+            if (continueBtn) continueBtn.style.display = 'none';
+            if (loginBtn) loginBtn.style.display = '';
+            var pw = document.getElementById('password');
+            if (pw) pw.focus();
+        }
+
+        async function resolve() {
+            var email = (emailEl.value || '').trim();
+            if (!email) {
+                errEl.textContent = t('self-service.login.enter_email');
+                errEl.style.display = 'block';
+                return;
+            }
+            errEl.style.display = 'none';
+            if (continueBtn) continueBtn.disabled = true;
+            try {
+                var r = await fetch('../api/auth/resolve_login.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, portal: 'self-service' })
+                });
+                var d = await r.json();
+                if (d && d.mode === 'sso' && d.provider_id) {
+                    window.location = '../api/auth/oidc_login.php?provider=' + d.provider_id + '&portal=self-service';
+                    return;
+                }
+            } catch (e) { /* fall through to local */ }
+            if (localAllowed) {
+                revealLocal();
+            } else {
+                errEl.textContent = t('self-service.login.no_sso_for_email');
+                errEl.style.display = 'block';
+            }
+            if (continueBtn) continueBtn.disabled = false;
+        }
+
+        if (continueBtn) continueBtn.addEventListener('click', resolve);
+        if (showLocalLink) showLocalLink.addEventListener('click', function (e) { e.preventDefault(); revealLocal(); });
+        // Enter in the email field continues, rather than submitting an empty password.
+        if (emailEl) emailEl.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !revealed) { e.preventDefault(); resolve(); }
+        });
+    })();
+<?php endif; ?>
     </script>
 </body>
 </html>

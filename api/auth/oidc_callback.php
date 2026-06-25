@@ -17,13 +17,16 @@ require_once '../../config.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/oidc.php';
 
-/** Bounce back to the login page with an error message. */
+/** Bounce back to the originating portal's login page with an error message. */
 function ssoBail(string $msg): void {
+    $loginPath = (($_SESSION['oidc_portal'] ?? 'analyst') === 'self-service')
+        ? 'self-service/login.php' : 'login.php';
     // Clear any in-flight OIDC state so a retry starts clean.
     unset($_SESSION['oidc_state'], $_SESSION['oidc_nonce'],
-          $_SESSION['oidc_code_verifier'], $_SESSION['oidc_provider_id']);
+          $_SESSION['oidc_code_verifier'], $_SESSION['oidc_provider_id'],
+          $_SESSION['oidc_portal']);
     $_SESSION['sso_error'] = $msg;
-    header('Location: ' . BASE_URL . 'login.php');
+    header('Location: ' . BASE_URL . $loginPath);
     exit;
 }
 
@@ -82,6 +85,12 @@ try {
     $preferredUser = $claims['preferred_username'] ?? ($email ?: $sub);
     if ($sub === '') {
         ssoBail('The provider did not return a user identifier.');
+    }
+
+    // --- Self-service portal branches off here (resolve against `users`) ---
+    if (($_SESSION['oidc_portal'] ?? 'analyst') === 'self-service') {
+        completeSelfServiceSso($conn, $provider, $providerId, $sub, $email, $emailVerified, $name, $tokens);
+        // (function sets the session, redirects and exits)
     }
 
     // --- 1) Existing link by (provider, sub) ---
@@ -156,6 +165,7 @@ try {
     // Remember the SSO context so logout can also end the session at the IdP.
     $_SESSION['sso_provider_id']  = $providerId;
     $_SESSION['sso_id_token']     = $tokens['id_token'];
+    unset($_SESSION['oidc_portal']);
 
     header('Location: ' . BASE_URL);
     exit;
@@ -170,6 +180,108 @@ function oidcLoadAnalyst(PDO $conn, int $id): ?array {
     $stmt = $conn->prepare("SELECT * FROM analysts WHERE id = ?");
     $stmt->execute([$id]);
     return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+}
+
+function ssLoadUser(PDO $conn, int $id): ?array {
+    $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
+    $stmt->execute([$id]);
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+}
+
+/**
+ * Complete an SSO sign-in for the SELF-SERVICE portal.
+ *
+ * Mirrors the analyst flow against the requester `users` table:
+ *   1) existing link by (provider, sub),
+ *   2) match an existing requester by verified email,
+ *   3) just-in-time create (if the provider allows it).
+ * Then sets the self-service session (SSO bypasses local TOTP) and lands in
+ * the portal. Never returns — it redirects and exits.
+ *
+ * Deliberate difference from analysts: a requester matched by verified email
+ * who is still UNASSIGNED is auto-claimed onto this provider, rather than
+ * rejected. Requesters are low-privilege and self-onboarding (a ticket-created
+ * contact starts passwordless and unassigned), so we don't require an admin to
+ * pre-enrol every customer. An already-assigned requester is still strictly
+ * isolated to their own provider.
+ */
+function completeSelfServiceSso(PDO $conn, array $provider, int $providerId, string $sub, string $email, bool $emailVerified, string $name, array $tokens): void {
+    // --- 1) Existing link by (provider, sub) ---
+    $stmt = $conn->prepare("SELECT user_id FROM user_sso_identities WHERE provider_id = ? AND subject = ?");
+    $stmt->execute([$providerId, $sub]);
+    $userId = $stmt->fetchColumn();
+
+    if ($userId) {
+        $userId = (int)$userId;
+        $user = ssLoadUser($conn, $userId);
+        if (!$user) {
+            ssoBail('Your account is no longer available. Contact your service desk.');
+        }
+        // Strict isolation: must still be assigned to this provider.
+        if ((int)($user['auth_provider_id'] ?? 0) !== $providerId) {
+            ssoBail('Your account is not assigned to this sign-in method.');
+        }
+        $conn->prepare("UPDATE user_sso_identities SET last_login_datetime = UTC_TIMESTAMP(), email = ? WHERE provider_id = ? AND subject = ?")
+             ->execute([$email ?: null, $providerId, $sub]);
+
+    } else {
+        // --- 2) Match an existing requester by verified email ---
+        $user = null;
+        if ($email !== '') {
+            if (!$emailVerified) {
+                ssoBail('Your email is not verified with the identity provider.');
+            }
+            $stmt = $conn->prepare("SELECT * FROM users WHERE LOWER(email) = ? LIMIT 1");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        }
+
+        if ($user) {
+            $userId   = (int)$user['id'];
+            $assigned = (int)($user['auth_provider_id'] ?? 0);
+            if ($assigned === 0) {
+                // Auto-claim an unassigned requester onto this provider.
+                $conn->prepare("UPDATE users SET auth_provider_id = ? WHERE id = ?")->execute([$providerId, $userId]);
+                $user['auth_provider_id'] = $providerId;
+            } elseif ($assigned !== $providerId) {
+                ssoBail('This account is not set up to sign in with this provider.');
+            }
+        } else {
+            // --- 3) Just-in-time provisioning (only if the provider allows it) ---
+            if ((int)$provider['auto_create_users'] !== 1) {
+                ssoBail('No self-service account exists for ' . ($email ?: 'this user') . '. Raise a ticket or register first.');
+            }
+            if ($email === '') {
+                ssoBail('Cannot create an account without an email from the provider.');
+            }
+            $stmt = $conn->prepare(
+                "INSERT INTO users (email, display_name, auth_provider_id, created_at)
+                 VALUES (?, ?, ?, UTC_TIMESTAMP())"
+            );
+            $stmt->execute([$email, $name ?: $email, $providerId]);
+            $userId = (int)$conn->lastInsertId();
+            $user   = ssLoadUser($conn, $userId);
+        }
+
+        // Link this IdP identity to the requester for next time.
+        $conn->prepare(
+            "INSERT INTO user_sso_identities (user_id, provider_id, subject, email, linked_datetime, last_login_datetime)
+             VALUES (?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())"
+        )->execute([$userId, $providerId, $sub, $email ?: null]);
+    }
+
+    // --- Success: set the self-service session (SSO bypasses local TOTP) ---
+    $displayName = $user['preferred_name'] ?: $user['display_name'] ?: $user['email'];
+    $_SESSION['ss_user_id']    = $userId;
+    $_SESSION['ss_user_email'] = $user['email'];
+    $_SESSION['ss_user_name']  = $displayName;
+    // Remember the SSO context so logout can also end the session at the IdP.
+    $_SESSION['ss_sso_provider_id'] = $providerId;
+    $_SESSION['ss_sso_id_token']    = $tokens['id_token'];
+    unset($_SESSION['oidc_portal']);
+
+    header('Location: ' . BASE_URL . 'self-service/index.php');
+    exit;
 }
 
 /**

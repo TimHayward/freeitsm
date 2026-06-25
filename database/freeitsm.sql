@@ -198,10 +198,33 @@ CREATE TABLE IF NOT EXISTS `users` (
     `password_hash`   VARCHAR(255) NULL,
     `totp_secret`     VARCHAR(500) NULL,
     `totp_enabled`    TINYINT(1) NOT NULL DEFAULT 0,
+    `auth_provider_id` INT NULL,
     `created_at`      DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_users_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Links a self-service requester to their identity at a given provider (the IdP
+-- `sub` claim). Mirrors analyst_sso_identities, one layer down for the portal.
+CREATE TABLE IF NOT EXISTS `user_sso_identities` (
+    `id`                  INT NOT NULL AUTO_INCREMENT,
+    `user_id`             INT NOT NULL,
+    `provider_id`         INT NOT NULL,
+    `subject`             VARCHAR(255) NOT NULL,
+    `email`               VARCHAR(255) NULL,
+    `linked_datetime`     DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_login_datetime` DATETIME NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_user_sso_provider_subject` (`provider_id`, `subject`),
+    UNIQUE KEY `uq_user_sso_provider_user` (`provider_id`, `user_id`),
+    CONSTRAINT `fk_user_sso_identity_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_user_sso_identity_provider` FOREIGN KEY (`provider_id`) REFERENCES `auth_providers` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- users.auth_provider_id => the IdP a requester is assigned to (NULL = local
+-- password). Added after auth_providers is defined.
+ALTER TABLE `users`
+    ADD CONSTRAINT `fk_users_auth_provider` FOREIGN KEY (`auth_provider_id`) REFERENCES `auth_providers` (`id`) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS `ticket_statuses` (
     `id`                INT NOT NULL AUTO_INCREMENT,

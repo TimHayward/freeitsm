@@ -174,7 +174,18 @@ $schema = [
         'password_hash'   => 'VARCHAR(255) NULL',
         'totp_secret'     => 'VARCHAR(500) NULL',
         'totp_enabled'    => 'TINYINT(1) NOT NULL DEFAULT 0',
+        'auth_provider_id' => 'INT NULL',
         'created_at'      => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
+    ],
+
+    'user_sso_identities' => [
+        'id'                  => 'INT NOT NULL AUTO_INCREMENT',
+        'user_id'             => 'INT NOT NULL',
+        'provider_id'         => 'INT NOT NULL',
+        'subject'             => 'VARCHAR(255) NOT NULL',
+        'email'               => 'VARCHAR(255) NULL',
+        'linked_datetime'     => 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP',
+        'last_login_datetime' => 'DATETIME NULL',
     ],
 
     'ticket_statuses' => [
@@ -3090,6 +3101,10 @@ try {
         ['analyst_sso_identities', 'fk_sso_identity_analyst',  "ALTER TABLE analyst_sso_identities ADD CONSTRAINT fk_sso_identity_analyst FOREIGN KEY (analyst_id) REFERENCES analysts (id) ON DELETE CASCADE"],
         ['analyst_sso_identities', 'fk_sso_identity_provider', "ALTER TABLE analyst_sso_identities ADD CONSTRAINT fk_sso_identity_provider FOREIGN KEY (provider_id) REFERENCES auth_providers (id) ON DELETE CASCADE"],
         ['analysts',               'fk_analysts_auth_provider', "ALTER TABLE analysts ADD CONSTRAINT fk_analysts_auth_provider FOREIGN KEY (auth_provider_id) REFERENCES auth_providers (id) ON DELETE SET NULL"],
+        // Self-service requester SSO (mirror of the analyst tables, one layer down).
+        ['user_sso_identities',    'fk_user_sso_identity_user',     "ALTER TABLE user_sso_identities ADD CONSTRAINT fk_user_sso_identity_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE"],
+        ['user_sso_identities',    'fk_user_sso_identity_provider', "ALTER TABLE user_sso_identities ADD CONSTRAINT fk_user_sso_identity_provider FOREIGN KEY (provider_id) REFERENCES auth_providers (id) ON DELETE CASCADE"],
+        ['users',                  'fk_users_auth_provider',        "ALTER TABLE users ADD CONSTRAINT fk_users_auth_provider FOREIGN KEY (auth_provider_id) REFERENCES auth_providers (id) ON DELETE SET NULL"],
     ];
     foreach ($ssoFks as [$tbl, $name, $sql]) {
         if (!$tableExists($tbl) || $fkExists($tbl, $name)) continue;
@@ -3540,6 +3555,8 @@ try {
         ['change_field_layout', 'uq_cfl_field_key', '(`field_key`)'],
         ['analyst_sso_identities', 'uq_sso_provider_subject', '(`provider_id`, `subject`)'],
         ['analyst_sso_identities', 'uq_sso_provider_analyst', '(`provider_id`, `analyst_id`)'],
+        ['user_sso_identities', 'uq_user_sso_provider_subject', '(`provider_id`, `subject`)'],
+        ['user_sso_identities', 'uq_user_sso_provider_user', '(`provider_id`, `user_id`)'],
         ['freemail_domains', 'uq_freemail_domains_domain', '(`domain`)'],
     ];
 
