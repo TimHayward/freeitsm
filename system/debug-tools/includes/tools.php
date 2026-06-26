@@ -65,6 +65,31 @@ function getDebugTools() {
             'persists'    => 'DESTRUCTIVE — on success the ticket and all its data are permanently deleted. On any error the transaction is rolled back and nothing changes.',
             'destructive' => true,
         ],
+        [
+            'id'       => 'D003',
+            'slug'     => 'd003',
+            'file'     => 'D003_selfservice_sso.php',
+            'title'    => 'Self-Service SSO check (by email)',
+            'category' => 'Self-Service',
+            'icon'     => 'sso',
+            'desc'     => 'Type a requester\'s email and check, end to end, whether self-service single sign-on is wired correctly for them.',
+            'keywords' => 'self service sso single sign on oidc login email tenant provider entra okta keycloak redirect uri discovery d003',
+            'when'     => 'Run this when a self-service portal user can\'t sign in with SSO (or you\'re setting them up and want to confirm the wiring). Enter their email address and it traces the whole path — schema, global SSO config, single vs multi-tenant, how the email maps to a company, the user account state, the predicted login outcome, provider health with a live OIDC discovery test, and the redirect URI.',
+            'input'    => ['name' => 'email', 'label' => 'Email address', 'placeholder' => 'e.g. someone@company.com'],
+            'checks'   => [
+                'Schema readiness for the self-service login + SSO tables/columns (users, user_sso_identities, auth_providers, system_settings) and the multi-tenant routing tables + key constraints',
+                'Global SSO config — sso_enabled, local_login_enabled, and counts of enabled global vs company-owned providers',
+                'Tenancy mode — single-company or multi-tenant',
+                'How the email maps to a company — exact sender-address override, domain mapping, and whether it\'s a freemail/personal domain',
+                'The user account — exists / passwordless / TOTP state / which provider it\'s pinned to / linked SSO identities (subject shown masked)',
+                'The predicted login outcome (local / sso / choose), mirroring the real resolve_login routing',
+                'Provider health + a live, secret-free OIDC discovery test (issuer match, authorization/token/jwks/end-session endpoints reachable)',
+                'The exact redirect URI to register in the IdP',
+                'A plain-English verdict listing any blockers',
+            ],
+            'duration' => '~1–5 seconds (depends on how quickly the identity provider answers discovery)',
+            'persists' => 'None. Read-only — it performs a live OIDC discovery fetch (an unauthenticated metadata request to the provider) but writes nothing, and never prints secrets (client secrets, TOTP secrets and password hashes are reported only as present/absent).',
+        ],
     ];
 }
 
