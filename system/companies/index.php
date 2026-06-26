@@ -108,6 +108,12 @@ $translationNamespaces = ['common', 'system'];
         <h1 class="page-title"><?php echo htmlspecialchars(t('system.companies.title')); ?></h1>
         <p class="page-subtitle"><?php echo htmlspecialchars(t('system.companies.subtitle')); ?></p>
 
+        <a href="../help/sso.php" style="display:flex;align-items:center;gap:12px;text-decoration:none;background:linear-gradient(135deg,#eef2ff,#e0e7ff);border:1px solid #c7d2fe;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3m-6 0H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+            <span style="flex:1;color:#3730a3;font-size:13.5px;line-height:1.45;"><strong style="display:block;font-size:14px;margin-bottom:1px;">Setting up single sign-on for the self-service portal?</strong>Click here for the step-by-step guide — it covers both single-company and multi-company (MSP) setups.</span>
+            <span style="color:#6366f1;font-weight:700;font-size:18px;">&rarr;</span>
+        </a>
+
         <div class="settings-card">
             <div class="companies-head">
                 <div></div>
