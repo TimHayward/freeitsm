@@ -149,6 +149,14 @@ $translationNamespaces = ['common', 'system'];
             color: #888;
             line-height: 1.45;
         }
+
+        /* Help card — visually distinct from the admin areas. */
+        .system-card--help {
+            background: linear-gradient(135deg, #ffffff 0%, #eef2ff 100%);
+            border-color: #c7d2fe;
+        }
+        .system-card--help svg { color: #6366f1; }
+        .system-card--help:hover { border-color: #6366f1; }
     </style>
 </head>
 <body>
@@ -170,6 +178,18 @@ $translationNamespaces = ['common', 'system'];
             </div>
 
             <div class="system-cards" id="systemCards">
+                <!-- Help is rendered directly (not from the areas registry) so it
+                     appears here but never recurses onto the help landing. -->
+                <a href="help/" class="system-card system-card--help"
+                   data-search="help guides guide documentation how to setup instructions manual sso single sign-on">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    <h3><?php echo htmlspecialchars(t('system.landing.help_title')); ?></h3>
+                    <p><?php echo htmlspecialchars(t('system.landing.help_desc')); ?></p>
+                </a>
                 <?php foreach ($systemAreas as $area): ?>
                     <?php
                     $title = t($area['title']);

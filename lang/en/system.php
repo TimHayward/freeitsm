@@ -39,6 +39,9 @@ return [
         'search_placeholder' => 'Search system areas…',
         'no_results'         => 'No system areas match your search.',
 
+        'help_title' => 'Help & guides',
+        'help_desc'  => 'Step-by-step guides for every system area, including single sign-on setup.',
+
         'encryption_title'  => 'Encryption',
         'encryption_desc'   => 'Generate and manage the encryption key used to protect sensitive data such as API keys and credentials.',
         'encryption_keywords' => 'encryption key master key crypto secrets credentials api keys cipher',
