@@ -15,7 +15,12 @@ services:
       DB_USERNAME: freeitsm
       DB_PASSWORD: freeitsm
       ENCRYPTION_KEY_PATH: /var/www/encryption_keys/freeitsm.key
-
+      HTTPS: "on"
+      REQUEST_SCHEME: "https"
+      SERVER_PORT: "443"
+      HTTP_HOST: "docker.hayward.blue"
+      SERVER_NAME: "docker.hayward.blue"
+      
     volumes:
       - attachments:/var/www/html/tickets/attachments
       - cm-attachments:/var/www/html/change-management/attachments
