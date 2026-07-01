@@ -25,6 +25,7 @@ services:
       - attachments:/var/www/html/tickets/attachments
       - cm-attachments:/var/www/html/change-management/attachments
       - encryption-keys:/var/www/encryption_keys
+      - /home/tim/docker/freeitsm/apache/force-https.conf:/etc/apache2/conf-enabled/force-https.conf:ro
 
     networks:
       - freeitsm-net
